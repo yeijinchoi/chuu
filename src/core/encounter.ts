@@ -356,9 +356,15 @@ export function doReroll(ctx: Ctx): boolean {
   const fresh = shuffle(rng, pool.filter((p) => !e.offered.includes(p.id)));
   const rest = shuffle(rng, pool.filter((p) => e.offered.includes(p.id)));
   const next = [...fresh, ...rest].slice(0, 3).map((p) => p.id);
+  // 마지막 기회에는 손님이 원하는 상품이 반드시 나온다 (세 번을 다 써도 못 찾는 일은 없다)
+  const wanted = pool.filter((p) => classifyProposal(ctx, c, p) === 'perfect');
+  if (e.rerolls + 1 >= SCORE.maxRerolls && wanted.length > 0 && !next.some((id) => wanted.some((p) => p.id === id))) {
+    const w = pickOne(rng, wanted) as Product;
+    next[next.length - 1] = w.id;
+  }
   if (c.onlyProduct && !e.rejected.includes(c.onlyProduct) && !next.includes(c.onlyProduct)) next.push(c.onlyProduct);
   e.rerolls++;
-  e.offered = shuffle(rng, next);
+  e.offered = shuffle(rng, [...new Set(next)]);
   narrate(ctx, str(ctx.data, 'text.rerolled'));
   ctx.emit({ type: 'sfx', id: 'cloth_pull' });
   return true;

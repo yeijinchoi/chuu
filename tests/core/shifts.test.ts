@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { EMPTY_BOX, pickOffers, SCORE } from '../../src/core/encounter';
 import { deriveRng, mulberry32 } from '../../src/core/rng';
 import { moodFor } from '../../src/core/mood';
-import { act, bestOffer, customer, data, encOf, newGame, playAfternoon, playCorrect, product, reject, rig, st } from './helpers';
+import { classifyProposal } from '../../src/core/reactions';
+import { act, bestOffer, ctxOf, customer, data, encOf, newGame, playAfternoon, playCorrect, product, reject, rig, st } from './helpers';
 
 describe('pickOffers', () => {
   it('같은 시드면 같은 결과, 다른 시드면 달라질 수 있다', () => {
@@ -249,5 +250,23 @@ describe('제안: 거절과 다시 뽑기', () => {
     encOf(g2).offered = ['tailored_suit']; // 마지막 한 장이 거절되면 더 보여 줄 것이 없다
     act(g2, { type: 'propose', productId: 'tailored_suit' });
     expect(encOf(g2).outcome).toBe('walked');
+  });
+});
+
+describe('다시 뽑기는 세 번 안에 반드시 원하는 상품이 나온다', () => {
+  it('모든 손님·여러 시드: 다시 뽑기를 모두 써도 마지막 카드에 손님이 원하는 상품이 있다', () => {
+    for (const c of data.customers) {
+      for (let seed = 1; seed <= 25; seed++) {
+        const g = rig(c.id, c.shift, seed);
+        act(g, { type: 'greet', style: c.greetPref === 'warm' && c.rules.includes(7) ? 'quiet' : c.greetPref });
+        if (encOf(g).step === 'serve') act(g, { type: 'serve', drink: 'none' });
+        const probes = c.rules.includes(8) ? ['askCategory', 'observe'] : c.rules.includes(9) ? ['askBudget', 'askCategory'] : ['askCategory', 'askOccasion'];
+        for (const p of probes) act(g, { type: 'probe', probe: p as never });
+        for (let i = 0; i < SCORE.maxRerolls; i++) act(g, { type: 'reroll' });
+        const ctx = ctxOf(g);
+        const ok = encOf(g).offered.some((id) => classifyProposal(ctx, c, product(id)) === 'perfect');
+        expect(ok, `${c.id}/${seed}: ${encOf(g).offered.join(',')}`).toBe(true);
+      }
+    }
   });
 });
