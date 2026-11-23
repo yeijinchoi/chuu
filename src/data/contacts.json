@@ -33,6 +33,6 @@
     "id": "zero", "name": "(빈칸)", "book": "dawn", "address": "(빈칸)",
     "memo": "(메모 없음)",
     "customerId": null, "prefers": null, "dislikes": null, "composureOnSend": -5,
-    "replies": { "any": "서윤이는 거기 없어요." }
+    "replies": { "any": "담당자님은 거기 없어요." }
   }
 ]

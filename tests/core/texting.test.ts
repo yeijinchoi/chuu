@@ -129,7 +129,7 @@ describe('문자 판정', () => {
   it('zero: 보내는 즉시 답장, 평정심 −5, 방문 안 함', () => {
     const g = dawnTexting();
     const ev = act(g, { type: 'sendText', contactId: 'zero', template: 'dawn_open' });
-    expect(ev).toContainEqual({ type: 'phone', from: '(빈칸)', text: '서윤이는 거기 없어요.' });
+    expect(ev).toContainEqual({ type: 'phone', from: '(빈칸)', text: '담당자님은 거기 없어요.' });
     expect(ev).toContainEqual({ type: 'composure', delta: -5, value: 95 });
     expect(st(g).composure).toBe(95);
     act(g, { type: 'finishTexting' });
