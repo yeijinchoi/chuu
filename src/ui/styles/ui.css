@@ -143,7 +143,7 @@ button:disabled, button[aria-disabled='true'] { cursor: default; }
 /* S00 타이틀: 필리그리 프레임 안에 로고 · 입력 중 말풍선 · 제목 말풍선 · 메뉴 (단계는 root 클래스로) */
 .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .screen--title { background: var(--ink); }
-.title__frame { display: flex; flex-direction: column; align-items: center; gap: 8px; width: 440px; padding: 14px 24px 20px; background: var(--color-surface); border: 16px solid transparent; border-image: var(--fr-main) 16 / 16px / 0 stretch; image-rendering: pixelated; visibility: hidden; }
+.title__frame { display: flex; flex-direction: column; align-items: center; gap: 16px; width: 440px; padding: 14px 24px 20px; background: var(--color-surface); border: 16px solid transparent; border-image: var(--fr-main) 16 / 16px / 0 stretch; image-rendering: pixelated; visibility: hidden; }
 .screen--title.is-frame .title__frame { visibility: visible; animation: title-frame 600ms steps(6, end) 1 both; }
 @keyframes title-frame { from { clip-path: inset(50% 50% 50% 50%); } to { clip-path: inset(0); } }
 .title__art { position: relative; width: 200px; height: 205px; opacity: 0; }
@@ -160,7 +160,9 @@ button:disabled, button[aria-disabled='true'] { cursor: default; }
 .title__typing .bubble-row, .title__msg .bubble-row { max-width: 100%; }
 .title__from { font-size: 9px; line-height: 12px; color: var(--ash); }
 .title__msg .bubble { font-size: 11px; line-height: 15px; }
-.title__time { align-self: center; font-family: var(--font-small); font-size: 9px; line-height: 12px; color: var(--ash); }
+.title__msg { gap: 6px; }
+.title__line { display: flex; align-items: flex-end; gap: 8px; max-width: 100%; }
+.title__time { align-self: flex-end; white-space: nowrap; padding-bottom: 2px; font-family: var(--font-small); font-size: 9px; line-height: 12px; color: var(--ash); }
 .screen-menu { display: flex; flex-direction: column; align-items: center; gap: 6px; width: 100%; }
 .screen-menu .btn { min-width: 200px; }
 .title__menu { display: none; flex-direction: column; align-items: center; gap: 6px; width: 100%; }

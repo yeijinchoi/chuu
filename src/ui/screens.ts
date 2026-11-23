@@ -42,7 +42,9 @@ export function titleScreen(host: HTMLElement, o: { canResume: boolean; corrupt:
   const from = el('div', 'title__from', t('title.from'));
   const msgRow = el('div', 'bubble-row bubble-row--in');
   msgRow.append(el('div', 'bubble bubble--in', t('title.message')));
-  msg.append(from, msgRow, el('div', 'title__time', t('title.time')));
+  const line = el('div', 'title__line'); // 시각은 말풍선 옆에 붙는다
+  line.append(msgRow, el('div', 'title__time', t('title.time')));
+  msg.append(from, line);
   const menu = el('div', 'title__menu');
   const start = button('btn', '', o.onStart);
   start.append(el('span', 'btn__key', `[${t('title.keyEnter')}]`), document.createTextNode(` ${t('title.start')}`));
