@@ -60,7 +60,7 @@ tests/
 
 ```ts
 export type Shift = 'afternoon' | 'dawn';
-export type Category = 'bag' | 'watch' | 'jewelry' | 'scarf' | 'glove' | 'wallet' | 'perfume';
+export type Category = 'bag' | 'apparel' | 'jewelry';   // 부서: 가방 · 의류 · 파인주얼리
 export type Color = 'beige' | 'pink' | 'black' | 'white';
 export type GreetStyle = 'warm' | 'quiet' | 'direct';
 export type ProbeId = 'askCategory' | 'askOccasion' | 'askBudget' | 'observe';
@@ -81,7 +81,8 @@ export type Mood = 'calm' | 'uneasy' | 'dread' | 'collapse';
 
 export interface Product {
   id: string; name: string; shift: Shift;
-  category: Category; color: Color; price: number;   // 새벽 상품의 price는 원화 환산가
+  category: Category; kind: string;                  // kind: 표시용 종류 (토트백, 수트, 반지 …)
+  color: Color | null; price: number;                // 새벽 상품의 price는 원화 환산가. empty_box는 color null
   description?: string;                              // 새벽 상품 설명
 }
 
@@ -236,7 +237,7 @@ GDD §6, §7, §11, §12의 표를 **그대로** JSON으로 옮긴다. 대사 �
 [{
   "id": "baek", "name": "백설", "shift": "dawn", "motif": "바람 위를 걷는 존재",
   "entranceNote": "매장 안 온도가 내려간다. 카운터에 올린 손끝마다 하얗게 서리가 맺혀 있다.", "greetPref": "quiet",
-  "category": "glove", "color": "white", "budget": 5000000,
+  "category": "apparel", "color": "white", "budget": 5000000,
   "mentionsPrice": false, "occasionIsGift": false,
   "traits": { "frostHands": true },
   "specialPayment": { "label": "녹지 않는 서리 한 병", "amount": 4400000 },
@@ -249,7 +250,7 @@ GDD §6, §7, §11, §12의 표를 **그대로** JSON으로 옮긴다. 대사 �
 | 손님 | 머리 | 머리색 | 옷 | 액센트 |
 |---|---|---|---|---|
 | 한여름 | bob | hair | shadow 원피스 | rose 머리핀 |
-| 강도윤 | slick | ink | dusk 수트 | brass 시계 |
+| 강도윤 | slick | ink | shadow 수트 | brass 손목시계 (늘 보는 습관) |
 | 진영숙 | bun | bone(은발) | shadow 상복 | paper 진주 목걸이(알 하나 빠짐) |
 | 마시 씨 | 젖어 붙은 짧은 머리 | stone | dusk 정장, 소매에서 물방울 | steel 큰 눈(깜빡이지 않음), 목 옆 아가미 선 1줄 |
 | 얼굴 없는 여자 | long, 얼굴을 가림 | ink | **rose 코트** (새벽 매장에서 유일하게 넓은 색 면적) | ash 손가락 |
@@ -265,7 +266,8 @@ GDD §6, §7, §11, §12의 표를 **그대로** JSON으로 옮긴다. 대사 �
 - 거울: 배경 장식일 뿐 **아무것도 비추지 않는다**(반사 렌더링 없음). 유리 하이라이트 사선 2줄만 그린다.
 - 크리처(D5~D8)는 손님별 전용 그리기 함수와 위치를 쓴다(`CUSTOMERS.md` §5).
 - 새벽 손님의 이상한 특징(깜빡이지 않는 눈, 얼굴 없음, 서리 맺힌 손, 많은 손가락)은 **숨기지 않고 처음부터 그린다.** 정체를 가려내는 숨은 단서는 없다.
-- **교대 전환**: 오후 진열은 가방·시계·주얼리, 새벽 진열은 GDD §12-2 아이템이다. 새벽에는 샹들리에를 끄고 카운터 스탠드 하나만 켠다(빛 반경 밖은 무채색 한 단계 어둡게). 새벽 기본 mood는 `uneasy`다.
+- **부서 배치**: 한 화면에 세 부서를 둔다. 뒷벽 선반 = 가방, 양쪽 마네킹과 행거 = 의류, 앞쪽 유리 카운터 = 파인주얼리. 손님이 입장하면 자기 부서 쪽으로 2초간 고개를 돌린다(첫 힌트).
+- **교대 전환**: 오후 진열은 GDD §12-1 상품, 새벽 진열은 GDD §12-2 아이템이다. 새벽에는 샹들리에를 끄고 카운터 스탠드 하나만 켠다(빛 반경 밖은 무채색 한 단계 어둡게). 새벽 기본 mood는 `uneasy`다.
 - **보이는 범위**: 사람형 손님은 카운터 뒤 상체와 카운터 위에 올린 손만 보인다. 특징은 반드시 이 범위(얼굴·머리·상체·손·카운터 상판)에 그린다.
 - 마시 씨가 있는 동안 카운터 상판에 물이 고인다(steel 하이라이트 1도트씩 번짐).
 - 마네킹: `dread` 이상이면 왼쪽 마네킹 머리가 돌아가고, `collapse`면 머리가 단발(서윤)로 바뀐다.
@@ -306,7 +308,7 @@ interface StorageAdapter { load(): SaveV1 | null | 'corrupt'; save(s: SaveV1): b
 |---|---|---|
 | M0 | 스캐폴드: `index.html`, 글꼴, 토큰 CSS, stage 스케일링, 로딩 화면 | `npm run dev`로 640×360 무대가 정수배로 뜨고 Galmuri가 적용된다 |
 | M1 | `core/` 전부 + `data/` + 테스트 | `npm test` 전부 통과 (§9) |
-| M2 | 렌더러: 오후/새벽 배경, 손님 6명 도트, 상품 아이콘 17종 | 디버그 키 `F1`로 손님 순환, `F2`로 교대 전환하며 스크린샷을 확인한다 |
+| M2 | 렌더러: 오후/새벽 배경, 손님 6명 도트, 상품 아이콘 26종(오후 14, 새벽 12) | 디버그 키 `F1`로 손님 순환, `F2`로 교대 전환하며 스크린샷을 확인한다 |
 | M3 | UI: 타이틀·이름 입력, HUD, 대화창, 선택지, 단계 표시, 하트, 수칙 쪽지, 상품 카드 | 문자 단계를 건너뛰고 손님 응대를 마우스와 키보드로 끝까지 할 수 있다 |
 | M4 | 업무폰: 오후 명부와 검은 수첩, 발송, 답장, 휴게 전환, 04:44 문자 이벤트 | GDD §3, §6, §9가 화면에서 그대로 동작한다 |
 | M5 | 공포 연출: mood 단계, 위반 이벤트, 배드엔딩 | 일부러 위반하는 루트로 확인. reduced-motion에서 흔들림이 없다 |
