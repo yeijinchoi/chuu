@@ -72,6 +72,41 @@ export function trueEndingMissing(ctx: Ctx): string[] {
   return miss;
 }
 
+/** 3일 누적 매출이 이만큼이면 "실적 1위" */
+export const TOP_SELLER_REVENUE = 25_000_000;
+/** 마지막 밤 평정심이 이만큼 남아 있고 위반이 없으면 "정규직 전환" */
+export const TENURE_COMPOSURE = 70;
+const DAWN_BONDS = ['marsh', 'baek', 'faceless'] as const;
+
+/** "…네."의 결말: 한서진에게 문자했다가 부족했다면 자매가 함께 진열되고, 실적이 높으면 실적 1위로 진열된다 */
+export function yesEnding(ctx: Ctx, allyTried: boolean): EndingId {
+  if (allyTried) return 'twinDisplay';
+  return ctx.state.totalRevenue >= TOP_SELLER_REVENUE ? 'topSeller' : 'display';
+}
+
+/** 가장 가까운 새벽 단골(VIP 이상 중 관계 점수가 가장 높은 손님) */
+export function dawnBond(ctx: Ctx): (typeof DAWN_BONDS)[number] | null {
+  let best: (typeof DAWN_BONDS)[number] | null = null;
+  let score = -Infinity;
+  for (const id of DAWN_BONDS) {
+    const card = ctx.state.cards[id];
+    if (!card || (card.tier !== 'vip' && card.tier !== 'lifetime')) continue;
+    if (card.score > score) { best = id; score = card.score; }
+  }
+  return best;
+}
+
+/** "퇴근할게요"의 결말: 한서진이 도착했다면 서진의 문, 아니면 새벽 단골 > 무사고 근무 > 빈 명부 > 퇴사 순 */
+export function leaveEnding(ctx: Ctx, allyTried: boolean): EndingId {
+  if (allyTried) return 'sisterDoor';
+  const bond = dawnBond(ctx);
+  if (bond) return bond;
+  const s = ctx.state;
+  if (s.totalViolations + s.violations === 0 && s.composure >= TENURE_COMPOSURE) return 'tenure';
+  if (endingSummary(ctx).regulars === 0) return 'emptyBook';
+  return 'resign';
+}
+
 export function beginFinale(ctx: Ctx): void {
   setPhase(ctx, { kind: 'finale', allyTried: false });
   setClock(ctx, ctx.data.days[ctx.state.day]?.clocks.closingText ?? '04:44');
@@ -87,8 +122,8 @@ export function beginFinale(ctx: Ctx): void {
 export function doFinale(ctx: Ctx, choice: 'yes' | 'ally' | 'leave'): boolean {
   const p = ctx.state.phase;
   if (p.kind !== 'finale') return false;
-  if (choice === 'yes') return endWith(ctx, 'display');
-  if (choice === 'leave') return endWith(ctx, 'resign');
+  if (choice === 'yes') return endWith(ctx, yesEnding(ctx, p.allyTried));
+  if (choice === 'leave') return endWith(ctx, leaveEnding(ctx, p.allyTried));
   // 한서진에게 문자한다: 협력자여야만 가능
   if (!hasFlag(ctx, 'ally') || p.allyTried) return false;
   for (const l of strList(ctx.data, 'finale.allyText')) ctx.emit({ type: 'phone', from: str(ctx.data, 'finale.allyFrom'), text: l });

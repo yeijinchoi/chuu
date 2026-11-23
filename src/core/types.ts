@@ -274,7 +274,11 @@ export type Phase =
   | { kind: 'ending'; ending: EndingId }
   | { kind: 'badEnding' };
 
-export type EndingId = 'display' | 'resign' | 'regulars';
+export type EndingId =
+  | 'display' | 'resign' | 'regulars' // 진열 · 퇴사 · 단골의 값
+  | 'sisterDoor' | 'twinDisplay' // 한서진에게 문자했지만 조건이 부족했을 때
+  | 'topSeller' | 'tenure' | 'emptyBook' // 플레이 결과(매출·무사고·단골 수)
+  | 'marsh' | 'baek' | 'faceless'; // 새벽 단골과의 결말
 
 export interface EncounterState {
   customerId: string;
@@ -333,6 +337,7 @@ export interface GameState {
   earlierSlots: Record<string, number>; // 다음 등장이 빨라질 횟수
   pendingReplies: Record<string, true>; // 답장 선택을 기다리는 손님
   redBoxDay: number | null;
+  totalViolations: number; // 지난 날들의 수칙 위반 누계 (오늘 것은 violations)
   flags: Record<string, true>; // 줄거리 플래그(협력자·서윤의 마지막 말·서윤의 시계·새벽 매장 사진 …)
   clues: string[]; // 얻은 단서 메모 id (strings.clues.<id>)
   closingReplied: boolean | null;
@@ -401,6 +406,7 @@ export interface SaveV1 {
   earlierSlots?: Record<string, number>;
   clues?: string[];
   flags?: Record<string, true>;
+  totalViolations?: number;
 }
 
 export interface StorageAdapter {

@@ -30,7 +30,7 @@ function initialState(data: GameData): GameState {
       dawn: { sent: {}, remaining: d?.texting.dawn.total ?? 0, salesSent: 0 },
     },
     aftercareRemaining: 0, visitors: {}, slots: [], pendingUninvited: [], earlierSlots: {},
-    pendingReplies: {}, redBoxDay: null, flags: {}, clues: [], closingReplied: null, results: null,
+    pendingReplies: {}, redBoxDay: null, totalViolations: 0, flags: {}, clues: [], closingReplied: null, results: null,
     phase: { kind: 'title' }, log: [],
   };
 }
@@ -69,6 +69,7 @@ export class Game {
     s.cards = JSON.parse(JSON.stringify(save.regulars)) as GameState['cards'];
     s.pendingUninvited = [...(save.pendingUninvited ?? [])];
     s.earlierSlots = { ...(save.earlierSlots ?? {}) };
+    s.totalViolations = save.totalViolations ?? 0;
     s.clues = [...(save.clues ?? [])];
     s.flags = { ...(save.flags ?? {}) };
     rollToNextDay(this.makeCtx(out));

@@ -240,3 +240,5 @@ button:disabled, button[aria-disabled='true'] { cursor: default; }
 .trophy--on { border-color: var(--color-trim); color: var(--brass-light); }
 .trophy--now { box-shadow: 0 0 0 2px var(--ink), 0 0 0 4px var(--color-trim); }
 .screen--final .ending__text { max-width: 360px; text-align: center; }
+.trophies__count { margin: 0; font-size: 11px; line-height: 14px; color: var(--color-text-muted); }
+.screen--final .trophies { max-width: 480px; }

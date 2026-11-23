@@ -55,8 +55,9 @@ export function titleScreen(host: HTMLElement, o: { canResume: boolean; corrupt:
   if (o.corrupt) menu.append(el('div', 'title__warn', t('title.corrupt')));
   if (o.trophies && o.trophies.length > 0) {
     const row = el('div', 'trophies trophies--title');
-    row.append(el('span', 'trophies__h', t('title.trophies')));
-    for (const id of ['display', 'resign', 'regulars']) row.append(el('span', `trophy${o.trophies.includes(id) ? ' trophy--on' : ''}`, o.trophies.includes(id) ? t(`ending.${id}.title`) : '？'));
+    const seen = ENDING_IDS.filter((id) => (o.trophies ?? []).includes(id));
+    row.append(el('span', 'trophies__h', `${t('title.trophies')} ${seen.length}/${ENDING_IDS.length}`));
+    for (const id of seen) row.append(el('span', 'trophy trophy--on', endingTitle(id)));
     menu.append(row);
   }
   frame.append(art, typing, msg, menu);
@@ -235,14 +236,19 @@ export function endingScreen(host: HTMLElement, o: { onRestart: () => void; onLo
 }
 
 /** 3일차 엔딩: 진열 · 퇴사 · 단골의 값. 도장(본 엔딩)과 처음부터 버튼 */
-export function finalEndingScreen(host: HTMLElement, o: { ending: 'display' | 'resign' | 'regulars'; trophies: string[]; onRestart: () => void }): Overlay {
+export const ENDING_IDS = ['display', 'resign', 'regulars', 'sisterDoor', 'twinDisplay', 'topSeller', 'tenure', 'emptyBook', 'marsh', 'baek', 'faceless', 'bad'] as const;
+const endingTitle = (id: string): string => t(id === 'bad' ? 'ending.bad.title' : `ending.${id}.title`);
+
+export function finalEndingScreen(host: HTMLElement, o: { ending: string; trophies: string[]; onRestart: () => void }): Overlay {
   const root = el('div', `screen screen--ending screen--final screen--final-${o.ending}`);
   root.append(el('h2', 'ending__title', t(`ending.${o.ending}.title`)), el('p', 'ending__text', t(`ending.${o.ending}.final`)));
   const stamps = el('div', 'trophies');
   stamps.setAttribute('aria-label', t('ending.trophies'));
-  for (const id of ['display', 'resign', 'regulars']) {
+  const seen = ENDING_IDS.filter((id) => o.trophies.includes(id)).length;
+  root.append(el('p', 'trophies__count', t('ending.trophyCount', { n: seen, total: ENDING_IDS.length })));
+  for (const id of ENDING_IDS) {
     const have = o.trophies.includes(id);
-    stamps.append(el('span', `trophy${have ? ' trophy--on' : ''}${id === o.ending ? ' trophy--now' : ''}`, have ? t(`ending.${id}.title`) : '？'));
+    stamps.append(el('span', `trophy${have ? ' trophy--on' : ''}${id === o.ending ? ' trophy--now' : ''}`, have ? endingTitle(id) : '？'));
   }
   const menu = el('div', 'screen-menu');
   const a = button('btn', '', o.onRestart);

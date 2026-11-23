@@ -456,6 +456,7 @@ export function startApp(stage: Stage, renderer: Renderer, opts: { debug: boolea
       case 'badEnding': {
         dialogue.hide();
         veil.hidden = false;
+        saveTrophy('bad');
         const can = storage.load();
         showOverlay(endingScreen(stage.stage, {
           onRestart: () => location.reload(),

@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { applicableRules, checkChoice } from '../../src/core/rules';
 import type { Game } from '../../src/core/game';
 import type { CloseId, CustomerDef, GreetStyle, ProbeId } from '../../src/core/types';
-import { act, customer, data, encOf, newGame, registered, rightDrink, st } from './helpers';
+import { dawnBond, leaveEnding, TOP_SELLER_REVENUE, yesEnding } from '../../src/core/plot';
+import { act, ctxOf, customer, data, encOf, newGame, registered, rightDrink, st } from './helpers';
 
 const PROBES: ProbeId[] = ['askCategory', 'askOccasion', 'observe', 'askBudget'];
 const CLOSES: CloseId[] = ['boxGold', 'checkout', 'boxRed', 'tryOn'];
@@ -131,7 +132,7 @@ describe('2·3일차', () => {
     const acts = g.availableActions().map((a) => (a.type === 'finale' ? a.choice : a.type)).sort();
     expect(acts).toEqual(['leave', 'yes']);
     const end = act(g, { type: 'finale', choice: 'yes' });
-    expect(end.some((e) => e.type === 'ending' && e.ending === 'display')).toBe(true);
+    expect(end.some((e) => e.type === 'ending' && e.ending === 'twinDisplay')).toBe(true);
   });
 
   it('협력자가 아니면 문자 선택지가 없다', () => {
@@ -139,7 +140,66 @@ describe('2·3일차', () => {
     st(g).phase = { kind: 'finale', allyTried: false };
     const acts = g.availableActions().map((a) => (a.type === 'finale' ? a.choice : a.type)).sort();
     expect(acts).toEqual(['leave', 'yes']);
+    st(g).violations = 1;
+    st(g).cards['hanyeoreum'] = registered('hanyeoreum', 'afternoon');
     const end = act(g, { type: 'finale', choice: 'leave' });
     expect(end.some((e) => e.type === 'ending' && e.ending === 'resign')).toBe(true);
+  });
+});
+
+describe('엔딩 분기', () => {
+  const finaleGame = (seed: number) => {
+    const g = newGame(seed);
+    st(g).day = 3;
+    st(g).composure = 100;
+    st(g).phase = { kind: 'finale', allyTried: false };
+    return g;
+  };
+
+  it('"…네": 기본은 진열, 매출이 높으면 실적 1위, 한서진에게 문자한 뒤에는 자매 진열', () => {
+    const g = finaleGame(21);
+    expect(yesEnding(ctxOf(g), false)).toBe('display');
+    st(g).totalRevenue = TOP_SELLER_REVENUE;
+    expect(yesEnding(ctxOf(g), false)).toBe('topSeller');
+    expect(yesEnding(ctxOf(g), true)).toBe('twinDisplay');
+  });
+
+  it('"퇴근할게요": 기본 퇴사 → 빈 명부 → 정규직 전환 → 새벽 단골 순으로 우선', () => {
+    const g = finaleGame(22);
+    st(g).violations = 1; // 무사고가 아니다
+    st(g).cards['hanyeoreum'] = registered('hanyeoreum', 'afternoon');
+    expect(leaveEnding(ctxOf(g), false)).toBe('resign');
+    st(g).cards = {};
+    expect(leaveEnding(ctxOf(g), false)).toBe('emptyBook');
+    st(g).violations = 0;
+    st(g).totalViolations = 0;
+    expect(leaveEnding(ctxOf(g), false)).toBe('tenure');
+    st(g).composure = 60;
+    expect(leaveEnding(ctxOf(g), false)).toBe('emptyBook');
+    st(g).cards['baek'] = registered('baek', 'dawn', { tier: 'vip', score: 7 });
+    st(g).cards['marsh'] = registered('marsh', 'dawn', { tier: 'vip', score: 9 });
+    expect(dawnBond(ctxOf(g))).toBe('marsh');
+    expect(leaveEnding(ctxOf(g), false)).toBe('marsh');
+    st(g).cards['marsh'] = registered('marsh', 'dawn', { tier: 'vip', score: 5 });
+    expect(leaveEnding(ctxOf(g), false)).toBe('baek');
+    expect(leaveEnding(ctxOf(g), true)).toBe('sisterDoor');
+  });
+
+  it('모든 엔딩에 제목·마무리·장면이 있다', () => {
+    const ids = ['display', 'resign', 'regulars', 'sisterDoor', 'twinDisplay', 'topSeller', 'tenure', 'emptyBook', 'marsh', 'baek', 'faceless'];
+    const ending = (data.strings as { ending: Record<string, { title: string; final: string; scene: string[] }> }).ending;
+    for (const id of ids) {
+      expect(ending[id]?.title, id).toBeTruthy();
+      expect(ending[id]?.final, id).toBeTruthy();
+      expect(ending[id]?.scene.length, id).toBeGreaterThan(3);
+    }
+  });
+
+  it('게임 안에서 끝까지 가면 선택한 엔딩 이벤트가 나온다', () => {
+    const g = finaleGame(23);
+    st(g).cards['faceless'] = registered('faceless', 'dawn', { tier: 'vip', score: 6 });
+    const ev = act(g, { type: 'finale', choice: 'leave' });
+    expect(ev.some((e) => e.type === 'ending' && e.ending === 'faceless')).toBe(true);
+    expect(st(g).phase).toEqual({ kind: 'ending', ending: 'faceless' });
   });
 });

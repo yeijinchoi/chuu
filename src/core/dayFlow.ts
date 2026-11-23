@@ -267,6 +267,7 @@ export function rollToNextDay(ctx: Ctx): void {
   }
   for (const id of roll.uninvited) if (!s.pendingUninvited.includes(id)) s.pendingUninvited.push(id);
   s.day++;
+  s.totalViolations += s.violations;
   const d = dayDef(ctx);
   s.revenue = 0;
   s.dawnLedger = [];
