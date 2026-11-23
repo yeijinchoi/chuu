@@ -18,6 +18,9 @@ const FACES = [
   '14px Galmuri14',
   '9px Galmuri9',
   '11px GalmuriMono11',
+  '11px GameBody',
+  'bold 11px GameBody',
+  '14px GameBodyM',
 ];
 
 function el<K extends keyof HTMLElementTagNameMap>(tag: K, cls: string, text?: string): HTMLElementTagNameMap[K] {

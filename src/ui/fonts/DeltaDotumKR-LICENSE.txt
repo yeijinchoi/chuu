@@ -1,0 +1,12 @@
+DeltaDotumKR (델타돋움체)
+Copyright qhtjr1116 2020
+Source: https://eocnd1116.github.io/qhtjrFont/index.html?type=1&n=0  (listed at https://noonnu.cc/font_page/1909)
+
+License as stated by the author: commercial use allowed; embedding in documents/games/software and
+use as a web font allowed; attribution not required; modification and redistribution allowed provided the
+SIL Open Font License 1.1 (https://spdx.org/licenses/OFL-1.1.html) is adopted; selling the font file
+by itself is prohibited; no liability for damages.
+
+DeltaDotumKR-subset.woff2 is a modified (subset) version of the original font, containing the Hangul
+syllables, Hangul compatibility jamo, ASCII and the punctuation used by this game. It is redistributed
+under the SIL Open Font License 1.1.
