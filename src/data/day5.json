@@ -1,0 +1,72 @@
+{
+  "day": 5,
+  "startComposure": 100,
+  "clocks": {
+    "afternoonBriefing": "12:30",
+    "afternoonTexting": "12:40",
+    "afternoonAftercare": "20:00",
+    "dawnBriefing": "00:30",
+    "dawnTexting": "01:50",
+    "closingText": "04:44",
+    "dawnAftercare": "05:00",
+    "uninvited": "04:10"
+  },
+  "texting": {
+    "afternoon": {
+      "total": 4,
+      "sales": 2
+    },
+    "dawn": {
+      "total": 3,
+      "sales": 2
+    }
+  },
+  "aftercare": {
+    "perShift": 2
+  },
+  "schedule": [
+    {
+      "shift": "afternoon",
+      "time": "14:00",
+      "customerId": "jin",
+      "condition": "returning",
+      "candidates": [
+        "jin",
+        "kang",
+        "hanyeoreum"
+      ]
+    },
+    {
+      "shift": "afternoon",
+      "time": "16:30",
+      "customerId": "kang",
+      "condition": "returning",
+      "candidates": [
+        "kang",
+        "jin",
+        "hanyeoreum"
+      ]
+    },
+    {
+      "shift": "dawn",
+      "time": "02:30",
+      "customerId": "marsh",
+      "condition": "returning",
+      "candidates": [
+        "marsh"
+      ]
+    },
+    {
+      "shift": "dawn",
+      "time": "03:33",
+      "customerId": "baek",
+      "condition": "returning",
+      "candidates": [
+        "baek",
+        "faceless",
+        "marsh"
+      ]
+    }
+  ],
+  "closing": "finale"
+}

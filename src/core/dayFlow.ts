@@ -24,7 +24,7 @@ export function buildSlots(ctx: Ctx, shift: Shift): ResolvedSlot[] {
   for (const sl0 of day.schedule.filter((x: ScheduleSlot) => x.shift === shift)) {
     let sl = sl0;
     if (sl.condition === 'returning') {
-      const pick = pickReturning(ctx, sl);
+      const pick = pickReturning(ctx, sl, present);
       if (pick === null) continue;
       sl = { ...sl, customerId: pick, condition: 'always' };
     }
@@ -69,12 +69,12 @@ export function buildSlots(ctx: Ctx, shift: Shift): ResolvedSlot[] {
 }
 
 /** 재방문 슬롯: 한 번이라도 판매한 후보 중 관계 점수가 가장 높은 손님 (동점이면 앞 순서). 없으면 슬롯을 비운다. */
-function pickReturning(ctx: Ctx, sl: ScheduleSlot): string | null {
+function pickReturning(ctx: Ctx, sl: ScheduleSlot, taken: ReadonlySet<string>): string | null {
   let best: string | null = null;
   let bestScore = -Infinity;
   for (const id of sl.candidates ?? [sl.customerId]) {
     const card = ctx.state.cards[id];
-    if (!card || card.purchases.length === 0 || card.tier === 'lost') continue;
+    if (taken.has(id) || !card || card.purchases.length === 0 || card.tier === 'lost') continue;
     if (card.score > bestScore) {
       best = id;
       bestScore = card.score;

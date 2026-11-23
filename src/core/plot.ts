@@ -2,7 +2,7 @@ import { narrate, setClock, setPhase, str, strList, thought, type Ctx } from './
 import { isRegistered } from './care';
 import type { CustomerDef, EndingId, PlotBeat } from './types';
 
-/** 줄거리 단서·플래그와 3일차 마지막 장면(서윤의 04:44) 및 엔딩 3종 (SCRIPT_DAY2_3 §2~3). */
+/** 줄거리 단서·플래그와 5일차 마지막 장면(서윤의 04:44) 및 엔딩 3종 (SCRIPT_DAY2_3 §2~3). */
 
 export function hasFlag(ctx: Ctx, flag: string): boolean {
   return ctx.state.flags[flag] === true;
@@ -20,13 +20,16 @@ export function grantClue(ctx: Ctx, id: string): void {
 }
 
 /**
- * 재방문 대사·사건에 쓰는 방문 횟수. 여러 날 쉬었다 와도 날짜만큼은 지난 것이다:
- * 두 번 이상 방문한 손님은 3일차에 3회째 대사를 쓴다 (SCRIPT_DAY2_3 §0-1, S3-04).
+ * 재방문 대사·사건에 쓰는 방문 횟수. 마지막 날(5일차)에 온 손님은 두 번째 방문이어도 마지막 대사(3회째)를 쓴다
+ * (SCRIPT_DAY2_3 §0-1). 그 전 날들은 실제 방문 횟수를 그대로 쓴다.
  */
 export function effectiveVisit(ctx: Ctx, customerId: string): number {
   const v = ctx.state.cards[customerId]?.visits ?? 1;
-  return v >= 2 ? Math.max(v, ctx.state.day) : v;
+  return v >= 2 && ctx.state.day >= FINAL_DAY ? Math.max(v, 3) : v;
 }
+
+/** 마지막 근무일 */
+export const FINAL_DAY = 5;
 
 /** "> "로 시작하면 지문, 아니면 손님의 대사 */
 export function sayLine(ctx: Ctx, c: CustomerDef | null, text: string): void {
@@ -48,12 +51,13 @@ export function runBeats(ctx: Ctx, c: CustomerDef, beats: readonly PlotBeat[] | 
   const visit = effectiveVisit(ctx, c.id);
   for (const b of beats) {
     if (b.day !== undefined && b.day !== s.day) continue;
-    if (b.visit !== undefined && b.visit !== visit) continue;
+    if (b.visit !== undefined && visit < b.visit) continue; // N번째 방문 이후
+    if (b.clue && s.clues.includes(b.clue)) continue; // 이미 얻은 단서의 사건은 되풀이하지 않는다
     playBeat(ctx, c, b);
   }
 }
 
-// ------------------------------------------------------------------ 3일차 04:44
+// ------------------------------------------------------------------ 5일차 04:44
 
 export const SEOYUN = '서윤';
 
@@ -72,8 +76,8 @@ export function trueEndingMissing(ctx: Ctx): string[] {
   return miss;
 }
 
-/** 3일 누적 매출이 이만큼이면 "실적 1위" */
-export const TOP_SELLER_REVENUE = 25_000_000;
+/** 5일 누적 매출이 이만큼이면 "실적 1위" */
+export const TOP_SELLER_REVENUE = 40_000_000;
 /** 마지막 밤 평정심이 이만큼 남아 있고 위반이 없으면 "정규직 전환" */
 export const TENURE_COMPOSURE = 70;
 const DAWN_BONDS = ['marsh', 'baek', 'faceless'] as const;

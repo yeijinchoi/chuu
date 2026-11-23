@@ -346,7 +346,7 @@ function hasTalk(ctx: Ctx, c: CustomerDef): boolean {
   const t = c.talk;
   if (!t) return false;
   const visit = effectiveVisit(ctx, c.id);
-  return (t.day === undefined || t.day === ctx.state.day) && (t.visit === undefined || t.visit === visit);
+  return (t.day === undefined || t.day === ctx.state.day) && (t.visit === undefined || visit >= t.visit);
 }
 
 /** 판매 뒤 선택 대화 */

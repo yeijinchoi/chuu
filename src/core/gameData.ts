@@ -6,6 +6,8 @@ import rules from '../data/rules.json';
 import day1 from '../data/day1.json';
 import day2 from '../data/day2.json';
 import day3 from '../data/day3.json';
+import day4 from '../data/day4.json';
+import day5 from '../data/day5.json';
 import strings from '../data/strings.ko.json';
 import type { GameData } from './types';
 
@@ -17,7 +19,7 @@ export function loadGameData(): GameData {
     contacts,
     templates,
     rules,
-    days: { 1: day1, 2: day2, 3: day3 },
+    days: { 1: day1, 2: day2, 3: day3, 4: day4, 5: day5 },
     strings,
   } as unknown as GameData;
 }

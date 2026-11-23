@@ -914,7 +914,7 @@
         "checkin"
       ],
       "dislikes": [],
-      "occasionDay": 2,
+      "occasionDay": 3,
       "occasionLabel": "결혼 40주년",
       "vipReveal": "30년 전 야간 경비 일지 한 장이에요. 4시 44분 칸에, 문 앞에 누가 서 있다고 적혀 있죠.",
       "chat": {
@@ -1043,7 +1043,7 @@
     "care": {
       "likes": [],
       "dislikes": [],
-      "occasionDay": 3,
+      "occasionDay": 5,
       "occasionLabel": "서윤 실종 7일째",
       "vipReveal": "언니가 마지막으로 보낸 문자예요. 캡처해 뒀어요. …읽어 보세요.",
       "chat": {
@@ -1072,7 +1072,7 @@
       "none": "…언니는 초콜릿을 줬다던데."
     },
     "talk": {
-      "day": 3,
+      "day": 4,
       "prompt": [
         "언니 여기서 일했어요. 한서윤. 그만둔 게 아니죠?"
       ],

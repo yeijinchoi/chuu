@@ -48,12 +48,6 @@
     },
     {
       "shift": "afternoon",
-      "time": "18:00",
-      "customerId": "park",
-      "condition": "always"
-    },
-    {
-      "shift": "afternoon",
       "time": "14:15",
       "customerId": "kang",
       "condition": "invited"
@@ -78,19 +72,13 @@
     },
     {
       "shift": "dawn",
-      "time": "03:40",
-      "customerId": "hound",
-      "condition": "always"
-    },
-    {
-      "shift": "dawn",
       "time": "02:30",
       "customerId": "marsh",
       "condition": "invited"
     },
     {
       "shift": "dawn",
-      "time": "03:20",
+      "time": "03:30",
       "customerId": "baek",
       "condition": "invited"
     }

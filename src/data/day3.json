@@ -28,29 +28,28 @@
     {
       "shift": "afternoon",
       "time": "13:30",
+      "customerId": "park",
+      "condition": "always"
+    },
+    {
+      "shift": "afternoon",
+      "time": "15:00",
       "customerId": "cha",
       "condition": "always"
     },
     {
       "shift": "afternoon",
-      "time": "15:30",
-      "customerId": "seojin",
-      "condition": "always"
-    },
-    {
-      "shift": "afternoon",
-      "time": "17:30",
-      "customerId": "jin",
+      "time": "17:00",
+      "customerId": "kang",
       "condition": "returning",
       "candidates": [
-        "jin",
         "kang",
-        "hanyeoreum"
+        "jin"
       ]
     },
     {
       "shift": "afternoon",
-      "time": "14:30",
+      "time": "14:15",
       "customerId": "kang",
       "condition": "invited"
     },
@@ -62,19 +61,13 @@
     },
     {
       "shift": "dawn",
-      "time": "02:22",
-      "customerId": "colour",
+      "time": "02:30",
+      "customerId": "hound",
       "condition": "always"
     },
     {
       "shift": "dawn",
-      "time": "03:03",
-      "customerId": "door",
-      "condition": "always"
-    },
-    {
-      "shift": "dawn",
-      "time": "03:33",
+      "time": "03:30",
       "customerId": "marsh",
       "condition": "returning",
       "candidates": [
@@ -85,16 +78,15 @@
     },
     {
       "shift": "dawn",
-      "time": "02:45",
+      "time": "02:00",
       "customerId": "marsh",
       "condition": "invited"
     },
     {
       "shift": "dawn",
-      "time": "03:50",
+      "time": "03:00",
       "customerId": "baek",
       "condition": "invited"
     }
-  ],
-  "closing": "finale"
+  ]
 }

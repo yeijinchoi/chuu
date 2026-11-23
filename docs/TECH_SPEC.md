@@ -407,9 +407,9 @@ interface StorageAdapter { load(): SaveV1 | null | 'corrupt'; save(s: SaveV1): b
 
 ## 부록. 2·3일차 구현 메모 (SCRIPT_DAY2_3 대응)
 - **일정 데이터**: `src/data/day1.json ~ day3.json`. 슬롯 조건은 `always | invited | invitedElse | returning`. `returning`은 `candidates` 중 한 번이라도 판매한 손님 가운데 관계 점수가 가장 높은 손님이 온다(없으면 슬롯 생략). 같은 손님은 한 교대에 한 번만 나온다(배열 앞쪽 슬롯이 우선).
-- **재방문 횟수**: 두 번 이상 온 손님은 `max(방문 횟수, 날짜)`를 "방문 횟수"로 쓴다(`plot.effectiveVisit`). 그래서 1·3일차에만 온 손님도 3일차에 3회째 대사를 받는다.
+- **재방문 횟수**: 두 번 이상 온 손님은 `plot.effectiveVisit`로 방문 횟수를 센다. 5일차에 온 재방문 손님은 방문 횟수와 상관없이 3회째(마지막) 대사를 쓴다.
 - **줄거리 사건**: `CustomerDef.onVisit`(입장 직후), `afterSale`(판매 직후), `talk`(판매 뒤 선택 대화). 단서는 `state.clues`(메모 앱 「손님 메모」), 플래그는 `state.flags`. 대사가 `> `로 시작하면 지문이다. 단서 문구는 `strings.clues.<id>`.
 - **수칙 6번**: `RuleDef.reveal`로 3일차부터 더 읽히는 문장을 가진다(`ruleText(rule, day)`).
-- **04:44**: `DayDef.closing === 'finale'`인 날(3일차)은 문자 대신 서윤 장면(`phase: finale`)이 오고 `{ type: 'finale', choice: 'yes' | 'ally' | 'leave' }`로 분기한다. 엔딩은 `phase: ending` + `{ type: 'ending' }` 이벤트(진열 / 퇴사 / 단골의 값). 엔딩 C 조건: 협력자 · 서윤의 마지막 말 · 서윤의 시계 · 새벽 VIP 2명 이상.
+- **04:44**: `DayDef.closing === 'finale'`인 날(5일차, 총 5일)은 문자 대신 서윤 장면(`phase: finale`)이 오고 `{ type: 'finale', choice: 'yes' | 'ally' | 'leave' }`로 분기한다. 엔딩은 `phase: ending` + `{ type: 'ending' }` 이벤트(진열 / 퇴사 / 단골의 값). 엔딩 C 조건: 협력자 · 서윤의 마지막 말 · 서윤의 시계 · 새벽 VIP 2명 이상.
 - **트로피**: 엔딩 기록은 core가 아니라 UI의 별도 저장 키(`closing-time.trophies.v1`)에 둔다.
 - **환경 램프**: 팔레트 `oxd/oxm/oxw/oxl`은 장면 벽·바닥 전용(DESIGN_SYSTEM §3-1).
