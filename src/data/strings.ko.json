@@ -277,10 +277,8 @@
   },
   "phone": {
     "tabs": {
-      "chat": "문자",
       "book": "명부",
-      "cards": "카드",
-      "rules": "수칙"
+      "cards": "카드"
     },
     "battery": "평정심",
     "revenue": "매출",
@@ -337,11 +335,23 @@
     "goHome": "홈 화면",
     "leaveHome": "홈 화면 닫기",
     "back": "목록",
-    "apps": {
-      "book": "고객 명부",
-      "black": "이름 없는 앱"
+    "search": "검색",
+    "threadKind": "문자 메시지",
+    "today": "오늘 {time}",
+    "read": "읽음 {time}",
+    "delivered": "전송됨",
+    "attach": "문구 고르기",
+    "fieldPlaceholder": "문자 메시지",
+    "time": {
+      "am": "오전",
+      "pm": "오후"
     },
-    "bookAfternoon": "고객 명부",
+    "apps": {
+      "messages": "메시지",
+      "contacts": "연락처",
+      "notes": "메모",
+      "black": "검은 수첩"
+    },
     "bookDawn": "검은 수첩",
     "waitReply": "답장을 기다리는 중이에요",
     "replyWaiting": "답장 대기",

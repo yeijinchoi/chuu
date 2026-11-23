@@ -43,11 +43,11 @@
   --color-danger: var(--wine);
   --color-info: var(--steel);
   --color-phone-body: var(--stone);
-  --color-phone-screen: var(--bone);
+  --color-phone-screen: var(--paper);
   --color-phone-text: var(--ink);
-  --color-bubble-out: var(--rose);
+  --color-bubble-out: var(--steel-dark);
   --color-bubble-out-text: var(--paper);
-  --color-bubble-in: var(--paper);
+  --color-bubble-in: var(--bone);
   --color-paper: var(--paper);
   --color-paper-ink: var(--dusk);
 

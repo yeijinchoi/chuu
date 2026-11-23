@@ -1,13 +1,13 @@
 import type { GameState } from '../core/types';
 import { el, t } from './dom';
 
-/** 평정심 배터리 10칸. 70/40 경계에서 색이 바뀐다. hit != 0이면 방금 깎인 것: 칸이 깜빡이고 변화량이 뜬다. */
+/** 평정심 배터리 10칸. 30% 이하면 wine(low). hit != 0이면 방금 깎인 것: 칸이 깜빡이고 변화량이 뜬다. */
 export function batteryEl(composure: number, hit = 0): HTMLElement {
   const bat = el('span', hit !== 0 ? 'battery battery--hit' : 'battery');
   bat.setAttribute('role', 'img');
   bat.setAttribute('aria-label', `${t('phone.battery')} ${composure}`);
   const filled = Math.ceil(composure / 10);
-  bat.dataset.level = composure >= 70 ? 'hi' : composure >= 40 ? 'mid' : 'low';
+  bat.dataset.level = composure >= 70 ? 'hi' : composure > 30 ? 'mid' : 'low';
   for (let i = 0; i < 10; i++) bat.append(el('i', i < filled ? 'cell cell--on' : 'cell'));
   if (hit !== 0) bat.append(el('b', 'battery__delta num', `${hit > 0 ? '+' : '−'}${Math.abs(hit)}`));
   return bat;

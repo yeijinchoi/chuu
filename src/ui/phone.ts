@@ -7,12 +7,14 @@ import type {
 import type { Mood } from '../render/palette';
 import { iconUrl } from './display';
 import { button, el, t, won } from './dom';
-import { appIconUrl } from './icons';
+import { phoneGlyph, type PhoneGlyph } from './phoneIcons';
 import { sfx } from './sfx';
 import { batteryEl, fillMobileStatus, regularsOf } from './status';
 
-export type PhoneTab = 'chat' | 'book' | 'cards' | 'rules';
-const TABS: PhoneTab[] = ['chat', 'book', 'cards', 'rules'];
+/** 업무폰의 앱 화면. card는 연락처 앱 안의 「카드」 탭이다. */
+export type PhoneTab = 'messages' | 'contacts' | 'card' | 'notes';
+type AppId = 'messages' | 'contacts' | 'notes';
+const APP_OF: Record<PhoneTab, AppId> = { messages: 'messages', contacts: 'contacts', card: 'contacts', notes: 'notes' };
 const ME = 'me'; // 04:44 문자의 발신자 "나"
 
 interface Msg {
@@ -21,10 +23,29 @@ interface Msg {
   dir: 'in' | 'out' | 'sys';
   from: string;
   text: string;
+  /** 보낸/받은 게임 시각(HH:MM) */
+  at: string;
   status?: 'sending' | 'sent';
 }
 
 type ChipStage = 'sending' | 'sent' | 'replied';
+
+/** 입력줄과 템플릿 패널이 함께 쓰는 작성 상태 */
+interface Plan {
+  none: boolean;
+  shift: Shift;
+  mode: 'sales' | 'care';
+  canSales: boolean;
+  canCare: boolean;
+  contact?: ContactDef;
+  care?: CustomerDef;
+  templates: TemplateDef[];
+  reasons: Map<string, BlockReason | null>;
+  picked?: TemplateDef;
+  needsProduct: boolean;
+  text: string;
+  ready: boolean;
+}
 
 export interface PhoneHost {
   game: Game;
@@ -50,10 +71,20 @@ export interface PhoneOpts {
 /** 템플릿 한 줄의 비활성 사유 문장 */
 const whyText = (r: BlockReason): string => t(`phone.block.${r}`);
 
-/** 업무폰 화면: 상태바, 매출 줄, 탭 4개와 문자·명부·카드·수칙. 홈 화면에서 앱을 고른다. */
+/** 게임 시각 "13:52" → "오후 01:52" */
+const kTime = (clock: string): string => {
+  const [h = 0, m = 0] = clock.split(':').map(Number);
+  const hh = h % 12 === 0 ? 12 : h % 12;
+  return `${t(h >= 12 ? 'phone.time.pm' : 'phone.time.am')} ${String(hh).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+};
+
+/** 이니셜 아바타 */
+const avatar = (name: string, cls = ''): HTMLElement => el('span', `avatar ${cls}`.trim(), name.trim().charAt(0) || '?');
+
+/** 업무폰 화면: 기기 틀 안의 상태줄, 홈 화면(앱 4개와 독), 메시지·연락처·메모 앱. */
 export class Phone {
-  tab: PhoneTab = 'book';
-  /** 홈 화면(앱 아이콘 두 개)이 떠 있다 */
+  tab: PhoneTab = 'contacts';
+  /** 홈 화면이 떠 있다 */
   home = false;
   /** 열려 있는 대화방: 손님 id(영업 연락처는 contact id) */
   private view: string | null = null;
@@ -76,23 +107,32 @@ export class Phone {
   private cardSel: string | null = null;
   private visible = true;
   private mood: Mood = 'calm';
-  private unread = new Set<PhoneTab>();
-  private pulseNow = new Set<PhoneTab>();
+  /** 앱별 알림 점(메시지 배지는 unreadKeys로 센다) */
+  private unread = new Set<AppId>();
+  /** 읽지 않은 대화방 */
+  private unreadKeys = new Set<string>();
+  private pulseNow = new Set<AppId>();
   private tipText = '';
   private lastBadge = false;
+  /** 입력줄을 눌러 템플릿 패널(키보드 자리)이 올라와 있다 */
+  private panelOpen = false;
   private readonly root: HTMLElement;
+  private readonly screen = el('div', 'phone__screen');
+  private readonly island = el('div', 'phone__island');
   private readonly status = el('div', 'phone__status');
   private readonly money = el('div', 'phone__money');
-  private readonly div = el('div', 'divider');
-  private readonly tabs = el('div', 'phone__tabs');
-  private readonly body = el('div', 'phone__body');
-  private readonly foot = el('div', 'phone__foot');
+  private readonly bar = el('div', 'phone__bar');
   private readonly tip = el('div', 'tip tip--phone');
+  private readonly body = el('div', 'phone__body');
+  private readonly dock = el('div', 'phone__dock');
+  private readonly foot = el('div', 'phone__foot');
+  private readonly homeBar = button('phone__home-bar', '', () => { sfx.play('sheet_open'); if (this.home) this.openTab(this.tab); else this.openHome(); });
 
   constructor(root: HTMLElement, private readonly host: PhoneHost, private readonly opts: PhoneOpts) {
     this.root = root;
-    root.append(this.status, this.money, this.div, this.tabs, this.tip, this.body, this.foot);
-    this.tabs.setAttribute('role', 'tablist');
+    root.append(this.screen);
+    this.screen.append(this.island, this.status, this.money, this.bar, this.tip, this.body, this.dock, this.foot, this.homeBar);
+    this.island.setAttribute('aria-hidden', 'true');
     this.tip.hidden = true;
     this.tip.setAttribute('role', 'status');
     this.tip.addEventListener('click', () => this.hideTip());
@@ -107,12 +147,12 @@ export class Phone {
   // ---------------------------------------------------------------- 바깥에서 쓰는 것
 
   setMood(m: Mood): void { this.mood = m; this.refresh(); }
-  unlockDawnRules(): void { this.dawnRules = true; this.pulse('rules'); }
-  get hasUnread(): boolean { return this.unread.size > 0; }
-  /** 폰 화면이 실제로 보이는지(모바일 시트가 열려 있는지). 보이는 탭의 알림은 바로 꺼진다. */
+  unlockDawnRules(): void { this.dawnRules = true; this.pulse('notes'); }
+  get hasUnread(): boolean { return this.unread.size > 0 || this.unreadKeys.size > 0; }
+  /** 폰 화면이 실제로 보이는지(모바일 시트가 열려 있는지). 보이는 앱의 알림은 바로 꺼진다. */
   setVisible(v: boolean): void {
     this.visible = v;
-    if (v) { this.unread.delete(this.tab); this.refresh(); }
+    if (v) { this.unread.delete(APP_OF[this.tab]); this.refresh(); }
   }
 
   /** 입력이 잠겨 있다: 전송 애니메이션 중이거나 브리지가 답장을 기다린다 */
@@ -122,17 +162,19 @@ export class Phone {
     this.tab = tab;
     this.home = false;
     this.view = null;
-    this.unread.delete(tab);
+    this.panelOpen = false;
+    this.unread.delete(APP_OF[tab]);
     this.refresh();
-    if (focus) this.tabs.querySelector<HTMLElement>('[aria-selected="true"]')?.focus();
+    if (focus) this.body.querySelector<HTMLElement>('button')?.focus();
   }
 
   /** 홈 화면으로 */
-  openHome(): void { this.home = true; this.view = null; this.refresh(); }
+  openHome(): void { this.home = true; this.view = null; this.panelOpen = false; this.refresh(); }
 
   pulse(tab: PhoneTab): void {
-    if (this.tab !== tab || !this.visible || this.home) this.unread.add(tab);
-    this.pulseNow.add(tab);
+    const app = APP_OF[tab];
+    if (APP_OF[this.tab] !== app || !this.visible || this.home) this.unread.add(app);
+    this.pulseNow.add(app);
     this.refresh();
   }
 
@@ -144,7 +186,7 @@ export class Phone {
     this.closing = on;
     this.closingPreview = null;
     this.facedown = false;
-    if (on) { this.tab = 'chat'; this.home = false; this.view = ME; this.unread.delete('chat'); }
+    if (on) { this.tab = 'messages'; this.home = false; this.view = ME; this.unreadKeys.delete(ME); }
     this.refresh();
   }
 
@@ -158,7 +200,7 @@ export class Phone {
         this.beginSend(ME, t('closingText.replyPreview'), {});
       } else {
         this.facedown = true;
-        this.feed.push({ id: this.nextId++, key: ME, dir: 'sys', from: '', text: t('closingText.facedown') });
+        this.feed.push({ id: this.nextId++, key: ME, dir: 'sys', from: '', text: t('closingText.facedown'), at: this.s.clock });
         this.refresh();
       }
       this.host.dispatch({ type: 'closingText', reply });
@@ -179,7 +221,7 @@ export class Phone {
 
   /** 안 보이는 대화방에 놓이는 시스템 줄(속마음, 지문): 이름표 없는 말 */
   addNote(text: string): void {
-    this.feed.push({ id: this.nextId++, key: this.view ?? this.lastKey ?? ME, dir: 'sys', from: '', text });
+    this.feed.push({ id: this.nextId++, key: this.view ?? this.lastKey ?? ME, dir: 'sys', from: '', text, at: this.s.clock });
     this.refresh();
   }
 
@@ -187,7 +229,7 @@ export class Phone {
   deferNote(key: string, text: string): void { this.deferred.push({ key, text }); }
   flushNotes(): void {
     if (this.deferred.length === 0) return;
-    for (const d of this.deferred.splice(0)) this.feed.push({ id: this.nextId++, key: d.key, dir: 'sys', from: '', text: d.text });
+    for (const d of this.deferred.splice(0)) this.feed.push({ id: this.nextId++, key: d.key, dir: 'sys', from: '', text: d.text, at: this.s.clock });
     this.refresh();
   }
 
@@ -215,9 +257,9 @@ export class Phone {
     this.refresh();
     this.later(() => {
       this.awaiting.delete(key);
-      this.feed.push({ id: this.nextId++, key, dir: 'in', from, text });
+      this.feed.push({ id: this.nextId++, key, dir: 'in', from, text, at: this.s.clock });
       const seeing = this.visible && !this.home && this.view === key;
-      if (!seeing) this.unread.add('chat');
+      if (!seeing) this.unreadKeys.add(key);
       if (this.chipStage.has(key)) {
         this.chipStage.set(key, 'replied');
         this.later(() => { if (this.chipStage.get(key) === 'replied') { this.chipStage.delete(key); this.refresh(); } }, 1300);
@@ -234,7 +276,7 @@ export class Phone {
 
   /** 검은 아이콘이 열린다: 새벽에 「검은 수첩」으로 들어간다 */
   openApp(): void {
-    this.openTab('book');
+    this.openTab('contacts');
     if (this.opts.reduced) return;
     this.root.classList.remove('phone--opening');
     void this.root.offsetWidth;
@@ -255,60 +297,57 @@ export class Phone {
     this.root.classList.toggle('phone--facedown', this.facedown);
     this.root.classList.toggle('phone--closing', this.closing);
     this.renderStatus();
-    this.renderTabs();
+    this.renderBar();
     this.renderBody();
+    this.renderDock();
     this.renderFoot();
     this.renderTip();
+    this.homeBar.setAttribute('aria-label', t(this.home ? 'phone.leaveHome' : 'phone.goHome'));
     const sig = `${this.home}|${this.tab}|${this.view}`;
     const n = this.feed.length + (this.awaiting.size ? 1 : 0);
     if (sig !== this.lastSig) this.body.scrollTop = 0; // 화면이 바뀌면 맨 위부터
     else if (this.view !== null && stick && n !== this.lastCount) {
-      // 새 말풍선이 보이도록: 대화 끝이 화면 아래쪽 60% 지점에 오게 하고, 작성칸은 그 아래에 둔다
+      // 새 말풍선이 보이도록: 대화 끝이 화면 아래쪽 60% 지점에 오게 한다
       const chat = this.body.querySelector<HTMLElement>('.chat');
       const end = chat ? chat.offsetTop + chat.offsetHeight : this.body.scrollHeight;
       this.body.scrollTop = Math.max(0, end - this.body.clientHeight * 0.6);
-    }
-    else this.body.scrollTop = top;
+    } else this.body.scrollTop = top;
     this.lastSig = sig;
     this.lastCount = n;
-    const badge = this.unread.size > 0;
+    this.pulseNow.clear();
+    const badge = this.hasUnread;
     if (badge !== this.lastBadge) { this.lastBadge = badge; this.opts.onBadge(badge); }
   }
 
-  // ---------------------------------------------------------------- 상태줄
+  // ---------------------------------------------------------------- 상태줄과 대화방 머리
 
   private renderStatus(): void {
     const s = this.s;
     const hit = this.hit && performance.now() < this.hit.until ? this.hit.delta : 0;
-    this.status.replaceChildren();
-    const homeBtn = button('phone__home', '', () => { sfx.play('sheet_open'); this.home ? this.openTab(this.tab) : this.openHome(); });
-    homeBtn.setAttribute('aria-label', t(this.home ? 'phone.leaveHome' : 'phone.goHome'));
-    homeBtn.append(el('i', 'phone__home-glyph'));
-    this.status.append(
-      el('span', 'phone__day', `${t('hud.day')} ${s.day}`),
-      el('span', 'phone__clock num', s.clock),
-      batteryEl(s.composure, hit),
-      homeBtn,
-    );
-    this.money.replaceChildren(el('span', 'num', `₩ ${s.revenue.toLocaleString('en-US')}`), el('span', 'phone__sub', `${t('phone.regularsCount')} ${regularsOf(s)}`));
+    const sys = el('span', 'phone__sys');
+    sys.append(phoneGlyph('signal', 'pico pico--signal'), phoneGlyph('wifi', 'pico pico--wifi'), batteryEl(s.composure, hit));
+    this.status.replaceChildren(el('span', 'phone__time num', s.clock), sys);
+    this.money.replaceChildren(el('span', 'phone__day num', `${t('hud.day')} ${s.day}`), el('span', 'num', `₩ ${s.revenue.toLocaleString('en-US')}`), el('span', 'phone__sub', `${t('phone.regularsCount')} ${regularsOf(s)}`));
     if (s.dawnLedger.length > 0) this.money.append(el('span', 'phone__sub', `${t('phone.ledgerCount')} ${s.dawnLedger.length}`));
+    this.money.hidden = this.home || this.view !== null;
     fillMobileStatus(this.opts.mirror, s, hit);
   }
 
-  private renderTabs(): void {
-    this.tabs.replaceChildren();
-    this.tabs.hidden = this.home;
-    for (const id of TABS) {
-      const b = button('tab', t(`phone.tabs.${id}`), () => this.openTab(id));
-      b.setAttribute('role', 'tab');
-      b.setAttribute('aria-selected', String(id === this.tab && !this.home));
-      if (this.unread.has(id) && id !== this.tab) b.dataset.dot = '1';
-      if (this.unread.has(id) && id === this.tab && !this.visible) b.dataset.dot = '1';
-      if (this.pulseNow.has(id)) b.dataset.pulse = '1';
-      this.tabs.append(b);
-    }
-    this.pulseNow.clear();
-    this.div.hidden = this.home;
+  /** 대화방 머리: ‹ (읽지 않은 수 배지) · 아바타 + 이름 › */
+  private renderBar(): void {
+    this.bar.replaceChildren();
+    const key = this.view;
+    this.bar.hidden = this.home || key === null;
+    if (this.home || key === null) return;
+    const name = this.titleOf(key);
+    const back = button('bar__back', '', () => { this.view = null; this.panelOpen = false; this.refresh(); });
+    back.setAttribute('aria-label', t('phone.back'));
+    back.append(phoneGlyph('back', 'pico pico--back'));
+    const n = this.unreadKeys.size;
+    if (n > 0) back.append(el('span', 'badge num', String(n)));
+    const who = el('div', 'bar__who');
+    who.append(avatar(name, 'avatar--sm'), el('span', 'bar__name', `${name} ›`));
+    this.bar.append(back, who, el('span', 'bar__spacer'));
   }
 
   private renderTip(): void {
@@ -322,11 +361,27 @@ export class Phone {
     this.body.dataset.view = this.view !== null ? 'thread' : 'list';
     if (this.home) { this.homeScreen(); return; }
     if (this.view !== null) { this.thread(this.view); return; }
-    ({ chat: () => this.chatList(), book: () => this.book(), cards: () => this.cards(), rules: () => this.rules() })[this.tab]();
+    ({ messages: () => this.chatList(), contacts: () => this.book(), card: () => this.cards(), notes: () => this.rules() })[this.tab]();
+  }
+
+  /** 대화방의 아래쪽: 문자 수 줄, 답장 칩, 입력줄, 템플릿 패널(키보드 자리) */
+  private renderDock(): void {
+    this.dock.replaceChildren();
+    const key = this.view;
+    this.dock.hidden = this.home || key === null;
+    if (this.home || key === null) return;
+    if (this.closing && key === ME) { this.dock.append(this.closingInput()); return; }
+    const plan = this.plan(key);
+    const line = this.statusLine();
+    if (line) this.dock.append(line);
+    if (this.s.pendingReplies[key] && !this.awaiting.has(key)) this.dock.append(this.replyChips(key));
+    this.dock.append(this.inputBar(key, plan));
+    if (this.panelOpen) this.dock.append(this.panel(key, plan));
   }
 
   private renderFoot(): void {
     this.foot.replaceChildren();
+    if (this.home || (this.view !== null && !this.closing)) return; // 대화방에서는 ‹로 목록에 돌아와 마친다
     const p = this.s.phase;
     const lock = this.locked;
     const done = (label: string, a: Action): HTMLButtonElement => {
@@ -337,11 +392,7 @@ export class Phone {
     if (p.kind === 'texting') {
       this.foot.append(this.counter(), done(t('phone.finishTexting'), { type: 'finishTexting' }));
     } else if (p.kind === 'aftercare') {
-      const d = this.data.days[this.s.day] ?? this.data.days[1];
-      this.foot.append(
-        el('div', 'phone__counter', t('phone.aftercareLeft', { left: this.s.aftercareRemaining, total: d?.aftercare.perShift ?? 0 })),
-        done(t('phone.finishAftercare'), { type: 'finishAftercare' }),
-      );
+      this.foot.append(this.aftercareCounter(), done(t('phone.finishAftercare'), { type: 'finishAftercare' }));
     } else if (p.kind === 'closingText' && this.closing) {
       const row = el('div', 'phone__choices');
       [t('choices.closingReply.reply'), t('choices.closingReply.ignore')].forEach((label, i) => {
@@ -364,49 +415,86 @@ export class Phone {
     }));
   }
 
+  private aftercareCounter(): HTMLElement {
+    const d = this.data.days[this.s.day] ?? this.data.days[1];
+    return el('div', 'phone__counter', t('phone.aftercareLeft', { left: this.s.aftercareRemaining, total: d?.aftercare.perShift ?? 0 }));
+  }
+
+  /** 대화방 아래 줄에 붙는 문자 수 */
+  private statusLine(): HTMLElement | null {
+    const p = this.s.phase;
+    if (p.kind === 'texting') return this.counter();
+    if (p.kind === 'aftercare') return this.aftercareCounter();
+    return null;
+  }
+
   // ---------------------------------------------------------------- 홈 화면
 
   private homeScreen(): void {
     const dawn = this.s.shift === 'dawn';
+    const W = 116;
+    const H = 240;
     const wall = el('canvas', 'phone__wall');
-    wall.width = 116;
-    wall.height = 65;
+    wall.width = W;
+    wall.height = H;
     wall.setAttribute('aria-hidden', 'true');
     const g = wall.getContext('2d');
-    if (g) { g.imageSmoothingEnabled = false; g.drawImage(this.opts.wallSource, 0, 0, wall.width, wall.height); }
-    const clock = el('div', 'phone__home-clock');
-    clock.append(el('span', 'num', this.s.clock), el('span', 'phone__sub', `${t('hud.day')} ${this.s.day}`));
+    if (g) {
+      // 배경: 장면을 세로로 가운데 잘라 화면 비율에 맞춘다
+      const src = this.opts.wallSource;
+      const sw = Math.round(src.height * W / H);
+      g.imageSmoothingEnabled = false;
+      g.drawImage(src, Math.round((src.width - sw) / 2), 0, sw, src.height, 0, 0, W, H);
+    }
+    const clock = el('div', 'home-clock');
+    clock.append(el('span', 'home-clock__time num', this.s.clock), el('span', 'home-clock__date', `${t('hud.day')} ${this.s.day}`));
+    const unread = this.unreadKeys.size;
     const grid = el('div', 'apps');
     grid.append(
-      this.appIcon('book', t('phone.apps.book'), !dawn, () => this.openTab('book')),
-      this.appIcon('black', '', dawn, () => this.openTab('book'), t('phone.apps.black')),
+      this.appIcon('messages', t('phone.apps.messages'), !dawn, () => this.openTab('messages'), { badge: unread }),
+      this.appIcon('contacts', t('phone.apps.contacts'), !dawn, () => this.openTab('contacts')),
+      this.appIcon('notes', t('phone.apps.notes'), true, () => this.openTab('notes')),
+      this.appIcon('black', t('phone.apps.black'), dawn, () => this.openTab('contacts')),
     );
-    this.body.append(wall, clock, grid);
+    // 독: 앞의 세 앱 (같은 앱의 되풀이라 보조 기술에서는 숨긴다)
+    const dock = el('div', 'apps-dock');
+    dock.append(
+      this.appIcon('messages', '', !dawn, () => this.openTab('messages'), { badge: unread, decorative: true }),
+      this.appIcon('contacts', '', !dawn, () => this.openTab('contacts'), { decorative: true }),
+      this.appIcon('notes', '', true, () => this.openTab('notes'), { decorative: true }),
+    );
+    this.body.append(wall, clock, grid, dock);
   }
 
   /** active가 아니면 눌러도 아이콘이 0.2초 흔들릴 뿐이다 (S01: 휴게 시간 전까지 검은 아이콘은 잠김) */
-  private appIcon(kind: 'book' | 'black', label: string, active: boolean, open: () => void, aria?: string): HTMLElement {
+  private appIcon(
+    kind: PhoneGlyph & ('messages' | 'contacts' | 'notes' | 'black'), label: string, active: boolean, open: () => void,
+    o: { badge?: number; decorative?: boolean } = {},
+  ): HTMLElement {
     const b = el('button', 'app');
     b.type = 'button';
     b.dataset.app = kind;
-    b.setAttribute('aria-label', aria ?? label);
+    if (o.decorative) { b.tabIndex = -1; b.setAttribute('aria-hidden', 'true'); } else b.setAttribute('aria-label', label);
     if (!active) b.setAttribute('aria-disabled', 'true');
-    const img = el('img', 'app__icon');
-    img.src = appIconUrl(kind, this.mood);
-    img.alt = '';
-    b.append(img, el('span', 'app__label', label));
+    const tile = el('span', 'app__tile');
+    tile.append(phoneGlyph(kind, 'pico pico--app'));
+    const app: AppId | null = kind === 'black' ? null : kind;
+    if (o.badge && o.badge > 0) tile.append(el('span', 'app__badge num', String(o.badge)));
+    else if (app && this.unread.has(app)) tile.append(el('span', 'app__dot'));
+    if (app && this.pulseNow.has(app)) tile.classList.add('is-pulse');
+    b.append(tile, el('span', 'app__label', label));
     b.addEventListener('click', () => {
       if (active) { open(); return; }
       sfx.play('icon_shake');
       if (this.opts.reduced) return;
-      img.classList.remove('is-shake');
-      void img.offsetWidth;
-      img.classList.add('is-shake');
+      tile.classList.remove('is-shake');
+      void tile.offsetWidth;
+      tile.classList.add('is-shake');
     });
     return b;
   }
 
-  // ---------------------------------------------------------------- 문자: 대화방 목록과 대화방
+  // ---------------------------------------------------------------- 메시지: 대화방 목록과 대화방
 
   private titleOf(key: string): string {
     if (key === ME) return t('closingText.from');
@@ -415,16 +503,36 @@ export class Phone {
     return this.data.customers.find((x) => x.id === key)?.name ?? key;
   }
 
+  private header(title: string, extra?: HTMLElement): HTMLElement {
+    const h = el('div', 'screen-title');
+    h.append(el('div', 'screen-title__text', title));
+    if (extra) h.append(extra);
+    return h;
+  }
+
   private chatList(): void {
+    this.body.append(this.header(t('phone.apps.messages')));
+    const search = el('div', 'search');
+    search.append(phoneGlyph('search', 'pico pico--search'), el('span', 'search__text', t('phone.search')));
+    this.body.append(search);
+    const feedRev = [...this.feed].reverse();
     const keys: string[] = [];
-    for (const m of [...this.feed].reverse()) if (m.dir !== 'sys' && !keys.includes(m.key)) keys.push(m.key);
+    for (const m of feedRev) if (m.dir !== 'sys' && !keys.includes(m.key)) keys.push(m.key);
     if (keys.length === 0) { this.body.append(el('div', 'empty', t('phone.noChat'))); return; }
     const list = el('div', 'threads');
     for (const key of keys) {
-      const last = [...this.feed].reverse().find((m) => m.key === key && m.dir !== 'sys') as Msg;
+      const last = feedRev.find((m) => m.key === key && m.dir !== 'sys') as Msg;
       const row = button('thread-row', '', () => this.openThread(key));
-      row.append(el('span', 'thread-row__name', this.titleOf(key)), el('span', 'thread-row__last', `${last.dir === 'out' ? '↗ ' : ''}${last.text}`));
-      if (this.s.pendingReplies[key]) row.append(el('span', 'chip-state chip-state--sent', t('phone.replyWaiting')));
+      if (this.unreadKeys.has(key)) row.classList.add('is-unread');
+      const main = el('span', 'thread-row__main');
+      const top = el('span', 'thread-row__top');
+      top.append(el('span', 'thread-row__name', this.titleOf(key)), el('span', 'thread-row__time num', kTime(last.at)));
+      main.append(top, el('span', 'thread-row__last', `${last.dir === 'out' ? `${t('closingText.from')}: ` : ''}${last.text}`));
+      const contact = this.contactOf(key);
+      const chip = contact ? this.chipFor(contact) : '';
+      if (chip) main.append(el('span', `chip-state chip-state--${chip}`, t(`phone.chip.${chip}`)));
+      else if (this.s.pendingReplies[key]) main.append(el('span', 'chip-state chip-state--sent', t('phone.replyWaiting')));
+      row.append(el('span', 'thread-row__dot'), avatar(this.titleOf(key)), main);
       list.append(row);
     }
     this.body.append(list);
@@ -434,9 +542,9 @@ export class Phone {
     this.view = key;
     this.home = false;
     this.tipText = '';
+    this.panelOpen = false;
     this.compose = { mode: this.defaultMode(key), template, product: null };
-    if (template) this.compose.template = template;
-    this.unread.delete(this.tab);
+    this.unreadKeys.delete(key);
     this.refresh();
   }
 
@@ -462,147 +570,182 @@ export class Phone {
   private thread(key: string): void {
     const s = this.s;
     const contact = this.data.contacts.find((c) => (c.customerId ?? c.id) === key);
-    const head = el('div', 'thread__head');
-    const back = button('thread__back', '', () => { this.view = null; this.refresh(); });
-    back.setAttribute('aria-label', t('phone.back'));
-    back.append(el('span', '', `‹ ${t('phone.back')}`));
-    head.append(back, el('span', 'thread__name', this.titleOf(key)));
-    const chip = contact ? this.chipFor(contact) : '';
-    if (chip) head.append(el('span', `chip-state chip-state--${chip}`, t(`phone.chip.${chip}`)));
-    this.body.append(head);
-
     const log = el('div', 'chat');
-    if (key === ME && this.s.shift === 'dawn') log.dataset.me = '1';
+    if (key === ME && s.shift === 'dawn') log.dataset.me = '1';
+    const head = el('div', 'thread-date');
+    head.append(el('span', '', t('phone.threadKind')), el('span', '', t('phone.today', { time: kTime(s.clock) })));
+    log.append(head);
     const msgs = this.feed.filter((m) => m.key === key);
     // (빈칸): 답장이 보내기 전에 이미 와 있다 (S08)
     const pre = contact && contact.composureOnSend && contact.replies.any && !(contact.id in s.texting[s.shift].sent);
     if (pre) {
       const row = el('div', 'bubble-row bubble-row--in');
-      row.append(el('div', 'bubble__from', contact.name), el('div', 'bubble bubble--in bubble--wrong', contact.replies.any));
+      row.append(el('div', 'bubble bubble--in bubble--wrong', contact.replies.any));
       log.append(row);
     }
     if (msgs.length === 0 && !pre && key !== ME) log.append(el('div', 'empty', t('phone.noChat')));
-    msgs.forEach((m) => {
+    const lastOut = msgs.reduce((acc, m, i) => (m.dir === 'out' ? i : acc), -1);
+    msgs.forEach((m, i) => {
       if (m.dir === 'sys') { log.append(el('div', 'sys', m.text)); return; }
       const row = el('div', `bubble-row bubble-row--${m.dir}`);
-      if (m.dir === 'in') row.append(el('div', 'bubble__from', m.from));
       row.append(el('div', `bubble bubble--${m.dir}`, m.text));
-      if (m.dir === 'out') row.append(el('div', `bubble__status${m.status === 'sending' ? ' is-sending' : ''}`, t(m.status === 'sending' ? 'phone.sendWait' : 'phone.chip.sent')));
+      if (m.dir === 'out' && i === lastOut) row.append(el('div', `bubble__status${m.status === 'sending' ? ' is-sending' : ''}`, this.deliveryLabel(msgs, i)));
       log.append(row);
     });
-    if (this.awaiting.has(key)) log.append(el('div', 'typing', '…'));
-    // 답장 선택지 2개: 마지막 받은 말풍선 아래
-    if (s.pendingReplies[key] && !this.awaiting.has(key)) {
-      const chat = this.data.customers.find((x) => x.id === key)?.care.chat;
-      if (chat) {
-        const box = el('div', 'reply');
-        box.setAttribute('role', 'group');
-        chat.options.forEach((label, i) => {
-          const b = button('reply__opt', label, () => this.chooseReply(key, i === 0 ? 0 : 1, label));
-          if (this.locked) b.setAttribute('aria-disabled', 'true');
-          box.append(b);
-        });
-        log.append(box);
-      }
+    if (this.awaiting.has(key)) {
+      // 답장 대기: 입력 중 말풍선 (점은 움직임을 줄이면 가만히 있다)
+      const row = el('div', 'bubble-row bubble-row--in');
+      const typing = el('div', 'bubble bubble--in bubble--typing');
+      typing.setAttribute('role', 'status');
+      typing.setAttribute('aria-label', t('phone.typing'));
+      for (let i = 0; i < 3; i++) typing.append(el('i'));
+      row.append(typing);
+      log.append(row);
     }
     this.body.append(log);
+  }
 
-    if (this.closing && key === ME) this.body.append(this.closingInput());
-    else this.body.append(this.composer(key));
+  /** 마지막 보낸 말풍선 아래 줄: 전송 중… → 전송됨 → 읽음 (받은 답장의 시각) */
+  private deliveryLabel(msgs: Msg[], i: number): string {
+    const m = msgs[i] as Msg;
+    if (m.status === 'sending') return t('phone.sendWait');
+    const reply = msgs.slice(i + 1).find((x) => x.dir === 'in');
+    return reply ? t('phone.read', { time: kTime(reply.at) }) : t('phone.delivered');
+  }
+
+  private replyChips(key: string): HTMLElement {
+    const box = el('div', 'reply');
+    box.setAttribute('role', 'group');
+    const chat = this.data.customers.find((x) => x.id === key)?.care.chat;
+    chat?.options.forEach((label, i) => {
+      const b = button('reply__opt', label, () => this.chooseReply(key, i === 0 ? 0 : 1, label));
+      if (this.locked) b.setAttribute('aria-disabled', 'true');
+      box.append(b);
+    });
+    return box;
   }
 
   private chooseReply(key: string, option: 0 | 1, label: string): void {
     if (this.locked) return;
     this.lastKey = key;
-    this.feed.push({ id: this.nextId++, key, dir: 'out', from: '', text: label, status: 'sent' });
+    this.feed.push({ id: this.nextId++, key, dir: 'out', from: '', text: label, status: 'sent', at: this.s.clock });
     sfx.play('msg_send');
     this.host.dispatch({ type: 'chooseReply', customerId: key, option });
   }
 
+  /** 입력줄: + (템플릿 패널), 입력칸(누르면 패널), 보내기 화살표 */
+  private inputBar(key: string, plan: Plan): HTMLElement {
+    const bar = el('div', 'inputbar');
+    const plus = button('inputbar__plus', '', () => { this.panelOpen = !this.panelOpen; this.refresh(); });
+    plus.setAttribute('aria-label', t('phone.attach'));
+    plus.setAttribute('aria-expanded', String(this.panelOpen));
+    plus.append(phoneGlyph('plus', 'pico pico--plus'));
+    const field = button('inputbar__field', '', () => { if (plan.none) return; this.panelOpen = true; this.refresh(); });
+    field.setAttribute('aria-label', t('phone.fieldPlaceholder'));
+    if (plan.none) field.setAttribute('aria-disabled', 'true');
+    if (plan.picked) field.append(el('span', 'inputbar__text', plan.text));
+    else field.append(el('span', 'inputbar__hint', t('phone.fieldPlaceholder')));
+    const enabled = !!plan.picked && plan.ready && !plan.none && !this.locked;
+    const send = button('inputbar__send', '', () => {
+      if (!enabled || !plan.picked) return;
+      this.send(key, plan.mode, plan.picked, plan.text);
+      this.panelOpen = false;
+    });
+    send.setAttribute('aria-label', t('phone.sendLabel'));
+    if (!enabled) send.setAttribute('aria-disabled', 'true');
+    if (plan.picked && !plan.ready) send.title = t('phone.pickProduct');
+    send.append(phoneGlyph('send', 'pico pico--send'));
+    bar.append(plus, field, send);
+    return bar;
+  }
 
+  /** 04:44 답장 입력줄: 보내기 없이 미리보기만 놓인다 */
   private closingInput(): HTMLElement {
     const box = el('div', 'closing-input');
-    const field = el('div', 'closing-input__field');
-    if (this.closingPreview !== null) field.append(el('span', '', this.closingPreview));
+    box.append(el('div', 'closing-input__label', t('phone.replyField')));
+    const bar = el('div', 'inputbar inputbar--closing');
+    const field = el('div', 'inputbar__field');
+    if (this.closingPreview !== null) field.append(el('span', 'inputbar__text', this.closingPreview));
+    else field.append(el('span', 'inputbar__hint', t('phone.fieldPlaceholder')));
     field.append(el('i', 'caret'));
-    box.append(el('div', 'closing-input__label', t('phone.replyField')), field);
+    bar.append(field);
+    box.append(bar);
     return box;
   }
 
-  // ---------------------------------------------------------------- 작성 화면 (영업 · 관리)
+  /** 템플릿 패널: 영업/관리 전환, 문구 목록(미리보기 포함), 상품 고르기 */
+  private panel(key: string, plan: Plan): HTMLElement {
+    const box = el('div', 'tpl-panel');
+    if (plan.none) {
+      box.append(el('div', 'hint', t(this.s.phase.kind === 'texting' || this.s.phase.kind === 'aftercare' ? 'phone.composeNone' : 'phone.composeClosed')));
+      return box;
+    }
+    if (plan.canSales && plan.canCare) {
+      const seg = el('div', 'seg');
+      for (const m of ['sales', 'care'] as const) {
+        const b = button('seg__btn', t(`phone.mode.${m}`), () => { this.compose = { mode: m, template: null, product: null }; this.refresh(); });
+        b.setAttribute('aria-pressed', String(m === plan.mode));
+        seg.append(b);
+      }
+      box.append(seg);
+    }
+    box.append(el('div', 'compose__h', t(plan.mode === 'sales' ? 'phone.composeSales' : 'phone.composeCare')));
+    const group = el('div', 'tpl-list');
+    group.setAttribute('role', 'radiogroup');
+    for (const tpl of plan.templates) {
+      const reason = plan.reasons.get(tpl.id) ?? null;
+      const r = el('button', 'tpl');
+      r.type = 'button';
+      r.setAttribute('role', 'radio');
+      r.setAttribute('aria-checked', String(plan.picked?.id === tpl.id));
+      r.append(el('span', 'tpl__name', tpl.name));
+      if (reason) {
+        r.disabled = true;
+        r.append(el('span', 'tpl__why', whyText(reason)));
+      } else {
+        r.append(el('span', 'tpl__text', this.previewText(tpl, key, plan.contact, plan.care)));
+        r.addEventListener('click', () => { this.compose.template = tpl.id; this.refresh(); });
+      }
+      group.append(r);
+    }
+    box.append(group);
+    if (plan.needsProduct) box.append(this.picker(plan.shift));
+    if (!plan.picked) box.append(el('div', 'hint', t('phone.pickTemplate')));
+    else if (!plan.ready) box.append(el('div', 'hint', t('phone.pickProduct')));
+    return box;
+  }
 
-  private composer(key: string): HTMLElement {
+  /** 작성 상태 계산: 영업/관리 가능 여부, 고른 문구, 보낼 수 있는지 */
+  private plan(key: string): Plan {
     const s = this.s;
-    const box = el('div', 'compose');
     const p = s.phase;
+    const shift: Shift = s.shift;
     const contact = this.contactOf(key);
     const care = this.careTarget(key);
     const texting = p.kind === 'texting';
     const canSales = texting && !!contact;
     const canCare = (texting || p.kind === 'aftercare') && !!care;
     if (!canSales && !canCare) {
-      box.append(el('div', 'hint', t(p.kind === 'texting' || p.kind === 'aftercare' ? 'phone.composeNone' : 'phone.composeClosed')));
-      return box;
+      return { none: true, shift, mode: 'sales', canSales, canCare, contact, care, templates: [], reasons: new Map(), needsProduct: false, text: '', ready: false };
     }
     let mode = this.compose.mode;
     if (mode === 'sales' && !canSales) mode = 'care';
     if (mode === 'care' && !canCare) mode = 'sales';
     this.compose.mode = mode;
 
-    if (canSales && canCare) {
-      const seg = el('div', 'seg');
-      for (const m of ['sales', 'care'] as const) {
-        const b = button('seg__btn', t(`phone.mode.${m}`), () => { this.compose = { mode: m, template: null, product: null }; this.refresh(); });
-        b.setAttribute('aria-pressed', String(m === mode));
-        seg.append(b);
-      }
-      box.append(seg);
-    }
-    box.append(el('div', 'compose__h', t(mode === 'sales' ? 'phone.composeSales' : 'phone.composeCare')));
-
-    const shift: Shift = s.shift;
     const templates: TemplateDef[] = mode === 'sales'
       ? this.data.templates.sales.filter((x) => x.shift === shift)
       : this.data.templates.care.filter((x) => x.shift === shift);
     const probeProduct = this.productsOf(shift)[0]?.id;
-    const group = el('div', 'radios');
-    group.setAttribute('role', 'radiogroup');
     const reasons = new Map<string, BlockReason | null>(templates.map((tpl) => [tpl.id, mode === 'sales'
       ? this.host.game.blockReason({ type: 'sendText', contactId: (contact as ContactDef).id, template: tpl.id as never })
       : this.host.game.blockReason({ type: 'sendCare', customerId: key, template: tpl.id as CareTemplateId, productId: probeProduct })]));
     if (this.compose.template && reasons.get(this.compose.template) !== null) this.compose.template = null;
-    for (const tpl of templates) {
-      const reason = reasons.get(tpl.id) ?? null;
-      const r = el('button', 'radio');
-      r.type = 'button';
-      r.setAttribute('role', 'radio');
-      r.setAttribute('aria-checked', String(this.compose.template === tpl.id));
-      r.append(el('span', 'radio__name', tpl.name));
-      if (reason) {
-        r.disabled = true;
-        r.append(el('span', 'radio__why', whyText(reason)));
-      } else r.addEventListener('click', () => { this.compose.template = tpl.id; this.refresh(); });
-      group.append(r);
-    }
-    box.append(group);
-    if (this.compose.template && !templates.some((x) => x.id === this.compose.template)) this.compose.template = null;
-
     const picked = templates.find((x) => x.id === this.compose.template);
     const needsProduct = mode === 'care' && !!picked && baseKind(picked.id as CareTemplateId) === 'recommend';
-    if (needsProduct) box.append(this.picker(shift));
-    if (!picked) {
-      box.append(el('div', 'hint', t('phone.pickTemplate')));
-    } else {
-      const text = this.previewText(picked, key, contact, care);
-      box.append(el('div', 'compose__label', t('phone.preview')), el('div', 'bubble bubble--out bubble--small bubble--preview', text));
-      const ready = !needsProduct || this.compose.product !== null;
-      const send = button('phone-btn phone-btn--primary phone-btn--send', t('phone.sendLabel'), () => this.send(key, mode, picked, text));
-      if (!ready || this.locked) send.setAttribute('aria-disabled', 'true');
-      if (!ready) send.title = t('phone.pickProduct');
-      box.append(send);
-      if (!ready) box.append(el('div', 'hint', t('phone.pickProduct')));
-    }
-    return box;
+    const ready = !needsProduct || this.compose.product !== null;
+    const text = picked ? this.previewText(picked, key, contact, care) : '';
+    return { none: false, shift, mode, canSales, canCare, contact, care, templates, reasons, picked, needsProduct, text, ready };
   }
 
   private productsOf(shift: Shift): Product[] {
@@ -663,14 +806,14 @@ export class Phone {
     this.endSend(key);
   }
 
-  /** 보낸 말풍선(rose) → "전송 중…" 0.6초 → "보냄". 답장은 코어 이벤트가 오면 deliver가 붙인다. */
+  /** 보낸 말풍선 → "전송 중…" 0.6초 → "전송됨". 답장은 코어 이벤트가 오면 deliver가 붙인다. */
   private beginSend(key: string, text: string, o: { pre?: string; from?: string }): void {
     this.lastKey = key;
     if (o.pre) {
-      this.feed.push({ id: this.nextId++, key, dir: 'in', from: o.from ?? '', text: o.pre });
+      this.feed.push({ id: this.nextId++, key, dir: 'in', from: o.from ?? '', text: o.pre, at: this.s.clock });
       this.preDelivered.add(key);
     }
-    const m: Msg = { id: this.nextId++, key, dir: 'out', from: '', text, status: 'sending' };
+    const m: Msg = { id: this.nextId++, key, dir: 'out', from: '', text, status: 'sending', at: this.s.clock };
     this.feed.push(m);
     this.chipStage.set(key, 'sending');
     this.inflight++;
@@ -690,13 +833,23 @@ export class Phone {
     this.later(() => { if (!this.awaiting.has(key)) { this.chipStage.delete(key); this.refresh(); } }, 1000);
   }
 
-  // ---------------------------------------------------------------- 명부 / 애프터케어
+  // ---------------------------------------------------------------- 연락처 (명부 · 카드) / 애프터케어
+
+  private appSeg(): HTMLElement {
+    const seg = el('div', 'seg seg--app');
+    for (const [tab, label] of [['contacts', t('phone.tabs.book')], ['card', t('phone.tabs.cards')]] as const) {
+      const b = button('seg__btn', label, () => this.openTab(tab));
+      b.setAttribute('aria-pressed', String(this.tab === tab));
+      seg.append(b);
+    }
+    return seg;
+  }
 
   private book(): void {
     const s = this.s;
     const p = s.phase;
     const dawn = s.shift === 'dawn';
-    this.body.append(el('div', 'phone__h', t(dawn ? 'phone.bookDawn' : 'phone.bookAfternoon')));
+    this.body.append(this.header(t(dawn ? 'phone.bookDawn' : 'phone.apps.contacts'), this.appSeg()));
     if (dawn) this.body.append(el('div', 'note-page', t('briefing.dawn.notebook')));
     if (p.kind === 'aftercare') { this.served(); return; }
     const list = el('div', 'contacts');
@@ -705,8 +858,8 @@ export class Phone {
       const key = c.customerId ?? c.id;
       const row = el('div', 'contact');
       const head = button('contact__head', '', () => this.openThread(key));
-      head.append(el('span', 'contact__name', c.name));
       const chip = this.chipFor(c);
+      head.append(avatar(c.name), el('span', 'contact__name', c.name));
       if (chip) head.append(el('span', `chip-state chip-state--${chip}`, t(`phone.chip.${chip}`)));
       row.append(head);
       if (c.address) row.append(el('div', 'contact__addr', c.address));
@@ -727,7 +880,7 @@ export class Phone {
     for (const c of regs) {
       const row = el('div', 'contact');
       const head = button('contact__head', '', () => this.openThread(c.id));
-      head.append(el('span', 'contact__name', c.name), el('span', 'chip-state chip-state--sent', t(`tier.${(s.cards[c.id] as ClientCard).tier}`)));
+      head.append(avatar(c.name), el('span', 'contact__name', c.name), el('span', 'chip-state chip-state--sent', t(`tier.${(s.cards[c.id] as ClientCard).tier}`)));
       row.append(head);
       if (c.care.memo && s.shift === 'dawn') row.append(el('div', 'contact__memo', c.care.memo));
       into.append(row);
@@ -755,7 +908,7 @@ export class Phone {
       const sold = card.purchases.some((x) => x.day === s.day);
       const row = el('div', 'contact');
       const head = el('div', 'contact__head contact__head--static');
-      head.append(el('span', 'contact__name', c.name), el('span', `chip-state chip-state--${sold ? 'coming' : 'no'}`, t(sold ? 'phone.soldMark' : 'phone.failMark')));
+      head.append(avatar(c.name), el('span', 'contact__name', c.name), el('span', `chip-state chip-state--${sold ? 'coming' : 'no'}`, t(sold ? 'phone.soldMark' : 'phone.failMark')));
       row.append(head);
       if (c.care.memo && s.shift === 'dawn') row.append(el('div', 'contact__memo', c.care.memo));
       const thanksId: CareTemplateId = s.shift === 'dawn' ? 'dawn_thanks' : 'thanks';
@@ -779,13 +932,13 @@ export class Phone {
     if (rest.childElementCount) this.body.append(rest);
   }
 
-  // ---------------------------------------------------------------- 고객 카드
+  // ---------------------------------------------------------------- 고객 카드 (연락처 · 카드 탭)
 
   private cards(): void {
     const s = this.s;
     const list = Object.values(s.cards).sort((a, b) => (b.lastVisitDay ?? 0) - (a.lastVisitDay ?? 0));
     const wrap = el('div', 'cards');
-    wrap.append(el('div', 'phone__h', t('phone.cardTitle')));
+    wrap.append(this.header(t('phone.cardTitle'), this.appSeg()));
     if (list.length === 0) wrap.append(el('div', 'empty', t('phone.cardEmpty')));
     else {
       const sel = list.find((c) => c.customerId === this.cardSel) ?? list[0] as ClientCard;
@@ -812,7 +965,7 @@ export class Phone {
     const box = el('div', 'card-sheet');
     box.dataset.tier = card.tier;
     const head = el('div', 'card-sheet__head');
-    head.append(el('span', 'card-sheet__name', c.name), el('span', 'card-sheet__tier', t(`phone.cardBook.${card.book}`)));
+    head.append(avatar(c.name, 'avatar--lg'), el('span', 'card-sheet__name', c.name), el('span', 'card-sheet__tier', t(`phone.cardBook.${card.book}`)));
     box.append(head);
     const dept = card.category ? t(`categories.${card.category}`) : undefined;
     const rows: [string, string | undefined][] = [
@@ -859,10 +1012,11 @@ export class Phone {
     return box;
   }
 
-  // ---------------------------------------------------------------- 수칙
+  // ---------------------------------------------------------------- 메모 (수칙)
 
   private rules(): void {
     const wrap = el('div', 'rules');
+    wrap.append(this.header(t('phone.apps.notes')));
     wrap.append(el('div', 'phone__h', t('phone.rulesAfternoon')));
     const ol = el('ol', 'rules__list');
     for (const l of this.afternoonRules()) ol.append(el('li', '', l));

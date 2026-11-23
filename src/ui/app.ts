@@ -209,7 +209,7 @@ export function startApp(stage: Stage, renderer: Renderer, opts: { debug: boolea
           blackout(origin?.type === 'closingText', () => bridge.release());
           return 'wait';
         case 'violation': return 'continue';
-        case 'mannerSlip': toast(t('toast.manner')); phone.pulse('rules'); return 'continue';
+        case 'mannerSlip': toast(t('toast.manner')); phone.pulse('notes'); return 'continue';
         case 'shift': setShift(e.shift); if (e.shift === 'dawn') phone.unlockDawnRules(); return 'continue';
         case 'mood': baseMood = e.mood as CoreMood; if (!breachTimer || html.dataset.mood !== 'breach') setMood(baseMood); return 'continue';
         case 'sale': toast(t('toast.sale', { amount: e.amount.toLocaleString('en-US') })); sfx.play('register'); phone.refresh(); return 'continue';
@@ -223,7 +223,7 @@ export function startApp(stage: Stage, renderer: Renderer, opts: { debug: boolea
           if (e.field !== 'purchases') {
             const key = String(e.field);
             toast(t('toast.cardRecorded', { field: t(`cardFieldNames.${key}`) }));
-            phone.pulse('cards');
+            phone.pulse('card');
           }
           phone.refresh();
           return 'continue';
@@ -394,13 +394,13 @@ export function startApp(stage: Stage, renderer: Renderer, opts: { debug: boolea
       case 'texting':
         dialogue.hide();
         if (entering) {
-          if (p.shift === 'dawn') phone.openApp(); else phone.openTab('book');
+          if (p.shift === 'dawn') phone.openApp(); else phone.openTab('contacts');
           once('texting', t('tutorial.texting'), 'phone');
         }
         break;
       case 'aftercare':
         dialogue.hide();
-        if (entering) { phone.openTab('book'); once('aftercare', t('tutorial.aftercare'), 'phone'); }
+        if (entering) { phone.openTab('contacts'); once('aftercare', t('tutorial.aftercare'), 'phone'); }
         break;
       case 'closingText':
         // 선택지는 폰 안에 있다(답장한다 / 폰을 엎어 둔다)
@@ -493,7 +493,7 @@ export function startApp(stage: Stage, renderer: Renderer, opts: { debug: boolea
       if (mobile()) sheets.toggle('phone'); else phone.openTab(phone.tab, true);
     } else if (ev.key === 'r' || ev.key === 'R') {
       showSheet('phone');
-      phone.openTab('rules', true);
+      phone.openTab('notes', true);
     }
   });
 
