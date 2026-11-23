@@ -6,7 +6,7 @@
     "replies": { "prefer": "오 신상? 세 시 반쯤 갈게요.", "neutral": "네 이따 들를게요.", "dislike": "아 네… 바빠서요." }
   },
   {
-    "id": "jin", "name": "진영숙 (진 마담)", "book": "afternoon",
+    "id": "jin", "name": "진영숙", "book": "afternoon",
     "memo": "VVIP. 말 많은 거 싫어하심. 탄산수. 레몬 없이.",
     "customerId": "jin", "prefers": "private", "dislikes": "new_arrival",
     "replies": { "prefer": "다섯 시 반. 조용히 보고 싶네요.", "neutral": "시간 되면 들를게요.", "dislike": "단체 문자는 사양할게요." }

@@ -60,10 +60,10 @@ describe('문자 판정', () => {
   it('진영숙: 선호 private → 17:30, 비선호 new_arrival → 오지 않음', () => {
     const g = afternoonTexting();
     const ev = act(g, { type: 'sendText', contactId: 'jin', template: 'private' });
-    expect(ev).toContainEqual({ type: 'phone', from: '진영숙 (진 마담)', text: '다섯 시 반. 조용히 보고 싶네요.' });
+    expect(ev).toContainEqual({ type: 'phone', from: '진영숙', text: '다섯 시 반. 조용히 보고 싶네요.' });
     const h = afternoonTexting();
     const ev2 = act(h, { type: 'sendText', contactId: 'jin', template: 'new_arrival' });
-    expect(ev2).toContainEqual({ type: 'phone', from: '진영숙 (진 마담)', text: '단체 문자는 사양할게요.' });
+    expect(ev2).toContainEqual({ type: 'phone', from: '진영숙', text: '단체 문자는 사양할게요.' });
     expect(st(h).visitors['jin']).toBeUndefined();
   });
 
