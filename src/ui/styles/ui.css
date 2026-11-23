@@ -58,7 +58,7 @@ button:disabled, button[aria-disabled='true'] { cursor: default; }
 .dialogue { position: absolute; left: 32px; top: 304px; width: 432px; height: 72px; z-index: var(--z-dialogue);
   padding: 2px 8px; background: var(--color-surface); border: 8px solid transparent; border-image: var(--fr-minor) 8 / 8px / 0 stretch; image-rendering: pixelated; }
 .dialogue[hidden] { display: none; }
-.dialogue__text { font-size: 11px; line-height: 16px; height: 48px; overflow: hidden; color: var(--color-text); white-space: pre-wrap; }
+.dialogue__text { font-size: 12px; line-height: 16px; height: 48px; overflow: hidden; color: var(--color-text); white-space: pre-wrap; }
 .dialogue[data-kind='narration'] .dialogue__text { color: var(--color-text-muted); }
 .dialogue[data-kind='thought'] .dialogue__text { color: var(--mist); }
 .dialogue__plate { position: absolute; left: 8px; top: -19px; height: 18px; padding: 0 10px; display: flex; align-items: center; font-weight: 700; font-size: 11px; line-height: 14px; background: var(--color-surface);
