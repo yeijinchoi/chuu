@@ -566,6 +566,7 @@ export function startApp(stage: Stage, renderer: Renderer, opts: { debug: boolea
   if (opts.debug) {
     const w = window as unknown as { __game: Game; __data: (id: string) => string };
     w.__game = game;
+    (w as unknown as { __bgm: Bgm }).__bgm = bgm;
     (w as unknown as { __busy: () => boolean }).__busy = () => bridge.busy;
     // 검증용: 브리지(사건 흐름)와 업무폰을 콘솔에서 직접 부른다
     (w as unknown as { __bridge: unknown }).__bridge = bridge;
