@@ -139,6 +139,7 @@ export function startApp(stage: Stage, renderer: Renderer, opts: { debug: boolea
   };
 
   // ------------------------------------------------------------ 모바일 시트
+  let bridge!: Bridge;
   const sheets = stage.sheets;
   const syncTabbar = (): void => {
     const open = sheets.open;
@@ -160,7 +161,7 @@ export function startApp(stage: Stage, renderer: Renderer, opts: { debug: boolea
   const phone = new Phone(stage.phone, {
     game, data,
     dispatch: (a) => bridge.dispatch(a),
-    busy: () => bridge.busy,
+    busy: () => (bridge ? bridge.busy : false),
   }, {
     reduced: opts.reduced,
     mirror: stage.mStatus,
@@ -247,7 +248,7 @@ export function startApp(stage: Stage, renderer: Renderer, opts: { debug: boolea
     },
     onIdle,
   };
-  const bridge = new Bridge(game, sink);
+  bridge = new Bridge(game, sink);
 
   function showDialogue(speaker: string | null, text: string, kind: 'speech' | 'narration' | 'thought'): void {
     if (mobile()) sheets.close(); // 시트가 대사를 가리지 않게
@@ -487,6 +488,7 @@ export function startApp(stage: Stage, renderer: Renderer, opts: { debug: boolea
   if (opts.debug) {
     const w = window as unknown as { __game: Game; __data: (id: string) => string };
     w.__game = game;
+    (w as unknown as { __busy: () => boolean }).__busy = () => bridge.busy;
     (w as unknown as { __best: () => number }).__best = () => {
       const p = game.getState().phase;
       if (p.kind !== 'encounter') return 0;

@@ -65,6 +65,9 @@ export class Phone {
   private compose: { mode: 'sales' | 'care'; template: string | null; product: string | null } = { mode: 'sales', template: null, product: null };
   private deferred: { key: string; text: string }[] = [];
   private inflight = 0;
+  private lastKey: string | null = null;
+  private lastSig = '';
+  private lastCount = 0;
   private hit: { delta: number; until: number } | null = null;
   private closing = false;
   private closingPreview: string | null = null;
@@ -88,7 +91,7 @@ export class Phone {
 
   constructor(root: HTMLElement, private readonly host: PhoneHost, private readonly opts: PhoneOpts) {
     this.root = root;
-    root.append(this.status, this.money, this.div, this.tabs, this.body, this.foot, this.tip);
+    root.append(this.status, this.money, this.div, this.tabs, this.tip, this.body, this.foot);
     this.tabs.setAttribute('role', 'tablist');
     this.tip.hidden = true;
     this.tip.setAttribute('role', 'status');
@@ -256,7 +259,18 @@ export class Phone {
     this.renderBody();
     this.renderFoot();
     this.renderTip();
-    this.body.scrollTop = this.view !== null && stick ? this.body.scrollHeight : top;
+    const sig = `${this.home}|${this.tab}|${this.view}`;
+    const n = this.feed.length + (this.awaiting.size ? 1 : 0);
+    if (sig !== this.lastSig) this.body.scrollTop = 0; // 화면이 바뀌면 맨 위부터
+    else if (this.view !== null && stick && n !== this.lastCount) {
+      // 새 말풍선이 보이도록: 대화 끝이 화면 아래쪽 60% 지점에 오게 하고, 작성칸은 그 아래에 둔다
+      const chat = this.body.querySelector<HTMLElement>('.chat');
+      const end = chat ? chat.offsetTop + chat.offsetHeight : this.body.scrollHeight;
+      this.body.scrollTop = Math.max(0, end - this.body.clientHeight * 0.6);
+    }
+    else this.body.scrollTop = top;
+    this.lastSig = sig;
+    this.lastCount = n;
     const badge = this.unread.size > 0;
     if (badge !== this.lastBadge) { this.lastBadge = badge; this.opts.onBadge(badge); }
   }
@@ -419,6 +433,7 @@ export class Phone {
   openThread(key: string, template: string | null = null): void {
     this.view = key;
     this.home = false;
+    this.tipText = '';
     this.compose = { mode: this.defaultMode(key), template, product: null };
     if (template) this.compose.template = template;
     this.unread.delete(this.tab);
@@ -504,7 +519,6 @@ export class Phone {
     this.host.dispatch({ type: 'chooseReply', customerId: key, option });
   }
 
-  private lastKey: string | null = null;
 
   private closingInput(): HTMLElement {
     const box = el('div', 'closing-input');

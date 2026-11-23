@@ -109,6 +109,7 @@ button:disabled, button[aria-disabled='true'] { cursor: default; }
 .slot--empty { border-image-source: var(--fr-tiny-disabled); }
 .slot--empty::before { display: none; }
 .slot .icon { margin-top: -2px; }
+.slot__name { display: none; }
 .slot__price { font-family: var(--font-mono); font-size: 9px; line-height: 12px; color: var(--color-money); margin-top: 0; }
 .icon { width: 64px; height: 64px; image-rendering: pixelated; flex: none; }
 
@@ -290,7 +291,7 @@ button.contact__head:hover .contact__name { text-decoration: underline; }
   border: 4px solid transparent; border-image: var(--fr-tiny-focus) 4 / 4px / 0 stretch; image-rendering: pixelated; animation: tip-in var(--dur-base) var(--ease-pixel); }
 .tip[hidden] { display: none; }
 .tip--serve { right: 8px; top: 8px; max-width: 232px; }
-.tip--phone { left: 4px; right: 4px; top: 56px; }
+.tip--phone { position: relative; flex: none; margin: 0 0 6px; }
 .tip--phone::before { content: ''; position: absolute; left: 24px; top: -8px; width: 8px; height: 4px; background: var(--paper); clip-path: polygon(0 100%, 50% 0, 100% 100%); }
 @keyframes tip-in { from { transform: translateY(-4px); } }
 
@@ -332,7 +333,7 @@ button.contact__head:hover .contact__name { text-decoration: underline; }
 [data-shift='dawn'] .note-page { color: var(--ash); }
 
 /* 대화방 */
-.thread__head { display: flex; align-items: center; gap: 6px; min-height: 22px; margin-bottom: 4px; padding-bottom: 4px; border-bottom: 1px dotted var(--mist); }
+.thread__head { position: sticky; top: 0; z-index: 2; background: var(--color-phone-screen); display: flex; align-items: center; gap: 6px; min-height: 22px; margin-bottom: 4px; padding-bottom: 4px; border-bottom: 1px dotted var(--mist); }
 .thread__back { flex: none; font-size: 11px; color: var(--stone); }
 [data-shift='dawn'] .thread__back { color: var(--ash); }
 .thread__back:hover { color: var(--color-accent); }
@@ -414,4 +415,4 @@ button.contact__head:hover .contact__name { text-decoration: underline; }
 .sched__row { display: flex; justify-content: space-between; gap: 6px; line-height: 16px; padding: 1px 0; border-bottom: 1px dotted var(--stone); }
 .sched__row--no { color: var(--mist); }
 .sched__state { font-family: var(--font-mono); font-size: 11px; }
-.kv__k { width: 56px; }
+.kv__k { width: 66px; white-space: nowrap; }
