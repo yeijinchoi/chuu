@@ -6,7 +6,7 @@ import {
 import { checkChoice, checkRequire, type CheckResult } from './rules';
 import { deriveRng, shuffle, pickOne, type Rng } from './rng';
 import type {
-  CloseId, ClientCard, CustomerDef, EncounterState, GreetStyle, ProbeId, Product, RuleId,
+  CloseId, ClientCard, CustomerDef, CustomerLines, CustomerReturnLines, EncounterState, GreetStyle, ProbeId, Product, RuleId,
 } from './types';
 
 /** 점수 상수 (GDD §5). 호감은 0~100으로 자른다. */
@@ -119,6 +119,22 @@ function narrate(ctx: Ctx, text: string | undefined): void {
   if (text) ctx.emit({ type: 'line', speaker: null, text });
 }
 
+type LineKey = keyof Omit<CustomerLines, 'violation'>;
+
+/** 재방문이면 returns의 대사를, 없으면 첫 방문 대사를 돌려준다 (3회째 → 2회째 → 첫 방문 순). */
+export function pickLine(ctx: Ctx, c: CustomerDef, key: LineKey | 'openingRegular'): string | undefined {
+  const visits = ctx.state.cards[c.id]?.visits ?? 1;
+  const chain: (CustomerReturnLines | undefined)[] = [];
+  if (visits >= 3) chain.push(c.returns?.['3']);
+  if (visits >= 2) chain.push(c.returns?.['2']);
+  for (const r of chain) {
+    const v = r?.[key];
+    if (v) return v;
+  }
+  if (key === 'openingRegular') return undefined;
+  return c.lines[key];
+}
+
 export function ensureCard(ctx: Ctx, c: CustomerDef): ClientCard {
   let card = ctx.state.cards[c.id];
   if (!card) {
@@ -146,6 +162,7 @@ export function startEncounter(ctx: Ctx, slotIndex: number): void {
     outcome: 'pending', uninvited: slot.uninvited, forgotten: slot.forgotten,
   };
   card.lastVisitDay = s.day;
+  card.visits = (card.visits ?? 0) + 1;
   card.lastContactDay = s.day;
   setClock(ctx, slot.time);
   setPhase(ctx, { kind: 'encounter', slotIndex, enc: e });
@@ -153,7 +170,10 @@ export function startEncounter(ctx: Ctx, slotIndex: number): void {
   ctx.emit({ type: 'affinity', delta: 0, value: e.affinity });
   if (slot.shift === 'dawn') narrate(ctx, c.entranceNote);
   emitReaction(ctx, c, c.reactions?.enter);
-  say(ctx, c, slot.uninvited ? (c.lines.openingUninvited ?? c.lines.opening) : c.lines.opening);
+  const registered = isRegistered(card);
+  say(ctx, c, slot.uninvited
+    ? (pickLine(ctx, c, 'openingUninvited') ?? pickLine(ctx, c, 'opening'))
+    : (registered ? pickLine(ctx, c, 'openingRegular') : undefined) ?? pickLine(ctx, c, 'opening'));
   if (vip) say(ctx, c, c.care.vipReveal);
   reactThought(ctx, c, 'opening');
   if (slot.forgotten) {
@@ -231,7 +251,7 @@ export function doProbe(ctx: Ctx, probe: ProbeId): boolean {
   const card = ensureCard(ctx, c);
   const chk: CheckResult = checkChoice(c, 'probe', probe, ctx.data.rules, e.shift);
   e.probesUsed.push(probe);
-  const answer = c.lines[probe];
+  const answer = pickLine(ctx, c, probe);
 
   if (chk?.kind === 'rule') {
     // 답변을 먼저 보여 주고 이어서 위반 이벤트
@@ -296,7 +316,7 @@ export function doClose(ctx: Ctx, choice: CloseId): boolean {
 
   if (e.affinity < SCORE.sold) {
     e.outcome = 'walked';
-    say(ctx, c, c.lines.fail);
+    say(ctx, c, pickLine(ctx, c, 'fail'));
     narrate(ctx, c.lines.failNote);
     finish(ctx, e);
     return true;
@@ -317,7 +337,7 @@ function recordSale(ctx: Ctx, e: EncounterState, c: CustomerDef): void {
   const product = ctx.products[e.chosenProductId as string] as Product;
   e.outcome = 'sold';
   s.salesCount++;
-  say(ctx, c, c.lines.success);
+  say(ctx, c, pickLine(ctx, c, 'success'));
   narrate(ctx, c.lines.successNote);
   if (e.shift === 'afternoon') {
     s.revenue += product.price;
@@ -359,8 +379,9 @@ function finish(ctx: Ctx, e: EncounterState): void {
   const c = ctx.customers[e.customerId] as CustomerDef;
   e.step = 'done';
   if (e.outcome === 'sold' || e.outcome === 'walked') {
-    say(ctx, c, c.lines.farewell);
-    if (c.lines.farewell) reactThought(ctx, c, 'farewell');
+    const farewell = pickLine(ctx, c, 'farewell');
+    say(ctx, c, farewell);
+    if (farewell) reactThought(ctx, c, 'farewell');
   }
   if (e.outcome === 'sold') {
     emitReaction(ctx, c, c.reactions?.leave);

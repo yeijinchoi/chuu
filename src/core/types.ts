@@ -29,6 +29,7 @@ export interface ClientCard {
   lastContactDay: number | null;
   sentToday: number; // 과잉 연락 판정 (관리 문자만 센다)
   lastVisitDay?: number; // 마지막으로 응대한 날
+  visits?: number; // 응대한 횟수 (재방문 대사 선택용)
   drink?: Hospitality['pref']; // 대접 취향 (undefined = 아직 모름)
   lastThanksDay?: number; // 마지막으로 감사 문자를 보낸 날
 }
@@ -111,6 +112,9 @@ export interface CustomerLines {
   violation: Partial<Record<string, string>>; // 키: 수칙 번호 문자열 또는 'manner'
 }
 
+/** 재방문 대사 (SCRIPT_DAY2_3 §0). 키는 방문 횟수("2", "3"). 적히지 않은 키는 첫 방문 대사를 쓴다. */
+export type CustomerReturnLines = Partial<Omit<CustomerLines, 'violation'>> & { openingRegular?: string };
+
 /** ★ 손님별 반응 대사 (SCRIPT_DAY1 §0). 문자열이 "> "로 시작하면 지문, 아니면 손님의 대사다. 없으면 strings의 공통 반응을 쓴다. */
 export interface CustomerReactions {
   enter?: string; // 입장 지문
@@ -157,6 +161,7 @@ export interface CustomerDef {
   draftLines?: boolean; // 기획 문서에 없는 대사를 구현자가 채웠다
   reactions?: CustomerReactions;
   lines: CustomerLines;
+  returns?: Partial<Record<'2' | '3', CustomerReturnLines>>;
   vvip?: boolean; // 처음부터 VIP 대접을 받는 손님
   hospitality?: Hospitality;
 }
