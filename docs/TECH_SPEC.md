@@ -344,7 +344,7 @@ GDD §6, §7, §11, §12의 표를 **그대로** JSON으로 옮긴다. 대사 �
 ### 6-1. 손님 스프라이트 (컨셉 아트 기반)
 - 사람 모습 손님 12명은 코드로 그리지 않고 **캐릭터 시트 이미지**에서 만든다. 그림체를 컨셉 아트와 같게 맞추기 위해서다. 배경, 크리처 4종, 상품 아이콘은 계속 코드로 그린다.
 - 원본: `docs/concept/sheets/sheet-{a,b,c}-open.png`(4명씩 같은 크기·구도·얼굴 구조로 한 장에 그린 시트), `-closed.png`(눈만 감은 같은 시트), `-alpha.png`(배경 제거 알파).
-- 변환: `python3 tools/import_customer_sprites.py` → `public/art/customers/<id>.png`, `<id>.blink.png`(눈 감은 프레임에서 달라진 픽셀만), `manifest.json`(장면 좌표, 숨쉬기 분할선). 모든 시트를 같은 배율로 줄여 도트 밀도를 통일한다.
+- 변환: `python3 tools/import_customer_sprites.py` → `public/art/customers/<id>.png`, `<id>.blink.png`(눈 감은 프레임에서 달라진 픽셀만), `manifest.json`(장면 좌표, 숨쉬기 분할선). 모든 시트를 같은 배율로 줄여 도트 밀도를 통일한다. 색은 매장 팔레트(Dusk Mono 24)에 Lab 거리로 맞추고(포인트 색은 원본 채도가 충분할 때만), 고립 잡티를 지우고, 바깥 테두리를 한 단계 어둡게(sel-out) 둘러 배경과 같은 도트 질감으로 만든다.
 - 새 손님을 추가할 때는 기존 시트를 참고 이미지로 넣어 같은 형식의 시트를 만들고, 스크립트의 `SHEET_IDS`에 등록한다.
 - **대기 동작(라이브2D 느낌)**: 2.5~5.5초마다 0.12초 눈 깜빡임, 3.2초 주기로 상체 1도트 숨쉬기(카운터 위 손은 고정). 마시 씨(눈꺼풀 없음), 얼굴 없는 여자, 가면 배우는 깜빡이지 않는다. `prefers-reduced-motion`이면 숨쉬기를 끈다.
 - mood가 calm이 아니면 스프라이트 픽셀을 가장 가까운 팔레트 키로 보고 장면과 같은 mood 규칙으로 바꾼다(`src/render/sprites.ts`).

@@ -10,14 +10,55 @@
 규칙
 - 모든 시트를 같은 배율(SCALE)로 줄인다 → 손님마다 도트 밀도와 머리 크기가 같다.
 - 배경색에서 먼 픽셀을 캐릭터로 보고, 열(column)별 가장 큰 덩어리만 남긴 뒤 안쪽 구멍을 채운다.
-- 색은 시트 전체에서 48색으로 정리한다(시트 안 캐릭터끼리 팔레트 공유, 디더 없음).
+- 색은 매장 팔레트(Dusk Mono 24)에 Lab 거리로 맞춘다. 그래야 배경과 같은 색·같은 또렷함으로 섞인다.
+- 바깥 테두리는 한 단계 어두운 색(sel-out)으로 둘러 배경 물체와 같은 외곽 처리를 한다.
 - 스프라이트 아래 끝(카운터에 올린 손)을 장면의 COUNTER_Y에 맞추고 가로 중앙(CUSTOMER_X)에 둔다.
 """
-import json, os
+import json, math, os, re
 from collections import deque
 from PIL import Image, ImageChops
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+# ---- 매장 팔레트(Dusk Mono 24)에 맞추기: Lab 거리, 포인트 색은 원본 채도가 충분할 때만, 고립 잡티 제거, 바깥 테두리 한 단계 어둡게(sel-out)
+pal=re.findall(r"'?([\w-]+)'?: '#([0-9a-f]{6})'", open(os.path.join(ROOT, 'src/render/palette.ts')).read())
+cols={k:tuple(int(h[i:i+2],16) for i in (0,2,4)) for k,h in pal}
+def lab(c):
+    def f(u):
+        u/=255; return ((u+0.055)/1.055)**2.4 if u>0.04045 else u/12.92
+    r,g,b=map(f,c)
+    X=(0.4124*r+0.3576*g+0.1805*b)/0.95047; Y=0.2126*r+0.7152*g+0.0722*b; Z=(0.0193*r+0.1192*g+0.9505*b)/1.08883
+    g2=lambda t: t**(1/3) if t>0.008856 else 7.787*t+16/116
+    return (116*g2(Y)-16, 500*(g2(X)-g2(Y)), 200*(g2(Y)-g2(Z)))
+L={k:lab(v) for k,v in cols.items()}
+ACCENT={k for k in cols if k.split('-')[0] in ('rose','brass','steel','wine')}
+memo={}
+def nearest(c, chroma_min=14):
+    if c in memo: return memo[c]
+    lc=lab(c); chroma=math.hypot(lc[1],lc[2])
+    cand=[k for k in L if chroma>=chroma_min or k not in ACCENT]
+    best=min(cand,key=lambda k:(lc[0]-L[k][0])**2*1.0+(lc[1]-L[k][1])**2+(lc[2]-L[k][2])**2)
+    memo[c]=best; return best
+DARK={'paper':'bone','bone':'ash','ash':'mist','mist':'stone','stone':'dusk','dusk':'shadow','shadow':'ink','ink':'ink','skin-c':'skin-a','skin-a':'skin-b','skin-b':'stone','hair':'ink','rose':'rose-dark','rose-light':'rose','rose-dark':'wine-dark','taupe':'stone','brass':'brass-dark','brass-light':'brass','brass-dark':'shadow','steel':'steel-dark','steel-light':'steel','steel-dark':'dusk','wine':'wine-dark','wine-dark':'ink'}
+def convert(rgb, mask, x0, x1, selout=True):
+    w,h=rgb.size; ip=rgb.load(); keys={}
+    for y in range(h):
+        for x in range(x0,x1):
+            if mask[y][x]: keys[(x,y)]=nearest(ip[x,y])
+    # 고립 잡티 제거: 4방향 이웃이 모두 다른 키면 가장 많은 이웃 키로
+    for (x,y),k in list(keys.items()):
+        nb=[keys.get((x+dx,y+dy)) for dx,dy in((1,0),(-1,0),(0,1),(0,-1))]
+        nb=[n for n in nb if n]
+        if len(nb)>=3 and k not in nb:
+            keys[(x,y)]=max(set(nb),key=nb.count)
+    if selout:
+        out={}
+        for (x,y),k in keys.items():
+            edge=any((x+dx,y+dy) not in keys for dx,dy in((1,0),(-1,0),(0,1),(0,-1)))
+            out[(x,y)]=DARK[k] if edge else k
+        keys=out
+    return keys
+
 SHEETS = os.path.join(ROOT, 'docs/concept/sheets')
 OUT = os.path.join(ROOT, 'public/art/customers')
 SCALE = 0.15          # 시트 1344px → 약 200px. 머리~허리가 장면에서 약 80px
@@ -81,13 +122,8 @@ def process_sheet(key, ids, manifest):
     opened = Image.open(os.path.join(SHEETS, f'sheet-{key}-open.png')).convert('RGB')
     size = (round(opened.width * SCALE), round(opened.height * SCALE))
     small = opened.resize(size, Image.BOX)
-    pal = small.quantize(colors=48, method=Image.Quantize.MEDIANCUT, dither=Image.Dither.NONE)
-    q = pal.convert('RGB')
     closed_path = os.path.join(SHEETS, f'sheet-{key}-closed.png')
-    qc = None
-    if os.path.exists(closed_path):
-        closed = Image.open(closed_path).convert('RGB').resize(size, Image.BOX)
-        qc = closed.quantize(palette=pal, dither=Image.Dither.NONE).convert('RGB')
+    small_closed = Image.open(closed_path).convert('RGB').resize(size, Image.BOX) if os.path.exists(closed_path) else None
     w, h = size
     alpha_path = os.path.join(SHEETS, f'sheet-{key}-alpha.png')
     if os.path.exists(alpha_path):
@@ -101,19 +137,21 @@ def process_sheet(key, ids, manifest):
         comps = sorted(components(mask, w, h, x0, x1), key=len, reverse=True)
         keep = {p for c in comps if len(c) >= 0.2 * len(comps[0]) for p in c}
         keep = fill_holes(keep, w, h)
-        xs = [x for x, _ in keep]; ys = [y for _, y in keep]
+        cmask = [[(x, y) in keep for x in range(w)] for y in range(h)]
+        keys = convert(small, cmask, x0, x1)
+        ckeys = convert(small_closed, cmask, x0, x1) if small_closed and cid not in NO_BLINK else None
+        xs = [x for x, _ in keys]; ys = [y for _, y in keys]
         bx0, by0, bx1, by1 = min(xs), min(ys), max(xs) + 1, max(ys) + 1
         sw, sh = bx1 - bx0, by1 - by0
         sprite = Image.new('RGBA', (sw, sh), (0, 0, 0, 0))
         blink = Image.new('RGBA', (sw, sh), (0, 0, 0, 0))
-        sp, bp, qp = sprite.load(), blink.load(), q.load()
-        qcp = qc.load() if qc else None
+        sp, bp = sprite.load(), blink.load()
         blink_px = 0
-        for x, y in keep:
-            sp[x - bx0, y - by0] = qp[x, y] + (255,)
-            # 깜빡임: 눈 높이(위 15~45%)에서 크게 달라진 픽셀만. 미세한 색 차이는 무시해 머리카락이 떨리지 않게 한다
-            if qcp and cid not in NO_BLINK and sh * 0.15 < (y - by0) < sh * 0.45 and sum(abs(qcp[x, y][k] - qp[x, y][k]) for k in range(3)) > 90:
-                bp[x - bx0, y - by0] = qcp[x, y] + (255,)
+        for (x, y), k in keys.items():
+            sp[x - bx0, y - by0] = cols[k] + (255,)
+            # 깜빡임: 눈 높이(위 15~45%)에서 팔레트 키가 바뀐 픽셀만
+            if ckeys and sh * 0.15 < (y - by0) < sh * 0.45 and ckeys.get((x, y), k) != k:
+                bp[x - bx0, y - by0] = cols[ckeys[(x, y)]] + (255,)
                 blink_px += 1
         sprite.save(os.path.join(OUT, f'{cid}.png'))
         entry = {'x': CUSTOMER_X - sw // 2, 'y': COUNTER_Y + 2 - sh, 'w': sw, 'h': sh,
