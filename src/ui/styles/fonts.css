@@ -1,0 +1,36 @@
+/* Galmuri (OFL) — 로컬 번들. Vite가 woff2를 dist로 복사한다. CDN 없음. */
+@font-face {
+  font-family: 'Galmuri11';
+  src: url('../../../node_modules/galmuri/dist/Galmuri11.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Galmuri11';
+  src: url('../../../node_modules/galmuri/dist/Galmuri11-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Galmuri14';
+  src: url('../../../node_modules/galmuri/dist/Galmuri14.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Galmuri9';
+  src: url('../../../node_modules/galmuri/dist/Galmuri9.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'GalmuriMono11';
+  src: url('../../../node_modules/galmuri/dist/GalmuriMono11.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}

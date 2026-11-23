@@ -1,0 +1,156 @@
+/* 디자인 토큰 — DESIGN_SYSTEM §3, §5, §6. 컴포넌트는 의미 토큰(--color-*)만 쓴다. */
+:root {
+  /* 원시 팔레트: Dusk Mono 16 (src/render/palette.ts와 같은 값) */
+  --ink: #0d0b0f;
+  --shadow: #1c1820;
+  --dusk: #2e2833;
+  --stone: #4a4350;
+  --mist: #6f6775;
+  --ash: #9a929e;
+  --bone: #cfc6c4;
+  --paper: #ece4da;
+  --rose: #b85c78;
+  --brass: #a88c52;
+  --steel: #7a9cb0;
+  --wine: #9e2236;
+  --skin-a: #d8c2b4;
+  --skin-b: #a8887a;
+  --taupe: #a89a88;
+  --hair: #3a2e2a;
+
+  /* 의미 토큰 */
+  --color-bg: var(--ink);
+  --color-surface: var(--shadow);
+  --color-surface-raised: var(--dusk);
+  --color-border: var(--stone);
+  --color-trim: var(--brass);
+  --color-trim-shadow: var(--stone);
+  --color-text: var(--paper);
+  --color-text-muted: var(--ash);
+  --color-accent: var(--rose);
+  --color-accent-text: var(--paper);
+  --color-money: var(--brass);
+  --color-success: var(--steel);
+  --color-warning: var(--brass);
+  --color-danger: var(--wine);
+  --color-info: var(--steel);
+  --color-phone-body: var(--stone);
+  --color-phone-screen: var(--bone);
+  --color-phone-text: var(--ink);
+  --color-bubble-out: var(--rose);
+  --color-bubble-out-text: var(--paper);
+  --color-bubble-in: var(--paper);
+  --color-paper: var(--paper);
+  --color-paper-ink: var(--dusk);
+
+  /* 글꼴 */
+  --font-body: 'Galmuri11', 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
+  --font-logo: 'Galmuri14', 'Galmuri11', 'Malgun Gothic', sans-serif;
+  --font-mono: 'GalmuriMono11', 'Galmuri11', monospace;
+  --font-small: 'Galmuri9', 'Galmuri11', sans-serif;
+
+  /* 간격·모양 */
+  --space-1: 2px;
+  --space-2: 4px;
+  --space-3: 8px;
+  --space-4: 12px;
+  --space-5: 16px;
+  --space-6: 24px;
+  --border-w: 2px;
+  --radius: 0;
+  --shadow-hard: 0 2px 0 var(--ink);
+
+  /* z-index */
+  --z-scene: 0;
+  --z-hud: 10;
+  --z-dialogue: 20;
+  --z-overlay: 30;
+  --z-phone: 40;
+  --z-modal: 50;
+  --z-fx: 60;
+
+  /* 모션 */
+  --dur-fast: 80ms;
+  --dur-base: 160ms;
+  --dur-slow: 320ms;
+  --ease-pixel: steps(4, end);
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* 교대 테마 (§3-3): 새벽 업무폰은 검은 수첩 */
+[data-shift='dawn'] {
+  --color-phone-body: var(--dusk);
+  --color-phone-screen: var(--shadow);
+  --color-phone-text: var(--paper);
+  --color-bubble-in: var(--stone);
+}
+
+/* 분위기 테마 (§3-4): 팔레트 한 단계 = 무채색 8단계 중 한 칸. 최선의 CSS 변수 교체 */
+[data-mood='uneasy'] {
+  --color-trim: var(--mist);
+  --color-money: var(--mist);
+  --color-warning: var(--mist);
+  --color-surface-raised: var(--shadow);
+  --color-border: var(--dusk);
+  --color-trim-shadow: var(--dusk);
+  --color-text: var(--bone);
+  --color-text-muted: var(--mist);
+}
+
+[data-mood='dread'],
+[data-mood='collapse'] {
+  --color-trim: var(--stone);
+  --color-trim-shadow: var(--shadow);
+  --color-money: var(--ash);
+  --color-warning: var(--ash);
+  --color-success: var(--ash);
+  --color-info: var(--ash);
+  --color-accent: var(--wine);
+  --color-bubble-out: var(--wine);
+  --color-surface: var(--ink);
+  --color-surface-raised: var(--shadow);
+  --color-border: var(--shadow);
+  --color-text: var(--ash);
+  --color-text-muted: var(--stone);
+}
+
+/* breach: ink/wine 2색 + paper 하이라이트 */
+[data-mood='breach'] {
+  --color-bg: var(--ink);
+  --color-surface: var(--ink);
+  --color-surface-raised: var(--wine);
+  --color-border: var(--wine);
+  --color-trim: var(--wine);
+  --color-trim-shadow: var(--ink);
+  --color-text: var(--paper);
+  --color-text-muted: var(--paper);
+  --color-accent: var(--wine);
+  --color-money: var(--paper);
+  --color-warning: var(--wine);
+  --color-success: var(--paper);
+  --color-info: var(--paper);
+  --color-bubble-out: var(--wine);
+  --color-phone-body: var(--ink);
+  --color-phone-screen: var(--ink);
+  --color-phone-text: var(--paper);
+  --color-bubble-in: var(--ink);
+}
+
+/* 모션 줄이기: 슬라이드 즉시, 흔들림 없음, 타자기 효과 끔 */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-fast: 0ms;
+    --dur-base: 0ms;
+    --dur-slow: 0ms;
+    --ease-pixel: steps(1, end);
+    --ease-out: steps(1, end);
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0ms !important;
+    scroll-behavior: auto !important;
+  }
+}

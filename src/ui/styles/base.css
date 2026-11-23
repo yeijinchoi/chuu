@@ -1,0 +1,107 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  filter: none;
+  backdrop-filter: none;
+}
+
+html,
+body {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-body);
+  font-size: 11px;
+  line-height: 16px;
+  -webkit-font-smoothing: none;
+  font-smooth: never;
+  text-rendering: optimizeSpeed;
+}
+
+#app {
+  position: fixed;
+  inset: 0;
+  background: var(--color-bg);
+}
+
+canvas {
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  image-rendering: pixelated;
+}
+
+/* 로딩 화면 (DESIGN_SYSTEM §8) */
+.loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-4);
+  background: var(--color-bg);
+  color: var(--color-text);
+  z-index: var(--z-modal);
+}
+.loading__text {
+  font-family: var(--font-body);
+  font-size: 11px;
+  line-height: 16px;
+}
+.loading__bar {
+  width: 160px;
+  height: 8px;
+  border: var(--border-w) solid var(--color-border);
+  padding: 0;
+  background: var(--color-surface);
+}
+.loading__fill {
+  height: 100%;
+  width: 0;
+  background: var(--color-text);
+}
+
+/* 글꼴 실패 안내 */
+.notice {
+  position: absolute;
+  right: var(--space-3);
+  top: var(--space-3);
+  z-index: var(--z-fx);
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-surface);
+  border: var(--border-w) solid var(--color-border);
+  color: var(--color-text-muted);
+  font-size: 11px;
+  line-height: 16px;
+}
+
+/* 무대 */
+.stage-wrap {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+.stage {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 640px;
+  height: 360px;
+  flex: none;
+  overflow: hidden;
+  background: var(--color-bg);
+  transform: translate(-50%, -50%);
+  transform-origin: center center;
+}
+.stage__canvas {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 640px;
+  height: 360px;
+  z-index: var(--z-scene);
+}
