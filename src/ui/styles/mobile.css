@@ -170,3 +170,4 @@ html[data-layout='mobile'] .ledger .kv__k { width: auto; flex: 1; }
 html[data-layout='mobile'] .ledger__line .kv__k { flex: none; }
 html[data-layout='mobile'] .ledger__line { flex-wrap: wrap; gap: var(--space-2) var(--space-4); }
 html[data-layout='mobile'] .stamp { position: static; align-self: flex-end; margin: 0 var(--space-3) var(--space-3); width: 64px; height: 64px; font-size: 22px; }
+html[data-layout='mobile'] .bgm-toggle { top: calc(var(--m-safe-top) + 14px); right: 72px; bottom: auto; width: 32px; height: 32px; }

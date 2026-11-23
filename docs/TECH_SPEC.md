@@ -414,3 +414,8 @@ interface StorageAdapter { load(): SaveV1 | null | 'corrupt'; save(s: SaveV1): b
 - **트로피**: 엔딩 기록은 core가 아니라 UI의 별도 저장 키(`closing-time.trophies.v1`)에 둔다.
 - **환경 램프**: 팔레트 `oxd/oxm/oxw/oxl`은 장면 벽·바닥 전용(DESIGN_SYSTEM §3-1).
 - **제안 단계 (거절·다시 뽑기)**: 손님이 원하는 상품은 카테고리·색(제한이 없으면 카테고리만)·예산이 모두 맞는 상품이다(`classifyProposal === 'perfect'`). 그 밖의 상품을 권하면 호감이 깎이고(다른 카테고리 −15, 색 불일치 −10, 예산 초과 −15) 그 상품은 거절되어 목록에서 빠지며 제안 단계에 머문다(`EncounterState.rejected`). 호감이 0이 되거나 보여 줄 상품이 없으면 손님이 돌아선다. `{ type: 'reroll' }`로 거절되지 않은 상품 중 무작위 3장을 다시 뽑을 수 있다(응대당 최대 3번, `SCORE.maxRerolls`). 수칙 위반 판정(수칙 10 등)이 거절 판정보다 먼저다.
+
+## 부록. 배경음악
+- 곡 4개(`public/audio/loop-{title,afternoon,dawn,finale}.mp3`, 각 약 40~57초 반복). 타이틀·엔딩 = title, 오후 = afternoon, 새벽 = dawn, 04:44·마지막 밤 = finale. 장면이 바뀌면 1.6초 교차 페이드(`src/ui/bgm.ts`).
+- 브라우저 정책상 첫 클릭·키 입력 뒤에 시작한다. 음소거는 M 키 또는 구석의 ♪ 버튼이고 저장소에 기억한다.
+- 원곡은 Higgsfield의 ElevenLabs Music v2.5(연주곡, 반복용 프롬프트)로 만들었고, `tools/make_bgm_loops.py`가 처음 3초와 끝 3초를 겹쳐 끊김 없이 반복되게 한다. 곡을 바꾸려면 새 원곡을 같은 이름으로 넣고 이 스크립트를 다시 돌린다.

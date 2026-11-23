@@ -6,6 +6,7 @@ import { JsonStorageAdapter } from '../core/save';
 import type { Action, GameEvent, GreetStyle, ProbeId, CloseId, Mood as CoreMood, EncounterState, CustomerDef } from '../core/types';
 import type { Mood } from '../render/palette';
 import type { Renderer } from '../render/renderer';
+import { Bgm } from './bgm';
 import { Bridge, type EventSink, type Flow } from './bridge';
 import { ChoicePanel, Dialogue, type ChoiceItem } from './dialogue';
 import { DisplayPanel } from './display';
@@ -78,6 +79,8 @@ export function startApp(stage: Stage, renderer: Renderer, opts: { debug: boolea
   // 대사창·선택지는 무대 바로 아래에 둔다: 데스크톱은 뷰포트 위에 겹치고, 모바일은 장면 아래로 흐른다(CSS)
   stage.stage.append(choices.root, dialogue.root, toasts);
 
+  const bgm = new Bgm();
+  document.body.append(bgm.button);
   const display = new DisplayPanel(stage.display);
   const mobile = (): boolean => stage.layout.mobile;
   let overlay: Overlay | null = null;
@@ -285,7 +288,16 @@ export function startApp(stage: Stage, renderer: Renderer, opts: { debug: boolea
   }
 
   /** 단계가 바뀌었다(이벤트 순서대로 불린다): 04:44는 폰이 강제로 열리고 문 유리의 실루엣이 짙어진다 */
+  /** 장면에 맞는 곡: 오후 · 새벽 · 04:44(마지막 밤) · 타이틀·엔딩 */
+  function syncBgm(kind: string): void {
+    const gs = game.getState();
+    if (kind === 'title' || kind === 'ending' || kind === 'badEnding') bgm.set('title');
+    else if (kind === 'closingText' || kind === 'finale') bgm.set('finale');
+    else bgm.set(gs.shift === 'dawn' ? 'dawn' : 'afternoon');
+  }
+
   function onPhase(kind: string): void {
+    syncBgm(kind);
     const gs = game.getState();
     if (kind === 'briefing' && gs.shift === 'afternoon' && gs.day > 1) phone.newDay();
     if (kind === 'finale') { renderer.setCustomer(SEOYUN_SPRITE as never); hud.hidden = true; dialogue.hide(); }
@@ -537,6 +549,7 @@ export function startApp(stage: Stage, renderer: Renderer, opts: { debug: boolea
       if (phone.closingKey(n) || (display.proposing ? display.pick(n) : choices.pick(n))) ev.preventDefault();
       return;
     }
+    if (ev.key === 'm' || ev.key === 'M') { bgm.toggle(); return; }
     if (ev.key === 'Escape' && mobile()) { sheets.close(); return; }
     if (ev.key === 'p' || ev.key === 'P') {
       if (mobile()) sheets.toggle('phone'); else phone.openTab(phone.tab, true);
@@ -546,6 +559,7 @@ export function startApp(stage: Stage, renderer: Renderer, opts: { debug: boolea
     }
   });
 
+  bgm.set('title');
   setMood('calm');
   setShift('afternoon');
   renderer.setCustomer(null);
