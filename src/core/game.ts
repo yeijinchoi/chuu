@@ -4,7 +4,7 @@ import {
 } from './dayFlow';
 import { makeLookups, str, type Ctx } from './ctx';
 import {
-  doClose, doGreet, doProbe, doPropose, doRegularOffer, stageChoices,
+  doClose, doGreet, doProbe, doPropose, doRegularOffer, doServe, stageChoices,
 } from './encounter';
 import {
   canPlaceRedBox, careBlock, checkSendCare, checkSendText, doChooseReply, doPlaceRedBox, doSendCare, doSendText, textBlock,
@@ -122,6 +122,8 @@ export class Game {
         return finishAftercare(ctx, this.storage);
       case 'greet':
         return doGreet(ctx, a.style);
+      case 'serve':
+        return doServe(ctx, a.drink);
       case 'probe':
         return doProbe(ctx, a.probe);
       case 'propose':
@@ -203,6 +205,7 @@ export class Game {
         const e = p.enc;
         const ch = stageChoices(e);
         if (e.step === 'greet') for (const style of ch.greet) out.push({ type: 'greet', style });
+        else if (e.step === 'serve') for (const drink of ['water', 'chocolate', 'none'] as const) out.push({ type: 'serve', drink });
         else if (e.step === 'probe') for (const probe of ch.probes) out.push({ type: 'probe', probe });
         else if (e.step === 'propose') for (const productId of e.offered) out.push({ type: 'propose', productId });
         else if (e.step === 'close') for (const choice of ch.closes) out.push({ type: 'close', choice });

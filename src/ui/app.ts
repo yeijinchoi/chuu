@@ -18,6 +18,7 @@ import type { Stage } from './stage';
 
 const PROBES: ProbeId[] = ['askCategory', 'askOccasion', 'askBudget', 'observe'];
 const GREETS: GreetStyle[] = ['warm', 'quiet', 'direct'];
+const DRINKS: ('water' | 'chocolate' | 'none')[] = ['water', 'chocolate', 'none'];
 const CLOSES: CloseId[] = ['tryOn', 'boxRed', 'boxGold', 'checkout'];
 const STEPS: EncounterState['step'][] = ['greet', 'probe', 'propose', 'close'];
 const STEP_KEYS = ['greet', 'probe', 'propose', 'close'] as const;
@@ -284,7 +285,8 @@ export function startApp(stage: Stage, renderer: Renderer, opts: { debug: boolea
   }
 
   function setStepper(step: EncounterState['step']): void {
-    const cur = step === 'regularOffer' ? 3 : STEPS.indexOf(step);
+    // 대접(serve)은 인사 단계 안에서 일어나는 일이라 인사 칸을 켠다
+    const cur = step === 'regularOffer' ? 3 : step === 'serve' ? 0 : STEPS.indexOf(step);
     stepper.replaceChildren();
     stepper.setAttribute('aria-label', t('stepper.label'));
     STEP_KEYS.forEach((k, i) => {
@@ -430,6 +432,10 @@ export function startApp(stage: Stage, renderer: Renderer, opts: { debug: boolea
       case 'greet':
         once('greet', t('tutorial.greet'), 'serve');
         pickChoices(GREETS.map((style) => ({ label: t(`choices.greet.${style}`), pick: () => bridge.dispatch({ type: 'greet', style }) })));
+        break;
+      case 'serve':
+        once('serve', t('tutorial.serve'), 'serve');
+        pickChoices(DRINKS.map((drink) => ({ label: t(`choices.serve.${drink}`), pick: () => bridge.dispatch({ type: 'serve', drink }) })));
         break;
       case 'probe':
         once('probe', t('tutorial.probe'), 'serve');

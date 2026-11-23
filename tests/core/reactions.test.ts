@@ -27,6 +27,7 @@ describe('★ 반응 대사와 속마음', () => {
   it('손님 데이터에 없는 반응은 공통 반응으로 대체한다', () => {
     const g = rig('jin', 'afternoon');
     act(g, { type: 'greet', style: 'quiet' });
+    act(g, { type: 'serve', drink: 'water' });
     act(g, { type: 'probe', probe: 'askCategory' });
     act(g, { type: 'probe', probe: 'askOccasion' });
     const wrong = encOf(g).offered.find((id) => data.products.find((p) => p.id === id)!.category !== 'jewelry')!;
@@ -55,6 +56,7 @@ describe('★ 반응 대사와 속마음', () => {
   it('진영숙 관찰 뒤 속마음, 작별 뒤 속마음', () => {
     const g = rig('jin', 'afternoon');
     act(g, { type: 'greet', style: 'quiet' });
+    act(g, { type: 'serve', drink: 'water' });
     const ev = act(g, { type: 'probe', probe: 'observe' });
     expect(ev).toContainEqual({ type: 'thought', text: '빠진 한 알을 채우러 오셨구나.' });
   });

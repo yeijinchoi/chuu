@@ -18,6 +18,8 @@ function goldenPath(seed: number): { events: GameEvent[]; game: ReturnType<typeo
     order.push(encOf(g).customerId);
     const c = data.customers.find((x) => x.id === encOf(g).customerId)!;
     A({ type: 'greet', style: c.greetPref });
+    // VIP 대접: 진영숙(VVIP)만 이 단계가 있다. 메모대로 탄산수.
+    if (encOf(g).step === 'serve') A({ type: 'serve', drink: 'water' });
     A({ type: 'probe', probe: 'askCategory' });
     A({ type: 'probe', probe: 'askOccasion' });
     const e = encOf(g);

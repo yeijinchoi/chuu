@@ -7,7 +7,7 @@
   },
   {
     "id": "jin", "name": "진영숙 (진 마담)", "book": "afternoon",
-    "memo": "VVIP. 말 많은 거 싫어하심.",
+    "memo": "VVIP. 말 많은 거 싫어하심. 탄산수. 레몬 없이.",
     "customerId": "jin", "prefers": "private", "dislikes": "new_arrival",
     "replies": { "prefer": "다섯 시 반. 조용히 보고 싶네요.", "neutral": "시간 되면 들를게요.", "dislike": "단체 문자는 사양할게요." }
   },

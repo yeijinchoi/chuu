@@ -29,6 +29,7 @@ export interface ClientCard {
   lastContactDay: number | null;
   sentToday: number; // 과잉 연락 판정 (관리 문자만 센다)
   lastVisitDay?: number; // 마지막으로 응대한 날
+  drink?: Hospitality['pref']; // 대접 취향 (undefined = 아직 모름)
   lastThanksDay?: number; // 마지막으로 감사 문자를 보낸 날
 }
 
@@ -123,6 +124,14 @@ export interface CustomerReactions {
   thought?: { opening?: string; observe?: string; farewell?: string; sold?: string };
 }
 
+/** VIP 웰컴 드링크 (GDD §5 단계 1-1). pref: 맞는 대접. any는 둘 다 맞고, taboo는 아무것도 내지 않는 것이 맞다. */
+export interface Hospitality {
+  pref: 'water' | 'chocolate' | 'any' | 'taboo' | 'none';
+  match: string;
+  mismatch: string;
+  none?: string;
+}
+
 export interface CustomerDef {
   id: string;
   name: string;
@@ -148,6 +157,8 @@ export interface CustomerDef {
   draftLines?: boolean; // 기획 문서에 없는 대사를 구현자가 채웠다
   reactions?: CustomerReactions;
   lines: CustomerLines;
+  vvip?: boolean; // 처음부터 VIP 대접을 받는 손님
+  hospitality?: Hospitality;
 }
 
 export interface ContactDef {
@@ -232,7 +243,7 @@ export type Phase =
 export interface EncounterState {
   customerId: string;
   shift: Shift;
-  step: 'greet' | 'probe' | 'propose' | 'close' | 'regularOffer' | 'done';
+  step: 'greet' | 'serve' | 'probe' | 'propose' | 'close' | 'regularOffer' | 'done';
   affinity: number;
   probesUsed: ProbeId[];
   offered: string[];
@@ -303,6 +314,7 @@ export type Action =
   | { type: 'placeRedBox' }
   | { type: 'finishAftercare' }
   | { type: 'greet'; style: GreetStyle }
+  | { type: 'serve'; drink: 'water' | 'chocolate' | 'none' }
   | { type: 'probe'; probe: ProbeId }
   | { type: 'propose'; productId: string }
   | { type: 'close'; choice: CloseId }

@@ -819,6 +819,7 @@ export class Phone {
       ['category', dept && card.wants ? `${dept} · ${card.wants}` : card.wants ?? dept],
       ['color', card.color ? t(`display.colors.${card.color}`) : undefined],
       ['budget', card.budget !== undefined ? won(card.budget) : undefined],
+      ['drink', card.drink ? t(`drinks.${card.drink}`) : undefined],
       ['occasion', card.occasion ? `${card.occasion.label} (${t('phone.dayN', { n: card.occasion.day })})` : undefined],
       ['notes', card.notes.length ? card.notes.join(' · ') : undefined],
       ['purchases', card.purchases.length ? card.purchases.map((x) => `${this.data.products.find((p) => p.id === x.productId)?.name ?? x.productId} (${t('phone.dayN', { n: x.day })})`).join(', ') : undefined],

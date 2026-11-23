@@ -150,6 +150,7 @@ describe('수칙 판정 (rules.json 데이터 기반, 범용 checkChoice)', () =
   it('오후 매너 실수: 호감 −10, mannerSlips++, 응대는 계속, 평정심 불변', () => {
     const g = rig('jin', 'afternoon');
     act(g, { type: 'greet', style: 'quiet' });
+    act(g, { type: 'serve', drink: 'water' });
     const before = encOf(g).affinity;
     const ev = act(g, { type: 'probe', probe: 'askBudget' });
     expect(ev.some((e) => e.type === 'mannerSlip')).toBe(true);

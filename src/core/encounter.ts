@@ -1,4 +1,4 @@
-import { fillCardFromProbe, newCard, registerRegular, isRegistered } from './care';
+import { applyScoreDelta, fillCardFromProbe, newCard, registerRegular, isRegistered } from './care';
 import { changeComposure, clamp, setClock, setPhase, str, type Ctx } from './ctx';
 import {
   emitReaction, react, reactClose, reactGreet, reactPropose, reactThought,
@@ -19,6 +19,12 @@ export const SCORE = {
   uninvitedComposure: -10,
   greetMatch: 15,
   greetMismatch: -10,
+  serveMatch: 10,
+  serveMismatch: -5,
+  serveNone: -5,
+  serveMismatchComposure: -5, // 새벽: 대접이 틀리면 호감 대신 평정심
+  serveTabooComposure: -10, // 문 밖의 손님: 무엇이든 내밀면
+  serveRelationship: 1,
   probe: 3,
   mannerSlip: -10,
   deptMatch: 20,
@@ -156,6 +162,12 @@ export function startEncounter(ctx: Ctx, slotIndex: number): void {
   }
 }
 
+/** VIP 이상(또는 VVIP)이고 대접 취향이 있는 손님에게만 대접 단계가 있다 */
+export function hasServeStep(c: CustomerDef, card: ClientCard | undefined): boolean {
+  const vip = card !== undefined && (card.tier === 'vip' || card.tier === 'lifetime');
+  return (vip || c.vvip === true) && c.hospitality !== undefined && c.hospitality.pref !== 'none';
+}
+
 export function doGreet(ctx: Ctx, style: GreetStyle): boolean {
   const e = enc(ctx);
   if (!e || e.step !== 'greet') return false;
@@ -164,6 +176,49 @@ export function doGreet(ctx: Ctx, style: GreetStyle): boolean {
   if (chk?.kind === 'rule') return violate(ctx, e, chk.rule);
   addAffinity(ctx, e, style === c.greetPref ? SCORE.greetMatch : SCORE.greetMismatch);
   reactGreet(ctx, c, style);
+  e.step = hasServeStep(c, ctx.state.cards[c.id]) ? 'serve' : 'probe';
+  return true;
+}
+
+/** 대접 취향과 맞는지. any는 둘 다, taboo는 아무것도 내지 않는 것만 맞다. */
+export function serveMatches(pref: NonNullable<CustomerDef['hospitality']>['pref'], drink: 'water' | 'chocolate' | 'none'): boolean {
+  if (pref === 'any') return drink !== 'none';
+  if (pref === 'taboo') return drink === 'none';
+  return drink === pref;
+}
+
+export function doServe(ctx: Ctx, drink: 'water' | 'chocolate' | 'none'): boolean {
+  const e = enc(ctx);
+  if (!e || e.step !== 'serve') return false;
+  const c = ctx.customers[e.customerId] as CustomerDef;
+  const h = c.hospitality;
+  if (!h) return false;
+  const card = ensureCard(ctx, c);
+  const match = serveMatches(h.pref, drink);
+  if (drink !== 'none') {
+    card.drink = h.pref;
+    ctx.emit({ type: 'cardUpdate', customerId: c.id, field: 'drink' });
+  }
+  if (match) {
+    addAffinity(ctx, e, SCORE.serveMatch);
+    emitReaction(ctx, c, h.match);
+    if (e.shift === 'afternoon' && drink !== 'none') {
+      const r = applyScoreDelta(card, SCORE.serveRelationship);
+      ctx.emit({ type: 'relationship', customerId: c.id, ...r });
+    }
+  } else if (drink === 'none') {
+    addAffinity(ctx, e, SCORE.serveNone);
+    emitReaction(ctx, c, h.none);
+  } else if (h.pref === 'taboo') {
+    changeComposure(ctx, SCORE.serveTabooComposure);
+    emitReaction(ctx, c, h.mismatch);
+  } else if (e.shift === 'dawn') {
+    changeComposure(ctx, SCORE.serveMismatchComposure);
+    emitReaction(ctx, c, h.mismatch);
+  } else {
+    addAffinity(ctx, e, SCORE.serveMismatch);
+    emitReaction(ctx, c, h.mismatch);
+  }
   e.step = 'probe';
   return true;
 }

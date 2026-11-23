@@ -57,6 +57,14 @@ export function bestOffer(g: Game): string {
   return exact ?? (e.offered[0] as string);
 }
 
+/** 대접 단계의 정답: 취향 그대로 (any는 탄산수, taboo는 아무것도 내지 않기) */
+export function rightDrink(c: CustomerDef): 'water' | 'chocolate' | 'none' {
+  const pref = c.hospitality?.pref;
+  if (pref === 'taboo') return 'none';
+  if (pref === 'any' || pref === undefined) return 'water';
+  return pref === 'none' ? 'none' : pref;
+}
+
 /** 손님 하나를 정답 루트로 끝까지 응대한다 (단골 권유는 accept 인자) */
 export function playCorrect(
   g: Game,
@@ -65,6 +73,7 @@ export function playCorrect(
   const e = encOf(g);
   const c = customer(e.customerId);
   act(g, { type: 'greet', style: c.greetPref });
+  if (encOf(g).step === 'serve') act(g, { type: 'serve', drink: rightDrink(c) });
   for (const p of opts.probes ?? ['askCategory', 'askOccasion']) act(g, { type: 'probe', probe: p });
   act(g, { type: 'propose', productId: bestOffer(g) });
   const close = opts.close ?? (c.rules.includes(11) ? 'checkout' : c.traits.wantsAnything ? 'boxRed' : 'boxRed');
