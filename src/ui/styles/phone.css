@@ -423,16 +423,3 @@ html[data-layout='mobile'] .notif__text { font-family: var(--font-m-body); font-
 html[data-layout='mobile'] .notes__large { font-family: var(--font-m-body); font-size: 22px; line-height: 28px; }
 html[data-layout='mobile'] .folder-row, html[data-layout='mobile'] .note-group { font-family: var(--font-m-body); font-size: var(--text-m-body); line-height: var(--lh-m-body); }
 html[data-layout='mobile'] .folder-row { padding: var(--space-3) var(--space-3); min-height: 48px; }
-
-/* 손글씨(서윤의 메모·검은 수첩). 16px 픽셀 그리드 = 화면 2배에서 정수 배 */
-.contact__memo, .note-page, .is-hand, .is-hand .note-row__title, .is-hand .note-row__line, .is-hand li, .is-hand p { font-family: var(--font-hand); font-weight: 400; }
-.contact__memo { font-size: 16px; line-height: 18px; }
-.note-page { font-size: 16px; line-height: 20px; }
-.rules__list.is-hand { font-size: 16px; line-height: 22px; }
-.note-doc__title.is-hand { font-size: 32px; line-height: 36px; }
-.note-row.is-hand .note-row__title { font-size: 16px; line-height: 20px; }
-.note-row.is-hand .note-row__line { font-size: 16px; line-height: 18px; }
-html[data-layout='mobile'] .contact__memo, html[data-layout='mobile'] .note-page, html[data-layout='mobile'] .is-hand, html[data-layout='mobile'] .note-row.is-hand .note-row__title, html[data-layout='mobile'] .note-row.is-hand .note-row__line { font-family: var(--font-hand); }
-html[data-layout='mobile'] .contact__memo { font-size: 16px; line-height: 20px; }
-html[data-layout='mobile'] .note-doc__title.is-hand { font-size: 32px; line-height: 36px; }
-html[data-layout='mobile'] .note-row.is-hand .note-row__title, html[data-layout='mobile'] .note-row.is-hand .note-row__line { font-size: 16px; line-height: 20px; }
