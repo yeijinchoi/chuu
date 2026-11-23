@@ -1140,7 +1140,8 @@ export class Phone {
     for (const n of items) {
       const g = n.day === this.s.day ? t('phone.notes.today') : n.day === this.s.day - 1 ? t('phone.notes.yesterday') : t('phone.notes.earlier');
       if (g !== group) { group = g; list.append(el('div', 'note-group', g)); }
-      const row = button(`note-row${n.fresh ? ' is-new' : ''}`, '', () => { this.noteSel = n.id; this.refresh(); });
+      const hand = n.shift === 'dawn' || folder === 'clues' || folder === 'trash';
+      const row = button(`note-row${n.fresh ? ' is-new' : ''}${hand ? ' is-hand' : ''}`, '', () => { this.noteSel = n.id; this.refresh(); });
       const top = el('span', 'note-row__top');
       top.append(el('span', 'note-row__title', n.title), n.fresh ? el('span', 'note-row__dot', '') : el('span', ''));
       const first = n.lines[0]?.text ?? '';
@@ -1163,9 +1164,10 @@ export class Phone {
     wrap.append(back);
     if (!n) return;
     wrap.append(el('div', 'note-doc__date', t('phone.notes.edited', { day: t('phone.dayN', { n: n.day }), shift: t(`phone.cardBook.${n.shift}`), time: n.at })));
-    wrap.append(el('div', 'note-doc__title', n.title));
+    const hand = n.shift === 'dawn' || folder === 'clues' || folder === 'trash';
+    wrap.append(el('div', `note-doc__title${hand ? ' is-hand' : ''}`, n.title));
     const numbered = n.lines.length > 1 || (n.lines[0]?.n ?? 0) > 0;
-    const ol = el(numbered ? 'ol' : 'div', `rules__list${n.shift === 'dawn' ? ' rules__list--dawn' : ''}`);
+    const ol = el(numbered ? 'ol' : 'div', `rules__list${n.shift === 'dawn' ? ' rules__list--dawn' : ''}${hand ? ' is-hand' : ''}`);
     for (const l of n.lines) {
       const li = el(numbered ? 'li' : 'p', l.torn ? 'torn' : '', l.text);
       if (numbered && l.n) (li as HTMLLIElement).value = l.n;

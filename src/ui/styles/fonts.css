@@ -69,3 +69,12 @@
   font-style: normal;
   font-display: swap;
 }
+
+/* 손글씨: 드림흐물체(제작 qhtjr1116). 서윤의 메모·검은 수첩에만 쓴다. 16px 그리드 픽셀체라 16px의 배수로 쓴다. */
+@font-face {
+  font-family: 'GameHand';
+  src: url('./../fonts/DreamHeumulKR-subset.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}

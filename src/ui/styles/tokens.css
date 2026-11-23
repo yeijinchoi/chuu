@@ -53,6 +53,7 @@
 
   /* 글꼴 */
   --font-body: 'GameBody', 'Galmuri11', 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
+  --font-hand: 'GameHand', 'Galmuri11', 'Malgun Gothic', sans-serif;
   --font-logo: 'Galmuri14', 'Galmuri11', 'Malgun Gothic', sans-serif;
   --font-mono: 'GalmuriMono11', 'Galmuri11', monospace;
   --font-small: 'Galmuri9', 'Galmuri11', sans-serif;

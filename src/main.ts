@@ -21,6 +21,7 @@ const FACES = [
   '11px GameBody',
   'bold 11px GameBody',
   '14px GameBodyM',
+  '16px GameHand',
 ];
 
 function el<K extends keyof HTMLElementTagNameMap>(tag: K, cls: string, text?: string): HTMLElementTagNameMap[K] {
