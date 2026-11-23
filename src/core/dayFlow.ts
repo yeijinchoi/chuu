@@ -117,11 +117,12 @@ export function beginBriefing(ctx: Ctx, shift: Shift): void {
     for (const l of strList(ctx.data, 'briefing.afternoon.lines')) say(l);
     if (first) thought(ctx, str(ctx.data, 'thoughts.afterNote'));
   } else {
-    say(str(ctx.data, 'briefing.dawn.intro'));
+    // 첫 새벽에만 새벽 교대를 처음 알리는 말을 한다
+    say(str(ctx.data, ctx.state.day === 1 ? 'briefing.dawn.intro' : 'briefing.dawn.introAgain'));
     say(str(ctx.data, 'briefing.dawn.title'));
     for (const r of ctx.data.rules.filter((x) => x.day <= ctx.state.day)) say(`${r.id}. ${ruleText(r, ctx.state.day)}`);
     say(str(ctx.data, 'briefing.dawn.outro'));
-    thought(ctx, str(ctx.data, 'thoughts.dawnNote'));
+    if (ctx.state.day === 1) thought(ctx, str(ctx.data, 'thoughts.dawnNote'));
   }
 }
 
@@ -137,8 +138,12 @@ export function beginTexting(ctx: Ctx, shift: Shift): void {
   } else {
     // 진열장 덮개를 벗기는 컷(선반 → 마네킹 → 유리 카운터) 뒤에 검은 수첩이 열린다
     for (let i = 0; i < 3; i++) ctx.emit({ type: 'sfx', id: 'cloth_pull' });
-    narrate(ctx, str(ctx.data, 'briefing.dawn.cover'));
-    narrate(ctx, str(ctx.data, 'briefing.dawn.notebook'));
+    if (ctx.state.day === 1) {
+      narrate(ctx, str(ctx.data, 'briefing.dawn.cover'));
+      narrate(ctx, str(ctx.data, 'briefing.dawn.notebook'));
+    } else {
+      narrate(ctx, str(ctx.data, 'briefing.dawn.coverAgain'));
+    }
   }
 }
 
@@ -148,8 +153,10 @@ export function finishTexting(ctx: Ctx, shift: Shift): void {
   if (shift === 'afternoon') {
     ctx.emit({ type: 'sfx', id: 'sign_flip' }); // 문 위 팻말이 OPEN으로
     const coming = Object.keys(ctx.state.visitors).length;
-    if (coming >= 2) thought(ctx, str(ctx.data, 'thoughts.visitorsMany'));
-    else if (coming === 0) thought(ctx, str(ctx.data, 'thoughts.visitorsNone'));
+    if (ctx.state.day === 1) {
+      if (coming >= 2) thought(ctx, str(ctx.data, 'thoughts.visitorsMany'));
+      else if (coming === 0) thought(ctx, str(ctx.data, 'thoughts.visitorsNone'));
+    }
   }
   advanceToSlot(ctx, 0, shift);
 }

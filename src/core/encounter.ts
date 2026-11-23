@@ -4,7 +4,7 @@ import {
   classifyProposal, emitReaction, react, reactClose, reactGreet, reactPropose, reactThought,
 } from './reactions';
 import { checkChoice, checkRequire, type CheckResult } from './rules';
-import { effectiveVisit, grantClue, runBeats, sayLine, setFlag } from './plot';
+import { effectiveVisit, grantClue, returnsFor, runBeats, sayLine, setFlag } from './plot';
 import { deriveRng, shuffle, pickOne, type Rng } from './rng';
 import type {
   CloseId, ClientCard, CustomerDef, CustomerLines, CustomerReturnLines, EncounterState, GreetStyle, ProbeId, Product, RuleId,
@@ -139,6 +139,7 @@ export function pickLine(ctx: Ctx, c: CustomerDef, key: LineKey | 'openingRegula
     if (v) return v;
   }
   if (key === 'openingRegular') return undefined;
+  if (key === 'farewell' && visits >= 2) return undefined; // 첫 방문의 작별 복선은 되풀이하지 않는다
   return c.lines[key];
 }
 
@@ -175,13 +176,23 @@ export function startEncounter(ctx: Ctx, slotIndex: number): void {
   setPhase(ctx, { kind: 'encounter', slotIndex, enc: e });
   ctx.emit({ type: 'customerEnter', customerId: c.id });
   ctx.emit({ type: 'affinity', delta: 0, value: e.affinity });
-  if (slot.shift === 'dawn') narrate(ctx, c.entranceNote);
-  emitReaction(ctx, c, c.reactions?.enter);
+  const ret = returnsFor(ctx, c);
+  if (ret) {
+    // 재방문: 처음 보는 사람처럼 묘사하지 않는다
+    if (slot.shift === 'dawn') narrate(ctx, ret.entrance ?? str(ctx.data, 'text.returnEnterDawn'));
+    else emitReaction(ctx, c, ret.enter ?? str(ctx.data, 'text.returnEnter'));
+  } else {
+    if (slot.shift === 'dawn') narrate(ctx, c.entranceNote);
+    emitReaction(ctx, c, c.reactions?.enter);
+  }
   const registered = isRegistered(card);
   say(ctx, c, slot.uninvited
     ? (pickLine(ctx, c, 'openingUninvited') ?? pickLine(ctx, c, 'opening'))
     : (registered ? pickLine(ctx, c, 'openingRegular') : undefined) ?? pickLine(ctx, c, 'opening'));
-  if (vip) say(ctx, c, c.care.vipReveal);
+  if (vip && !card.vipSaid) {
+    say(ctx, c, c.care.vipReveal); // VIP 보상 대사는 한 번만
+    card.vipSaid = true;
+  }
   reactThought(ctx, c, 'opening');
   runBeats(ctx, c, c.onVisit);
   if (slot.forgotten) {

@@ -32,6 +32,7 @@ export interface ClientCard {
   visits?: number; // 응대한 횟수 (재방문 대사 선택용)
   drink?: Hospitality['pref']; // 대접 취향 (undefined = 아직 모름)
   lastThanksDay?: number; // 마지막으로 감사 문자를 보낸 날
+  vipSaid?: boolean; // VIP 보상 대사를 이미 들었다
 }
 
 export interface ChatDef {
@@ -114,7 +115,12 @@ export interface CustomerLines {
 }
 
 /** 재방문 대사 (SCRIPT_DAY2_3 §0). 키는 방문 횟수("2", "3"). 적히지 않은 키는 첫 방문 대사를 쓴다. */
-export type CustomerReturnLines = Partial<Omit<CustomerLines, 'violation'>> & { openingRegular?: string };
+export type CustomerReturnLines = Partial<Omit<CustomerLines, 'violation'>> & {
+  openingRegular?: string;
+  enter?: string; // 재방문 입장 지문 ("> "로 시작)
+  entrance?: string; // 새벽 재방문 입장 묘사
+  thought?: NonNullable<CustomerReactions['thought']>; // 재방문 속마음 (첫 만남 속마음은 되풀이하지 않는다)
+};
 
 /** ★ 손님별 반응 대사 (SCRIPT_DAY1 §0). 문자열이 "> "로 시작하면 지문, 아니면 손님의 대사다. 없으면 strings의 공통 반응을 쓴다. */
 export interface CustomerReactions {

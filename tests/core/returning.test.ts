@@ -60,3 +60,50 @@ describe('재방문 대사', () => {
     expect(said).not.toContain(customer('hanyeoreum').lines.askCategory);
   });
 });
+
+describe('재방문: 첫 만남 문구를 되풀이하지 않는다', () => {
+  const visit = (id: string, shift: 'afternoon' | 'dawn', visits: number, tier: 'new' | 'vip' = 'new') => {
+    const lines: { speaker: string | null; text: string; kind: 'line' | 'thought' }[] = [];
+    const g = newGame(31);
+    st(g).shift = shift;
+    st(g).day = visits;
+    st(g).cards[id] = { ...registered(id, shift), visits: visits - 1, tier, purchases: [{ productId: 'x', day: 1 }] };
+    st(g).slots = [{ shift, time: shift === 'dawn' ? '02:22' : '13:30', customerId: id, uninvited: false, forgotten: false }];
+    const ctx = { ...ctxOf(g), emit: (e: { type: string; speaker?: string | null; text?: string }) => {
+      if (e.type === 'line') lines.push({ speaker: e.speaker ?? null, text: e.text ?? '', kind: 'line' });
+      if (e.type === 'thought') lines.push({ speaker: null, text: e.text ?? '', kind: 'thought' });
+    } };
+    startEncounter(ctx as never, 0);
+    return lines.map((l) => l.text);
+  };
+
+  it('한여름 2회째: "나도 처음인데" 같은 첫 방문 속마음 대신 재방문 속마음', () => {
+    const first = visit('hanyeoreum', 'afternoon', 1);
+    const second = visit('hanyeoreum', 'afternoon', 2);
+    expect(first.some((t) => t.includes('나도 처음인데'))).toBe(true);
+    expect(second.some((t) => t.includes('나도 처음인데'))).toBe(false);
+    expect(second.some((t) => t.includes('어제 첫 손님이 오늘은 단골이다'))).toBe(true);
+    // 첫 방문의 입장 지문("문이 조심스럽게 열린다…")도 되풀이하지 않는다
+    expect(second.some((t) => t.includes('문이 조심스럽게 열린다'))).toBe(false);
+  });
+
+  it('새벽 재방문은 처음 보는 사람처럼 묘사하지 않는다', () => {
+    const first = visit('marsh', 'dawn', 1);
+    const second = visit('marsh', 'dawn', 2);
+    expect(first.some((t) => t.includes('눈이 크고, 깜빡이지 않는다'))).toBe(true);
+    expect(second.some((t) => t.includes('눈이 크고, 깜빡이지 않는다'))).toBe(false);
+    expect(second.some((t) => t.includes('어제보다 짙다'))).toBe(true);
+  });
+
+  it('VIP 보상 대사는 한 번만 한다', () => {
+    const a = visit('hanyeoreum', 'afternoon', 2, 'vip');
+    expect(a.some((t) => t.includes('엄마가 그 가방 매일 들어요'))).toBe(true);
+    const g = newGame(32);
+    st(g).shift = 'afternoon';
+    st(g).cards['hanyeoreum'] = { ...registered('hanyeoreum', 'afternoon'), visits: 2, tier: 'vip', vipSaid: true, purchases: [{ productId: 'x', day: 1 }] };
+    st(g).slots = [{ shift: 'afternoon', time: '13:30', customerId: 'hanyeoreum', uninvited: false, forgotten: false }];
+    const out: string[] = [];
+    startEncounter({ ...ctxOf(g), emit: (e: { type: string; text?: string }) => { if (e.type === 'line') out.push(e.text ?? ''); } } as never, 0);
+    expect(out.some((t) => t.includes('엄마가 그 가방 매일 들어요'))).toBe(false);
+  });
+});

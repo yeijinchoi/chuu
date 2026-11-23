@@ -1,6 +1,7 @@
 import { narrate, thought, type Ctx } from './ctx';
 import type { CloseId, CustomerDef, CustomerReactions, GreetStyle, Product } from './types';
 import { effectiveBudget } from './encounter';
+import { effectiveVisit, returnsFor } from './plot';
 
 /** 반응 종류 → 데이터 경로. 손님 데이터(reactions)에 없으면 strings의 공통 반응을 쓴다. */
 export type ReactionKey =
@@ -67,6 +68,8 @@ export function reactClose(ctx: Ctx, c: CustomerDef, choice: CloseId): void {
 }
 
 export function reactThought(ctx: Ctx, c: CustomerDef, key: keyof NonNullable<CustomerReactions['thought']>): void {
-  thought(ctx, c.reactions?.thought?.[key]);
+  // 재방문이면 첫 만남의 속마음("나도 처음인데", "첫 판매다")을 되풀이하지 않는다
+  if (effectiveVisit(ctx, c.id) >= 2) thought(ctx, returnsFor(ctx, c)?.thought?.[key]);
+  else thought(ctx, c.reactions?.thought?.[key]);
 }
 

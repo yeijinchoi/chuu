@@ -1,6 +1,6 @@
 import { narrate, setClock, setPhase, str, strList, thought, type Ctx } from './ctx';
 import { isRegistered } from './care';
-import type { CustomerDef, EndingId, PlotBeat } from './types';
+import type { CustomerDef, CustomerReturnLines, EndingId, PlotBeat } from './types';
 
 /** 줄거리 단서·플래그와 5일차 마지막 장면(서윤의 04:44) 및 엔딩 3종 (SCRIPT_DAY2_3 §2~3). */
 
@@ -26,6 +26,13 @@ export function grantClue(ctx: Ctx, id: string): void {
 export function effectiveVisit(ctx: Ctx, customerId: string): number {
   const v = ctx.state.cards[customerId]?.visits ?? 1;
   return v >= 2 && ctx.state.day >= FINAL_DAY ? Math.max(v, 3) : v;
+}
+
+/** 지금 방문에 해당하는 재방문 대사 묶음 (3회째 → 2회째 순). 첫 방문이면 undefined. */
+export function returnsFor(ctx: Ctx, c: CustomerDef): CustomerReturnLines | undefined {
+  const v = effectiveVisit(ctx, c.id);
+  if (v < 2) return undefined;
+  return (v >= 3 ? c.returns?.['3'] : undefined) ?? c.returns?.['2'];
 }
 
 /** 마지막 근무일 */
