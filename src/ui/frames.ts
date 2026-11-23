@@ -67,7 +67,7 @@ function stampCorners(px: Pen, size: number, map: readonly string[], legend: Rec
 }
 
 const LEG: Record<string, PaletteKey> = {
-  d: 'brass-dark', s: 'oxw', u: 'oxm', b: 'brass', l: 'brass-light', p: 'paper', o: 'bone', a: 'ash', k: 'ink', m: 'oxl',
+  d: 'brass-dark', s: 'stone', u: 'dusk', b: 'brass', l: 'brass-light', p: 'paper', o: 'bone', a: 'ash', k: 'ink', m: 'mist',
 };
 
 /** 주 프레임 모서리 필리그리: 진주 한 알과 안쪽으로 말린 덩굴 두 갈래(명품관의 퀼팅 마름모를 닮은 작은 마름모 포함) */
@@ -101,14 +101,14 @@ function symmetrize(map: readonly string[]): string[] {
 }
 
 function mainFrame(mood: Mood): string {
-  return frame(48, 16, { 0: 'brass-dark', 2: 'oxw', 5: 'oxm', 14: 'oxw', 15: 'ink' }, mood, (px) => {
+  return frame(48, 16, { 0: 'brass-dark', 2: 'stone', 5: 'dusk', 14: 'stone', 15: 'ink' }, mood, (px) => {
     // 안쪽 두 줄 사이를 비워 두고 모서리에서만 선을 끊는다
     stampCorners(px, 48, symmetrize(MAIN_CORNER), LEG);
   }, { 0: 4, 2: 3 });
 }
 
 function minorFrame(mood: Mood): string {
-  return frame(24, 8, { 0: 'brass-dark', 2: 'oxw' }, mood, (px) => {
+  return frame(24, 8, { 0: 'brass-dark', 2: 'stone' }, mood, (px) => {
     stampCorners(px, 24, symmetrize(['........', '........', '........', '...b....', '..blb...', '...b..b.', '.....b..', '........']), LEG);
   }, { 0: 3, 2: 2 });
 }
@@ -125,18 +125,18 @@ const MAIN_SMALL_CORNER = [
   '........',
 ];
 function mainSmallFrame(mood: Mood): string {
-  return frame(32, 8, { 0: 'brass-dark', 2: 'oxw', 7: 'ink' }, mood, (px) => {
+  return frame(32, 8, { 0: 'brass-dark', 2: 'stone', 7: 'ink' }, mood, (px) => {
     stampCorners(px, 32, symmetrize(MAIN_SMALL_CORNER), LEG);
   }, { 0: 3, 2: 2 });
 }
 
 export interface TinyStyle { outer: PaletteKey; inner: PaletteKey; corner: PaletteKey }
 const TINY: Record<string, TinyStyle> = {
-  base: { outer: 'brass-dark', inner: 'oxw', corner: 'brass' },
+  base: { outer: 'brass-dark', inner: 'stone', corner: 'brass' },
   hover: { outer: 'brass-dark', inner: 'brass', corner: 'brass-light' },
-  focus: { outer: 'brass', inner: 'oxw', corner: 'brass-light' },
+  focus: { outer: 'brass', inner: 'stone', corner: 'brass-light' },
   selected: { outer: 'brass-dark', inner: 'rose', corner: 'rose-light' },
-  disabled: { outer: 'oxm', inner: 'oxm', corner: 'oxw' },
+  disabled: { outer: 'dusk', inner: 'dusk', corner: 'stone' },
 };
 
 /** 작은 프레임(버튼·칸·탭): 바깥 선 1px, 안쪽 선 1px, 모서리 홈 */
@@ -154,7 +154,7 @@ function dividerImage(mood: Mood): string {
     const edge = Math.min(x, 48 - x);
     if (edge < 24 && edge % 2 === 1 && edge < 12) continue;
     if (edge < 4 && (x + 1) % 2 === 0) continue;
-    px(x, 1, edge < 12 ? 'oxw' : 'brass-dark');
+    px(x, 1, edge < 12 ? 'stone' : 'brass-dark');
   }
   return cv.toDataURL('image/png');
 }

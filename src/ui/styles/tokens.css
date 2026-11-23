@@ -33,11 +33,11 @@
 
   /* 의미 토큰 */
   --color-bg: var(--ink);
-  --color-surface: var(--oxd);
-  --color-surface-raised: var(--oxm);
-  --color-border: var(--oxw);
+  --color-surface: var(--shadow);
+  --color-surface-raised: var(--dusk);
+  --color-border: var(--stone);
   --color-trim: var(--brass);
-  --color-trim-shadow: var(--oxw);
+  --color-trim-shadow: var(--stone);
   --color-text: var(--paper);
   --color-text-muted: var(--ash);
   --color-accent: var(--rose);
@@ -47,14 +47,14 @@
   --color-warning: var(--brass);
   --color-danger: var(--wine);
   --color-info: var(--steel);
-  --color-phone-body: var(--oxw);
+  --color-phone-body: var(--stone);
   --color-phone-screen: var(--paper);
   --color-phone-text: var(--ink);
   --color-bubble-out: var(--steel-dark);
   --color-bubble-out-text: var(--paper);
   --color-bubble-in: var(--bone);
   --color-paper: var(--paper);
-  --color-paper-ink: var(--oxm);
+  --color-paper-ink: var(--dusk);
 
   /* 글꼴 */
   --font-body: 'GameBody', 'Galmuri11', 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
@@ -106,28 +106,28 @@
 
 /* 교대 테마 (§3-3): 새벽 업무폰은 검은 수첩 */
 [data-shift='dawn'] {
-  --color-phone-body: var(--oxm);
-  --color-phone-screen: var(--oxd);
+  --color-phone-body: var(--dusk);
+  --color-phone-screen: var(--shadow);
   --color-phone-text: var(--paper);
-  --color-bubble-in: var(--oxw);
+  --color-bubble-in: var(--stone);
 }
 
 /* 분위기 테마 (§3-4): 팔레트 한 단계 = 무채색 8단계 중 한 칸. 최선의 CSS 변수 교체 */
 [data-mood='uneasy'] {
-  --color-trim: var(--oxl);
-  --color-money: var(--oxl);
-  --color-warning: var(--oxl);
-  --color-surface-raised: var(--oxd);
-  --color-border: var(--oxm);
-  --color-trim-shadow: var(--oxm);
+  --color-trim: var(--mist);
+  --color-money: var(--mist);
+  --color-warning: var(--mist);
+  --color-surface-raised: var(--shadow);
+  --color-border: var(--dusk);
+  --color-trim-shadow: var(--dusk);
   --color-text: var(--bone);
-  --color-text-muted: var(--oxl);
+  --color-text-muted: var(--mist);
 }
 
 [data-mood='dread'],
 [data-mood='collapse'] {
-  --color-trim: var(--oxw);
-  --color-trim-shadow: var(--oxd);
+  --color-trim: var(--stone);
+  --color-trim-shadow: var(--shadow);
   --color-money: var(--ash);
   --color-warning: var(--ash);
   --color-success: var(--ash);
@@ -135,10 +135,10 @@
   --color-accent: var(--wine);
   --color-bubble-out: var(--wine);
   --color-surface: var(--ink);
-  --color-surface-raised: var(--oxd);
-  --color-border: var(--oxd);
+  --color-surface-raised: var(--shadow);
+  --color-border: var(--shadow);
   --color-text: var(--ash);
-  --color-text-muted: var(--oxw);
+  --color-text-muted: var(--stone);
 }
 
 /* breach: ink/wine 2색 + paper 하이라이트 */
