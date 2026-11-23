@@ -1,5 +1,8 @@
 import { fillCardFromProbe, newCard, registerRegular, isRegistered } from './care';
 import { changeComposure, clamp, setClock, setPhase, str, type Ctx } from './ctx';
+import {
+  emitReaction, react, reactClose, reactGreet, reactPropose, reactThought,
+} from './reactions';
 import { checkChoice, checkRequire, type CheckResult } from './rules';
 import { deriveRng, shuffle, pickOne, type Rng } from './rng';
 import type {
@@ -143,8 +146,10 @@ export function startEncounter(ctx: Ctx, slotIndex: number): void {
   ctx.emit({ type: 'customerEnter', customerId: c.id });
   ctx.emit({ type: 'affinity', delta: 0, value: e.affinity });
   if (slot.shift === 'dawn') narrate(ctx, c.entranceNote);
+  emitReaction(ctx, c, c.reactions?.enter);
   say(ctx, c, slot.uninvited ? (c.lines.openingUninvited ?? c.lines.opening) : c.lines.opening);
   if (vip) say(ctx, c, c.care.vipReveal);
+  reactThought(ctx, c, 'opening');
   if (slot.forgotten) {
     narrate(ctx, str(ctx.data, 'text.uninvitedNote'));
     changeComposure(ctx, SCORE.uninvitedComposure);
@@ -158,6 +163,7 @@ export function doGreet(ctx: Ctx, style: GreetStyle): boolean {
   const chk = checkChoice(c, 'greet', style, ctx.data.rules, e.shift);
   if (chk?.kind === 'rule') return violate(ctx, e, chk.rule);
   addAffinity(ctx, e, style === c.greetPref ? SCORE.greetMatch : SCORE.greetMismatch);
+  reactGreet(ctx, c, style);
   e.step = 'probe';
   return true;
 }
@@ -184,11 +190,13 @@ export function doProbe(ctx: Ctx, probe: ProbeId): boolean {
     e.mannerSlips++;
     ctx.state.mannerSlips++;
     ctx.emit({ type: 'mannerSlip', text: str(ctx.data, 'manner.note') });
+    emitReaction(ctx, c, c.reactions?.manner);
     addAffinity(ctx, e, SCORE.mannerSlip);
   } else {
     say(ctx, c, answer);
     fillCard(ctx, card, c, probe, true);
-    if (probe !== 'observe') addAffinity(ctx, e, SCORE.probe);
+    if (probe === 'observe') reactThought(ctx, c, 'observe');
+    else addAffinity(ctx, e, SCORE.probe);
   }
   if (e.probesUsed.length >= SCORE.maxProbes) {
     const miss = checkRequire(c, 'probe', e.probesUsed, ctx.data.rules, e.shift);
@@ -215,6 +223,7 @@ export function doPropose(ctx: Ctx, productId: string): boolean {
   const miss = checkRequire(c, 'propose', [productId], ctx.data.rules, e.shift);
   if (miss !== null) return violate(ctx, e, miss);
   addAffinity(ctx, e, proposeDelta(c, product, ctx.state.cards[c.id]));
+  reactPropose(ctx, c, product);
   e.step = 'close';
   return true;
 }
@@ -228,6 +237,7 @@ export function doClose(ctx: Ctx, choice: CloseId): boolean {
   const miss = checkRequire(c, 'close', [choice], ctx.data.rules, e.shift);
   if (miss !== null) return violate(ctx, e, miss);
   addAffinity(ctx, e, closeDelta(c, choice));
+  reactClose(ctx, c, choice);
 
   if (e.affinity < SCORE.sold) {
     e.outcome = 'walked';
@@ -282,6 +292,9 @@ export function doRegularOffer(ctx: Ctx, accept: boolean): boolean {
     ctx.state.newRegulars.push(c.id);
     ctx.emit({ type: 'regular', customerId: c.id, book: c.shift });
     ctx.emit({ type: 'relationship', customerId: c.id, delta: card.score, score: card.score, tier: card.tier });
+    react(ctx, c, 'regular.accept');
+  } else {
+    react(ctx, c, 'regular.decline');
   }
   finish(ctx, e);
   return true;
@@ -290,7 +303,14 @@ export function doRegularOffer(ctx: Ctx, accept: boolean): boolean {
 function finish(ctx: Ctx, e: EncounterState): void {
   const c = ctx.customers[e.customerId] as CustomerDef;
   e.step = 'done';
-  if (e.outcome === 'sold' || e.outcome === 'walked') say(ctx, c, c.lines.farewell);
+  if (e.outcome === 'sold' || e.outcome === 'walked') {
+    say(ctx, c, c.lines.farewell);
+    if (c.lines.farewell) reactThought(ctx, c, 'farewell');
+  }
+  if (e.outcome === 'sold') {
+    emitReaction(ctx, c, c.reactions?.leave);
+    reactThought(ctx, c, 'sold');
+  }
   ctx.emit({ type: 'customerLeave', customerId: e.customerId, outcome: e.outcome });
 }
 

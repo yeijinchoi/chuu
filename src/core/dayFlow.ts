@@ -1,5 +1,5 @@
 import { rolloverCards } from './care';
-import { changeComposure, dayDef, setClock, setPhase, str, strList, type Ctx } from './ctx';
+import { changeComposure, dayDef, narrate, setClock, setPhase, str, strList, thought, type Ctx } from './ctx';
 import { startEncounter, SCORE } from './encounter';
 import { moodFor } from './mood';
 import { checkClosingReply } from './rules';
@@ -72,15 +72,25 @@ export function beginBriefing(ctx: Ctx, shift: Shift): void {
   setPhase(ctx, { kind: 'briefing', shift });
   setClock(ctx, shift === 'afternoon' ? d.clocks.afternoonBriefing : d.clocks.dawnBriefing);
   const who = str(ctx.data, 'briefing.speaker');
-  const say = (text: string): void => ctx.emit({ type: 'line', speaker: who, text });
+  // 쪽지 본문은 kind 'note'로 보낸다. UI는 이 줄들을 모아 RulesNote로 펼친다.
+  const say = (text: string): void => ctx.emit({ type: 'line', speaker: who, text, kind: 'note' });
+  const first = ctx.state.day === 1;
   if (shift === 'afternoon') {
+    if (first) {
+      for (const l of strList(ctx.data, 'briefing.afternoon.intro')) narrate(ctx, l);
+      thought(ctx, str(ctx.data, 'thoughts.afternoonOpen'));
+      const name = ctx.state.playerName;
+      for (const l of strList(ctx.data, 'briefing.afternoon.head')) say(l.replace('{name}', name));
+    }
     say(str(ctx.data, 'briefing.afternoon.title'));
     for (const l of strList(ctx.data, 'briefing.afternoon.lines')) say(l);
+    if (first) thought(ctx, str(ctx.data, 'thoughts.afterNote'));
   } else {
     say(str(ctx.data, 'briefing.dawn.intro'));
     say(str(ctx.data, 'briefing.dawn.title'));
     for (const r of ctx.data.rules.filter((x) => x.day <= ctx.state.day)) say(`${r.id}. ${r.text}`);
     say(str(ctx.data, 'briefing.dawn.outro'));
+    thought(ctx, str(ctx.data, 'thoughts.dawnNote'));
   }
 }
 
@@ -88,11 +98,27 @@ export function beginTexting(ctx: Ctx, shift: Shift): void {
   const d = dayDef(ctx);
   setPhase(ctx, { kind: 'texting', shift });
   setClock(ctx, shift === 'afternoon' ? d.clocks.afternoonTexting : d.clocks.dawnTexting);
+  if (shift === 'afternoon') {
+    if (ctx.state.day === 1) {
+      narrate(ctx, str(ctx.data, 'briefing.afternoon.phoneHome'));
+      thought(ctx, str(ctx.data, 'thoughts.blackIcon'));
+    }
+  } else {
+    // 진열장 덮개를 벗기는 컷(선반 → 마네킹 → 유리 카운터) 뒤에 검은 수첩이 열린다
+    for (let i = 0; i < 3; i++) ctx.emit({ type: 'sfx', id: 'cloth_pull' });
+    narrate(ctx, str(ctx.data, 'briefing.dawn.cover'));
+    narrate(ctx, str(ctx.data, 'briefing.dawn.notebook'));
+  }
 }
 
 /** 문자 단계를 마치고 첫 손님 응대로 */
 export function finishTexting(ctx: Ctx, shift: Shift): void {
   ctx.state.slots = buildSlots(ctx, shift);
+  if (shift === 'afternoon') {
+    const coming = Object.keys(ctx.state.visitors).length;
+    if (coming >= 2) thought(ctx, str(ctx.data, 'thoughts.visitorsMany'));
+    else if (coming === 0) thought(ctx, str(ctx.data, 'thoughts.visitorsNone'));
+  }
   advanceToSlot(ctx, 0, shift);
 }
 
@@ -126,6 +152,9 @@ export function finishAftercare(ctx: Ctx, storage?: StorageAdapter): boolean {
   const s = ctx.state;
   if (p.shift === 'afternoon') {
     setPhase(ctx, { kind: 'shiftBreak' });
+    ctx.emit({ type: 'sfx', id: 'lights_off' });
+    narrate(ctx, str(ctx.data, 'shiftBreak.narration'));
+    thought(ctx, str(ctx.data, 'thoughts.shiftBreak'));
     return true;
   }
   // 고맙다는 말에는 꼭 답할 것: 방문한 날 감사 문자를 안 보내면 다음 새벽에 초대 없이 찾아온다
@@ -155,6 +184,8 @@ export function beginClosingText(ctx: Ctx): void {
   const from = str(ctx.data, 'closingText.from');
   for (const text of strList(ctx.data, 'closingText.incoming')) ctx.emit({ type: 'phone', from, text });
   ctx.emit({ type: 'sfx', id: 'phone_buzz' });
+  thought(ctx, str(ctx.data, 'thoughts.closingWho'));
+  thought(ctx, str(ctx.data, 'thoughts.closingRule3'));
 }
 
 export function doClosingText(ctx: Ctx, reply: boolean): boolean {
@@ -173,6 +204,7 @@ export function doClosingText(ctx: Ctx, reply: boolean): boolean {
     if (s.phase.kind === 'badEnding') return true;
   } else {
     for (const text of strList(ctx.data, 'closingText.ignored')) ctx.emit({ type: 'phone', from, text });
+    thought(ctx, str(ctx.data, 'thoughts.closingIgnored'));
   }
   beginAftercare(ctx, 'dawn');
   return true;

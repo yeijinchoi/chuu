@@ -1,7 +1,7 @@
 import {
   applyScoreDelta, baseKind, findDawnTaboo, isRegistered, scoreCare,
 } from './care';
-import { changeComposure, dayDef, str, type Ctx } from './ctx';
+import { changeComposure, dayDef, str, thought, type Ctx } from './ctx';
 import { SCORE } from './encounter';
 import type { CareTemplateId, ContactDef, CustomerDef, SalesTemplateId, Shift } from './types';
 
@@ -58,6 +58,7 @@ export function doSendText(ctx: Ctx, contactId: string, template: SalesTemplateI
   }
   if (reply) ctx.emit({ type: 'phone', from: contact.name, text: reply });
   else ctx.emit({ type: 'line', speaker: null, text: str(ctx.data, 'text.noReply') });
+  if (!customer && contact.composureOnSend) thought(ctx, str(ctx.data, 'thoughts.zeroReply'));
   if (contact.composureOnSend) changeComposure(ctx, contact.composureOnSend);
   return true;
 }

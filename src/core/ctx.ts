@@ -77,3 +77,13 @@ export function goBadEnding(ctx: Ctx): void {
 export function dayDef(ctx: Ctx): DayDef {
   return (ctx.data.days[ctx.state.day] ?? ctx.data.days[1]) as DayDef;
 }
+
+/** (속마음) 이벤트 */
+export function thought(ctx: Ctx, text: string | undefined): void {
+  if (text) ctx.emit({ type: 'thought', text });
+}
+
+/** 이름표 없는 지문 */
+export function narrate(ctx: Ctx, text: string | undefined): void {
+  if (text) ctx.emit({ type: 'line', speaker: null, text });
+}

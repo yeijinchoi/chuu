@@ -110,6 +110,19 @@ export interface CustomerLines {
   violation: Partial<Record<string, string>>; // 키: 수칙 번호 문자열 또는 'manner'
 }
 
+/** ★ 손님별 반응 대사 (SCRIPT_DAY1 §0). 문자열이 "> "로 시작하면 지문, 아니면 손님의 대사다. 없으면 strings의 공통 반응을 쓴다. */
+export interface CustomerReactions {
+  enter?: string; // 입장 지문
+  greet?: { match?: string; mismatch?: string | Partial<Record<GreetStyle, string>> };
+  propose?: { perfect?: string; deptOnly?: string; wrong?: string; overBudget?: string };
+  close?: { tryOn?: string; box?: string | { red?: string; gold?: string }; checkout?: string };
+  regular?: { accept?: string; decline?: string };
+  manner?: string; // 매너 실수 뒤 덧붙이는 지문
+  leave?: string; // 퇴장 지문
+  /** (속마음): opening = 첫 대사 뒤, observe = 관찰 뒤, farewell = 작별 대사 뒤, sold = 판매 후 퇴장 뒤 */
+  thought?: { opening?: string; observe?: string; farewell?: string; sold?: string };
+}
+
 export interface CustomerDef {
   id: string;
   name: string;
@@ -133,6 +146,7 @@ export interface CustomerDef {
   specialPayment?: { label: string; amount: number };
   sprite: SpriteParams;
   draftLines?: boolean; // 기획 문서에 없는 대사를 구현자가 채웠다
+  reactions?: CustomerReactions;
   lines: CustomerLines;
 }
 
@@ -298,7 +312,8 @@ export type Action =
   | { type: 'nextDay' };
 
 export type GameEvent =
-  | { type: 'line'; speaker: string | null; text: string }
+  | { type: 'line'; speaker: string | null; text: string; kind?: 'note' } // note: 쪽지(RulesNote) 본문
+  | { type: 'thought'; text: string } // (속마음) 이름표 없음
   | { type: 'phone'; from: string; text: string }
   | { type: 'customerEnter'; customerId: string }
   | { type: 'customerLeave'; customerId: string; outcome: EncounterState['outcome'] }
