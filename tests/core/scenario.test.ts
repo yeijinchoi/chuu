@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { act, data, encOf, newGame, playAfternoon, playCorrect, st, toAftercare } from './helpers';
+import { act, bestOffer, data, encOf, newGame, playAfternoon, playCorrect, st, toAftercare } from './helpers';
 import type { GameEvent } from '../../src/core/types';
 
 function goldenPath(seed: number): { events: GameEvent[]; game: ReturnType<typeof newGame> } {
@@ -153,7 +153,7 @@ describe('평정심 0 → 배드엔딩', () => {
     act(g, { type: 'greet', style: 'quiet' });
     act(g, { type: 'probe', probe: 'askCategory' });
     act(g, { type: 'probe', probe: 'askOccasion' });
-    act(g, { type: 'propose', productId: encOf(g).offered[0]! });
+    act(g, { type: 'propose', productId: bestOffer(g) });
     act(g, { type: 'close', choice: 'tryOn' });
     expect(st(g).composure).toBe(25);
     expect(st(g).violations).toBe(3);

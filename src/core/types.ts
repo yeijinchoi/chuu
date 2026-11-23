@@ -287,6 +287,8 @@ export interface EncounterState {
   affinity: number;
   probesUsed: ProbeId[];
   offered: string[];
+  rejected: string[]; // 손님이 거절한 상품 (제안 단계에서 원하지 않는 상품을 골랐다)
+  rerolls: number; // 제안 카드를 다시 뽑은 횟수
   chosenProductId: string | null;
   violated: RuleId[];
   mannerSlips: number;
@@ -360,6 +362,7 @@ export type Action =
   | { type: 'serve'; drink: 'water' | 'chocolate' | 'none' }
   | { type: 'probe'; probe: ProbeId }
   | { type: 'propose'; productId: string }
+  | { type: 'reroll' } // 제안 카드를 다시 뽑는다
   | { type: 'close'; choice: CloseId }
   | { type: 'regularOffer'; accept: boolean }
   | { type: 'advance' }

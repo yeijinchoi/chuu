@@ -413,3 +413,4 @@ interface StorageAdapter { load(): SaveV1 | null | 'corrupt'; save(s: SaveV1): b
 - **04:44**: `DayDef.closing === 'finale'`인 날(5일차, 총 5일)은 문자 대신 서윤 장면(`phase: finale`)이 오고 `{ type: 'finale', choice: 'yes' | 'ally' | 'leave' }`로 분기한다. 엔딩은 `phase: ending` + `{ type: 'ending' }` 이벤트(진열 / 퇴사 / 단골의 값). 엔딩 C 조건: 협력자 · 서윤의 마지막 말 · 서윤의 시계 · 새벽 VIP 2명 이상.
 - **트로피**: 엔딩 기록은 core가 아니라 UI의 별도 저장 키(`closing-time.trophies.v1`)에 둔다.
 - **환경 램프**: 팔레트 `oxd/oxm/oxw/oxl`은 장면 벽·바닥 전용(DESIGN_SYSTEM §3-1).
+- **제안 단계 (거절·다시 뽑기)**: 손님이 원하는 상품은 부서·색(제한이 없으면 부서만)·예산이 모두 맞는 상품이다(`classifyProposal === 'perfect'`). 그 밖의 상품을 권하면 호감이 깎이고(다른 부서 −15, 색 불일치 −10, 예산 초과 −15) 그 상품은 거절되어 목록에서 빠지며 제안 단계에 머문다(`EncounterState.rejected`). 호감이 0이 되거나 보여 줄 상품이 없으면 손님이 돌아선다. `{ type: 'reroll' }`로 거절되지 않은 상품 중 무작위 3장을 다시 뽑을 수 있다(응대당 최대 3번, `SCORE.maxRerolls`). 수칙 위반 판정(수칙 10 등)이 거절 판정보다 먼저다.

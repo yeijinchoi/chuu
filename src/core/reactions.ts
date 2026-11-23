@@ -53,7 +53,7 @@ export function classifyProposal(ctx: Ctx, c: CustomerDef, product: Product): Pr
   if (product.category !== c.category) return 'wrong';
   const budget = effectiveBudget(c, ctx.state.cards[c.id]);
   if (budget !== null && product.price > budget) return 'overBudget';
-  return c.color !== null && product.color === c.color ? 'perfect' : 'deptOnly';
+  return c.color === null || product.color === c.color ? 'perfect' : 'deptOnly';
 }
 
 export function reactPropose(ctx: Ctx, c: CustomerDef, product: Product): void {

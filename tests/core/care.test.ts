@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { newCard, rolloverCards, scoreCare, tierFor } from '../../src/core/care';
 import type { ClientCard, GameEvent } from '../../src/core/types';
-import { act, customer, data, encOf, newGame, registered, reject, rig, st, toAftercare, toTexting } from './helpers';
+import { act, bestOffer, customer, data, encOf, newGame, registered, reject, rig, st, toAftercare, toTexting } from './helpers';
 
 const score = (g: ReturnType<typeof newGame>, id: string) => st(g).cards[id]!.score;
 const ofType = <T extends GameEvent['type']>(ev: GameEvent[], t: T) => ev.filter((e) => e.type === t) as Extract<GameEvent, { type: T }>[];
@@ -198,7 +198,7 @@ describe('고객 카드: 모르는 칸은 undefined', () => {
     act(g, { type: 'greet', style: 'warm' });
     act(g, { type: 'probe', probe: 'askCategory' });
     act(g, { type: 'probe', probe: 'askOccasion' });
-    act(g, { type: 'propose', productId: encOf(g).offered[0]! });
+    act(g, { type: 'propose', productId: bestOffer(g) });
     act(g, { type: 'close', choice: 'boxGold' });
     const card = st(g).cards['hanyeoreum']!;
     expect(card.purchases).toHaveLength(encOf(g).outcome === 'sold' ? 1 : 0);

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { classifyProposal } from '../../src/core/reactions';
 import { applicableRules, checkChoice } from '../../src/core/rules';
 import type { Game } from '../../src/core/game';
 import type { CloseId, CustomerDef, GreetStyle, ProbeId } from '../../src/core/types';
@@ -25,10 +26,7 @@ function serveSafely(g: Game, talkOption: 0 | 1 = 1): string {
   }
   for (const p of probes) act(g, { type: 'probe', probe: p });
   const offered = encOf(g).offered;
-  const exact = c.onlyProduct ?? offered.find((id) => {
-    const pr = data.products.find((x) => x.id === id)!;
-    return pr.category === c.category && c.color !== null && pr.color === c.color;
-  }) ?? offered[0]!;
+  const exact = c.onlyProduct ?? offered.find((id) => classifyProposal(ctxOf(g), c, data.products.find((x) => x.id === id)!) === 'perfect') ?? offered[0]!;
   act(g, { type: 'propose', productId: exact });
   const needClose = applicableRules(c, rules).find((r) => shift === 'dawn' && r.stage === 'close' && r.require)?.require as CloseId | undefined;
   const close = needClose ?? CLOSES.find((x) => checkChoice(c, 'close', x, rules, shift) === null) as CloseId;

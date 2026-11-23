@@ -1,4 +1,5 @@
 import customersData from '../data/customers.json';
+import { SCORE } from '../core/encounter';
 import { Game } from '../core/game';
 import { loadGameData } from '../core/gameData';
 import { JsonStorageAdapter } from '../core/save';
@@ -491,7 +492,13 @@ export function startApp(stage: Stage, renderer: Renderer, opts: { debug: boolea
         break;
       case 'propose':
         once('propose', t('tutorial.propose'), 'serve');
-        if (!display.proposing) display.showOffers(e.offered, (productId) => { display.showCatalog(); bridge.dispatch({ type: 'propose', productId }); });
+        if (!display.proposing) {
+          display.showOffers(
+            e.offered,
+            (productId) => { display.showCatalog(); bridge.dispatch({ type: 'propose', productId }); },
+            { left: SCORE.maxRerolls - e.rerolls, run: () => { display.showCatalog(); bridge.dispatch({ type: 'reroll' }); } },
+          );
+        }
         // 모바일: 시트를 닫았을 때 다시 열 수 있는 버튼
         if (mobile()) pickChoices([{ label: t('choices.openDisplay'), keep: true, pick: () => sheets.show('display') }]);
         break;

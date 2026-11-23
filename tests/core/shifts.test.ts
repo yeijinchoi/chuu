@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { EMPTY_BOX, pickOffers, SCORE } from '../../src/core/encounter';
 import { deriveRng, mulberry32 } from '../../src/core/rng';
 import { moodFor } from '../../src/core/mood';
-import { act, customer, data, encOf, newGame, playAfternoon, playCorrect, product, rig, st } from './helpers';
+import { act, bestOffer, customer, data, encOf, newGame, playAfternoon, playCorrect, product, reject, rig, st } from './helpers';
 
 describe('pickOffers', () => {
   it('같은 시드면 같은 결과, 다른 시드면 달라질 수 있다', () => {
@@ -23,9 +23,10 @@ describe('pickOffers', () => {
       for (let seed = 0; seed < 30; seed++) {
         const ids = pickOffers(c, data.products, mulberry32(seed));
         const ps = ids.map(product);
-        const exact = ps.filter((p) => p.category === c.category && c.color !== null && p.color === c.color);
+        // 손님이 원하는 상품: 부서·색·예산이 모두 맞는 것
+        const exact = ps.filter((p) => p.category === c.category && (c.color === null || p.color === c.color) && (c.budget === null || p.price <= c.budget));
         if (c.color !== null) expect(exact.length, `${c.id}/${seed}`).toBeGreaterThanOrEqual(1);
-        expect(ps.some((p) => p.category === c.category && p.color !== c.color)).toBe(true);
+        if (!c.onlyProduct) expect(ps.some((p) => p.category === c.category && !exact.includes(p))).toBe(true);
         expect(ps.some((p) => p.category !== c.category)).toBe(true);
         expect(new Set(ids).size).toBe(ids.length);
       }
@@ -74,7 +75,7 @@ describe('교대 분리', () => {
     act(g, { type: 'greet', style: 'direct' }); // 불일치 −10
     act(g, { type: 'probe', probe: 'askBudget' }); // 매너 실수
     act(g, { type: 'probe', probe: 'observe' });
-    act(g, { type: 'propose', productId: st(g).phase.kind === 'encounter' ? (st(g).phase as { enc: { offered: string[] } }).enc.offered[0]! : '' });
+    act(g, { type: 'propose', productId: bestOffer(g) });
     act(g, { type: 'close', choice: 'tryOn' });
     expect(st(g).mannerSlips).toBe(1);
     expect(st(g).composure).toBe(100);
@@ -139,9 +140,8 @@ describe('판정 임계값', () => {
     act(g, { type: 'greet', style: 'direct' }); // 40 −10
     act(g, { type: 'probe', probe: 'observe' });
     act(g, { type: 'probe', probe: 'askCategory' }); // +3
-    const e0 = (st(g).phase as { enc: { offered: string[] } }).enc.offered;
-    const wrong = e0.find((id) => product(id).category !== 'bag')!; // 부서 불일치
-    act(g, { type: 'propose', productId: wrong });
+    act(g, { type: 'propose', productId: bestOffer(g) });
+    encOf(g).affinity = 59; // 임계값 바로 아래
     act(g, { type: 'close', choice: 'checkout' });
     const enc = (st(g).phase as { enc: { outcome: string } }).enc;
     expect(enc.outcome).toBe('walked');
@@ -154,7 +154,7 @@ describe('판정 임계값', () => {
       act(g, { type: 'greet', style: 'warm' });
       act(g, { type: 'probe', probe: 'askCategory' });
       act(g, { type: 'probe', probe: 'askOccasion' });
-      act(g, { type: 'propose', productId: encOf(g).offered[0]! });
+      act(g, { type: 'propose', productId: bestOffer(g) });
       encOf(g).affinity = affinity; // 닫기 직전 호감을 고정 (+0 클로징)
       act(g, { type: 'close', choice: 'boxRed' });
       expect(encOf(g).outcome).toBe('sold');
@@ -167,9 +167,87 @@ describe('판정 임계값', () => {
     act(g, { type: 'greet', style: 'quiet' });
     act(g, { type: 'probe', probe: 'askCategory' });
     act(g, { type: 'probe', probe: 'askOccasion' });
-    act(g, { type: 'propose', productId: encOf(g).offered[0]! });
+    act(g, { type: 'propose', productId: bestOffer(g) });
     encOf(g).affinity = 60;
     act(g, { type: 'close', choice: 'checkout' });
     expect(encOf(g)).toMatchObject({ outcome: 'sold', step: 'regularOffer' });
+  });
+});
+
+describe('제안: 거절과 다시 뽑기', () => {
+  const setup = (id = 'hanyeoreum', shift: 'afternoon' | 'dawn' = 'afternoon') => {
+    const g = rig(id, shift);
+    act(g, { type: 'greet', style: customer(id).greetPref });
+    act(g, { type: 'probe', probe: 'askCategory' });
+    act(g, { type: 'probe', probe: 'askOccasion' });
+    return g;
+  };
+
+  it('원하지 않는 상품을 권하면 호감이 깎이고 그 상품은 거절된다 (제안 단계에 머문다)', () => {
+    const g = setup();
+    const e = encOf(g);
+    const before = e.affinity;
+    const wrongDept = e.offered.find((id) => product(id).category !== 'bag')!;
+    const ev = act(g, { type: 'propose', productId: wrongDept });
+    expect(encOf(g).step).toBe('propose');
+    expect(encOf(g).affinity).toBe(before + SCORE.wrongProduct);
+    expect(encOf(g).rejected).toEqual([wrongDept]);
+    expect(encOf(g).offered).not.toContain(wrongDept);
+    expect(ev.some((x) => x.type === 'line')).toBe(true);
+    // 정답을 권하면 다음 단계로
+    act(g, { type: 'propose', productId: bestOffer(g) });
+    expect(encOf(g).step).toBe('close');
+  });
+
+  it('부서는 맞지만 색이 다르면 −10, 예산을 넘으면 −15', () => {
+    const g = setup();
+    const e = encOf(g);
+    // 한여름(베이지 가방, 예산 250만): 같은 가방이지만 로즈 토트(230만)는 색이 다르다 → 색 불일치
+    e.offered = ['luna_tote_rose', 'luna_tote_beige', 'tailored_suit'];
+    const b = e.affinity;
+    act(g, { type: 'propose', productId: 'luna_tote_rose' });
+    expect(encOf(g).affinity).toBe(b + SCORE.wrongColor);
+    expect(encOf(g).step).toBe('propose');
+    const g2 = rig('hound', 'dawn');
+    act(g2, { type: 'greet', style: 'quiet' });
+    act(g2, { type: 'probe', probe: 'askCategory' });
+    act(g2, { type: 'probe', probe: 'askOccasion' });
+    // 개: 흰색 주얼리, 예산 550만 — 숨 쉬는 진주(880만)는 색은 맞지만 예산 초과
+    st(g2); encOf(g2).offered = ['breathing_pearl', 'backward_watch', 'drowned_choker'];
+    const b2 = encOf(g2).affinity;
+    act(g2, { type: 'propose', productId: 'breathing_pearl' });
+    expect(encOf(g2).affinity).toBe(b2 + SCORE.overBudget);
+    expect(encOf(g2).step).toBe('propose');
+  });
+
+  it('다시 뽑기: 최대 3번, 새 상품 3장, 거절된 상품은 다시 나오지 않는다', () => {
+    const g = setup();
+    const first = [...encOf(g).offered];
+    const wrong = first.find((id) => product(id).category !== 'bag')!;
+    act(g, { type: 'propose', productId: wrong });
+    for (let i = 1; i <= SCORE.maxRerolls; i++) {
+      const ev = act(g, { type: 'reroll' });
+      expect(ev.some((x) => x.type === 'line')).toBe(true);
+      expect(encOf(g).rerolls).toBe(i);
+      expect(encOf(g).offered).toHaveLength(3);
+      expect(encOf(g).offered).not.toContain(wrong);
+    }
+    reject(g, { type: 'reroll' });
+    expect(g.availableActions().some((a) => a.type === 'reroll')).toBe(false);
+  });
+
+  it('호감이 0이 되거나 더 보여 줄 상품이 없으면 손님이 돌아선다', () => {
+    const g = setup();
+    encOf(g).affinity = 10;
+    const wrong = encOf(g).offered.find((id) => product(id).category !== 'bag')!;
+    act(g, { type: 'propose', productId: wrong });
+    expect(encOf(g)).toMatchObject({ outcome: 'walked', step: 'done' });
+    expect(st(g).salesCount).toBe(0);
+
+    const g2 = setup();
+    encOf(g2).rerolls = SCORE.maxRerolls;
+    encOf(g2).offered = ['tailored_suit']; // 마지막 한 장이 거절되면 더 보여 줄 것이 없다
+    act(g2, { type: 'propose', productId: 'tailored_suit' });
+    expect(encOf(g2).outcome).toBe('walked');
   });
 });

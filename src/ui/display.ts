@@ -46,7 +46,7 @@ export class DisplayPanel {
   private shift: Shift = 'afternoon';
   private mood: Mood = 'calm';
   private cat: Category = 'bag';
-  private offers: { products: Product[]; onPick: (id: string) => void } | null = null;
+  private offers: { products: Product[]; onPick: (id: string) => void; reroll: { left: number; run: () => void } | null } | null = null;
   private cards: HTMLButtonElement[] = [];
 
   constructor(private readonly root: HTMLElement) {
@@ -57,8 +57,9 @@ export class DisplayPanel {
   setMood(m: Mood): void { this.mood = m; this.render(); }
 
   showCatalog(): void { this.offers = null; this.render(); }
-  showOffers(ids: string[], onPick: (id: string) => void): void {
-    this.offers = { products: ids.map((id) => ALL.find((p) => p.id === id) as Product).filter(Boolean), onPick };
+  /** reroll: 다른 상품 보기(남은 횟수). 원하는 상품이 없을 때 제안 카드를 다시 뽑는다 */
+  showOffers(ids: string[], onPick: (id: string) => void, reroll: { left: number; run: () => void } | null = null): void {
+    this.offers = { products: ids.map((id) => ALL.find((p) => p.id === id) as Product).filter(Boolean), onPick, reroll };
     this.render();
     this.cards[0]?.focus({ preventScroll: true });
   }
@@ -87,6 +88,11 @@ export class DisplayPanel {
     if (this.offers) {
       side.append(el('div', 'display__label', t('display.proposeLabel')));
       side.append(el('div', 'display__hint', t('display.proposeHint')));
+      const rr = this.offers.reroll;
+      if (rr && rr.left > 0) {
+        const rb = button('display__reroll', t('display.reroll', { n: rr.left }), () => rr.run());
+        side.append(rb);
+      }
       this.cards = [];
       const n = this.offers.products.length;
       body.dataset.count = String(n);

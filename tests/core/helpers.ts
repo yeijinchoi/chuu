@@ -7,6 +7,7 @@ import type {
   Action, ClientCard, CustomerDef, GameEvent, GameState, Product, Shift, StorageAdapter,
 } from '../../src/core/types';
 import { newCard } from '../../src/core/care';
+import { classifyProposal } from '../../src/core/reactions';
 
 export const data = loadGameData();
 export const customer = (id: string): CustomerDef => data.customers.find((c) => c.id === id) as CustomerDef;
@@ -50,10 +51,8 @@ export function encOf(g: Game) {
 export function bestOffer(g: Game): string {
   const e = encOf(g);
   const c = customer(e.customerId);
-  const exact = e.offered.find((id) => {
-    const p = product(id);
-    return p.category === c.category && c.color !== null && p.color === c.color;
-  });
+  const ctx = ctxOf(g);
+  const exact = e.offered.find((id) => classifyProposal(ctx, c, product(id)) === 'perfect');
   return exact ?? (e.offered[0] as string);
 }
 

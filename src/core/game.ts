@@ -4,7 +4,7 @@ import {
 } from './dayFlow';
 import { makeLookups, str, type Ctx } from './ctx';
 import {
-  doClose, doGreet, doProbe, doPropose, doRegularOffer, doServe, doTalk, stageChoices, talkOptions,
+  canReroll, doClose, doGreet, doProbe, doPropose, doRegularOffer, doReroll, doServe, doTalk, stageChoices, talkOptions,
 } from './encounter';
 import { doFinale, hasFlag } from './plot';
 import {
@@ -132,6 +132,8 @@ export class Game {
         return doProbe(ctx, a.probe);
       case 'propose':
         return doPropose(ctx, a.productId);
+      case 'reroll':
+        return doReroll(ctx);
       case 'close':
         return doClose(ctx, a.choice);
       case 'regularOffer':
@@ -215,7 +217,10 @@ export class Game {
         if (e.step === 'greet') for (const style of ch.greet) out.push({ type: 'greet', style });
         else if (e.step === 'serve') for (const drink of ['water', 'chocolate', 'none'] as const) out.push({ type: 'serve', drink });
         else if (e.step === 'probe') for (const probe of ch.probes) out.push({ type: 'probe', probe });
-        else if (e.step === 'propose') for (const productId of e.offered) out.push({ type: 'propose', productId });
+        else if (e.step === 'propose') {
+          for (const productId of e.offered) out.push({ type: 'propose', productId });
+          if (canReroll(e)) out.push({ type: 'reroll' });
+        }
         else if (e.step === 'close') for (const choice of ch.closes) out.push({ type: 'close', choice });
         else if (e.step === 'regularOffer') out.push({ type: 'regularOffer', accept: true }, { type: 'regularOffer', accept: false });
         else if (e.step === 'talk') for (const i of talkOptions(this.data.customers.find((x) => x.id === e.customerId) as never).keys()) out.push({ type: 'talk', option: i as 0 | 1 });

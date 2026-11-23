@@ -1,7 +1,7 @@
 import { applyScoreDelta, fillCardFromProbe, newCard, registerRegular, isRegistered } from './care';
 import { changeComposure, clamp, setClock, setPhase, str, type Ctx } from './ctx';
 import {
-  emitReaction, react, reactClose, reactGreet, reactPropose, reactThought,
+  classifyProposal, emitReaction, react, reactClose, reactGreet, reactPropose, reactThought,
 } from './reactions';
 import { checkChoice, checkRequire, type CheckResult } from './rules';
 import { effectiveVisit, grantClue, runBeats, sayLine, setFlag } from './plot';
@@ -39,7 +39,10 @@ export const SCORE = {
   regularOffer: 85,
   violationComposure: -25,
   closingReplyComposure: -30,
+  wrongProduct: -15, // 다른 부서 상품을 권했다 → 거절
+  wrongColor: -10, // 부서는 맞지만 원하는 색이 아니다 → 거절
   maxProbes: 2,
+  maxRerolls: 3, // 제안 카드를 다시 뽑을 수 있는 횟수
 } as const;
 
 export const EMPTY_BOX = 'empty_box';
@@ -59,7 +62,10 @@ export function pickOffers(customer: CustomerDef, products: readonly Product[], 
     for (const p of shuffle(rng, pool).slice(0, 3)) add(p);
   } else {
     const sameCat = pool.filter((p) => p.category === customer.category);
-    const exact = sameCat.filter((p) => customer.color !== null && p.color === customer.color);
+    // 원하는 상품: 색이 맞고(색 제한이 없으면 부서만) 예산 안에 드는 것. 그런 상품이 없으면 예산을 무시한다.
+    const colorOk = sameCat.filter((p) => customer.color === null || p.color === customer.color);
+    const affordable = colorOk.filter((p) => customer.budget === null || p.price <= customer.budget);
+    const exact = affordable.length > 0 ? affordable : colorOk.filter(() => customer.color !== null);
     const partial = sameCat.filter((p) => !exact.includes(p));
     const other = pool.filter((p) => p.category !== customer.category);
     add(pickOne(rng, exact.length > 0 ? exact : partial));
@@ -159,7 +165,7 @@ export function startEncounter(ctx: Ctx, slotIndex: number): void {
     : SCORE.baseAffinity + Math.max(textBonus, vip ? SCORE.vipBonus : 0);
   const e: EncounterState = {
     customerId: c.id, shift: slot.shift, step: 'greet', affinity: clamp(start, 0, 100),
-    probesUsed: [], offered: [], chosenProductId: null, violated: [], mannerSlips: 0,
+    probesUsed: [], offered: [], rejected: [], rerolls: 0, chosenProductId: null, violated: [], mannerSlips: 0,
     outcome: 'pending', uninvited: slot.uninvited, forgotten: slot.forgotten,
   };
   card.lastVisitDay = s.day;
@@ -296,12 +302,54 @@ export function doPropose(ctx: Ctx, productId: string): boolean {
   if (!e || e.step !== 'propose' || !e.offered.includes(productId)) return false;
   const c = ctx.customers[e.customerId] as CustomerDef;
   const product = ctx.products[productId] as Product;
-  e.chosenProductId = productId;
   const miss = checkRequire(c, 'propose', [productId], ctx.data.rules, e.shift);
-  if (miss !== null) return violate(ctx, e, miss);
+  if (miss !== null) { e.chosenProductId = productId; return violate(ctx, e, miss); }
+  // 손님이 원하는 상품(부서·색·예산이 모두 맞음)이 아니면 호감이 깎이고 그 상품은 거절된다. 다른 상품을 권할 수 있다.
+  const kind = classifyProposal(ctx, c, product);
+  if (kind !== 'perfect') return rejectProduct(ctx, e, c, product, kind);
+  e.chosenProductId = productId;
   addAffinity(ctx, e, proposeDelta(c, product, ctx.state.cards[c.id]));
   reactPropose(ctx, c, product);
   e.step = 'close';
+  return true;
+}
+
+function rejectProduct(ctx: Ctx, e: EncounterState, c: CustomerDef, product: Product, kind: 'deptOnly' | 'wrong' | 'overBudget'): boolean {
+  const delta = kind === 'deptOnly' ? SCORE.wrongColor : kind === 'overBudget' ? SCORE.overBudget : SCORE.wrongProduct;
+  addAffinity(ctx, e, delta);
+  reactPropose(ctx, c, product);
+  e.rejected.push(product.id);
+  e.offered = e.offered.filter((id) => id !== product.id);
+  const noneLeft = e.offered.length === 0 && e.rerolls >= SCORE.maxRerolls;
+  if (e.affinity <= 0 || noneLeft) {
+    // 호감이 바닥났거나 더 보여 줄 상품이 없다: 손님이 돌아선다
+    e.outcome = 'walked';
+    say(ctx, c, pickLine(ctx, c, 'fail'));
+    narrate(ctx, c.lines.failNote);
+    finish(ctx, e);
+  }
+  return true;
+}
+
+/** 제안 카드 다시 뽑기: 거절된 상품을 뺀 진열 상품에서 무작위 3장 (이번에 보여 준 것은 되도록 피한다) */
+export function canReroll(e: EncounterState): boolean {
+  return e.step === 'propose' && e.rerolls < SCORE.maxRerolls;
+}
+
+export function doReroll(ctx: Ctx): boolean {
+  const e = enc(ctx);
+  if (!e || !canReroll(e)) return false;
+  const c = ctx.customers[e.customerId] as CustomerDef;
+  const pool = ctx.data.products.filter((p) => p.shift === c.shift && p.id !== EMPTY_BOX && !e.rejected.includes(p.id));
+  const rng = deriveRng(ctx.state.seed, ctx.state.day, c.id, 'reroll', e.rerolls);
+  const fresh = shuffle(rng, pool.filter((p) => !e.offered.includes(p.id)));
+  const rest = shuffle(rng, pool.filter((p) => e.offered.includes(p.id)));
+  const next = [...fresh, ...rest].slice(0, 3).map((p) => p.id);
+  if (c.onlyProduct && !e.rejected.includes(c.onlyProduct) && !next.includes(c.onlyProduct)) next.push(c.onlyProduct);
+  e.rerolls++;
+  e.offered = shuffle(rng, next);
+  narrate(ctx, str(ctx.data, 'text.rerolled'));
+  ctx.emit({ type: 'sfx', id: 'cloth_pull' });
   return true;
 }
 
