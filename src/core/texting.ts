@@ -15,17 +15,29 @@ function textingShift(ctx: Ctx): Shift | null {
   return p.kind === 'texting' ? p.shift : null;
 }
 
+/** 문자를 보낼 수 없는 이유. UI가 비활성 사유를 보여 줄 때 쓴다. */
+export type BlockReason =
+  | 'phase' | 'unknown' | 'sent' | 'noneLeft' | 'salesCap'
+  | 'notRegistered' | 'noPurchase' | 'lost' | 'unreachable' | 'noProduct' | 'noAftercare';
+
+/** 영업 문자: 막는 이유, 보낼 수 있으면 null */
+export function textBlock(ctx: Ctx, contactId: string, template: SalesTemplateId): BlockReason | null {
+  const shift = textingShift(ctx);
+  if (!shift) return 'phase';
+  const contact = ctx.data.contacts.find((c) => c.id === contactId);
+  if (!contact || contact.book !== shift) return 'unknown';
+  if (!ctx.data.templates.sales.some((t) => t.id === template && t.shift === shift)) return 'unknown';
+  const t = ctx.state.texting[shift];
+  if (contactId in t.sent) return 'sent';
+  if (t.remaining <= 0) return 'noneLeft';
+  if (t.salesSent >= dayDef(ctx).texting[shift].sales) return 'salesCap';
+  return null;
+}
+
 /** 영업 문자 발송 가능 여부 (검증만) */
 export function checkSendText(ctx: Ctx, contactId: string, template: SalesTemplateId): ContactDef | null {
-  const shift = textingShift(ctx);
-  if (!shift) return null;
-  const contact = ctx.data.contacts.find((c) => c.id === contactId);
-  if (!contact || contact.book !== shift) return null;
-  if (!ctx.data.templates.sales.some((t) => t.id === template && t.shift === shift)) return null;
-  const t = ctx.state.texting[shift];
-  const cap = dayDef(ctx).texting[shift].sales;
-  if (contactId in t.sent || t.remaining <= 0 || t.salesSent >= cap) return null;
-  return contact;
+  if (textBlock(ctx, contactId, template) !== null) return null;
+  return ctx.data.contacts.find((c) => c.id === contactId) ?? null;
 }
 
 export function doSendText(ctx: Ctx, contactId: string, template: SalesTemplateId): boolean {
@@ -77,32 +89,45 @@ export interface CareCheck {
   isThanks: boolean;
 }
 
+/** 관리 문자: 막는 이유, 보낼 수 있으면 null */
+export function careBlock(
+  ctx: Ctx, customerId: string, template: CareTemplateId, productId?: string,
+): BlockReason | null {
+  const p = ctx.state.phase;
+  if (p.kind !== 'texting' && p.kind !== 'aftercare') return 'phase';
+  const shift = p.shift;
+  const tpl = ctx.data.templates.care.find((t) => t.id === template);
+  if (!tpl || tpl.shift !== shift) return 'unknown';
+  const customer = ctx.customers[customerId];
+  if (!customer || customer.shift !== shift) return 'unknown';
+  const card = ctx.state.cards[customerId];
+  const isThanks = baseKind(template) === 'thanks';
+  if (customer.care.unreachable) return 'unreachable';
+  if (card?.tier === 'lost') return 'lost';
+  if (isThanks) {
+    if (!card || card.purchases.length === 0) return 'noPurchase';
+  } else if (!card || (!isRegistered(card) && !customer.care.noContact)) {
+    return 'notRegistered';
+  }
+  if (baseKind(template) === 'recommend') {
+    const prod = productId ? ctx.products[productId] : undefined;
+    if (!prod || prod.shift !== shift) return 'noProduct';
+  }
+  if (p.kind === 'aftercare' && isThanks) {
+    if (ctx.state.aftercareRemaining <= 0) return 'noAftercare';
+  } else if (ctx.state.texting[shift].remaining <= 0) return 'noneLeft';
+  return null;
+}
+
 /** 관리 문자 발송 가능 여부 (검증만) */
 export function checkSendCare(
   ctx: Ctx, customerId: string, template: CareTemplateId, productId?: string,
 ): CareCheck | null {
+  if (careBlock(ctx, customerId, template, productId) !== null) return null;
   const p = ctx.state.phase;
-  if (p.kind !== 'texting' && p.kind !== 'aftercare') return null;
-  const shift = p.shift;
-  const tpl = ctx.data.templates.care.find((t) => t.id === template);
-  if (!tpl || tpl.shift !== shift) return null;
   const customer = ctx.customers[customerId];
-  const card = ctx.state.cards[customerId];
-  if (!customer || !card || customer.shift !== shift) return null;
-  if (customer.care.unreachable || card.tier === 'lost') return null;
-  const isThanks = baseKind(template) === 'thanks';
-  if (isThanks) {
-    if (card.purchases.length === 0) return null;
-  } else if (!isRegistered(card) && !customer.care.noContact) {
-    return null;
-  }
-  if (baseKind(template) === 'recommend') {
-    const prod = productId ? ctx.products[productId] : undefined;
-    if (!prod || prod.shift !== shift) return null;
-  }
-  const useAftercare = p.kind === 'aftercare' && isThanks;
-  if (useAftercare ? ctx.state.aftercareRemaining <= 0 : ctx.state.texting[shift].remaining <= 0) return null;
-  return { customer, shift, phase: p.kind, isThanks };
+  if ((p.kind !== 'texting' && p.kind !== 'aftercare') || !customer) return null;
+  return { customer, shift: p.shift, phase: p.kind, isThanks: baseKind(template) === 'thanks' };
 }
 
 export function doSendCare(ctx: Ctx, customerId: string, template: CareTemplateId, productId?: string): boolean {

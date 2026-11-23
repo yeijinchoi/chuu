@@ -62,8 +62,8 @@
     },
     "probeUsed": "이미 물어봤어요",
     "closingReply": {
-      "reply": "답장하기",
-      "ignore": "무시하기"
+      "reply": "답장한다",
+      "ignore": "폰을 엎어 둔다"
     },
     "placeRedBox": "문 앞에 빨간 상자를 둔다",
     "briefing": {
@@ -74,7 +74,8 @@
     "title": {
       "start": "출근하기",
       "resume": "이어하기"
-    }
+    },
+    "openDisplay": "진열에서 상품 고르기"
   },
   "stage_labels": {
     "greet": "인사",
@@ -108,12 +109,13 @@
     "ignored": [
       "……",
       "……",
-      "……",
       "내일 봐."
     ],
     "replied": [
       "고마워. 이제 내 자리 돌려줘."
-    ]
+    ],
+    "replyPreview": "누구세요?",
+    "facedown": "폰 화면이 엎어진 채로 계속 진동한다."
   },
   "badEnding": {
     "line": "마감 시간입니다.",
@@ -272,7 +274,7 @@
     "tabs": {
       "chat": "문자",
       "book": "명부",
-      "cards": "고객 카드",
+      "cards": "카드",
       "rules": "수칙"
     },
     "battery": "평정심",
@@ -295,7 +297,8 @@
       "sent": "보냄",
       "replied": "답장 옴",
       "coming": "방문 예정",
-      "no": "안 옴"
+      "no": "안 옴",
+      "sending": "전송 중…"
     },
     "served": "오늘 응대한 손님",
     "soldMark": "판매",
@@ -306,11 +309,13 @@
     "cardEmpty": "아직 기록된 손님이 없어요",
     "cardFields": {
       "category": "찾는 것",
-      "occasion": "용도",
+      "occasion": "기념일",
       "budget": "예산",
-      "color": "색",
-      "notes": "메모",
-      "purchases": "구매"
+      "color": "취향 색",
+      "notes": "성격",
+      "purchases": "구매",
+      "relation": "관계",
+      "lastContact": "마지막 연락"
     },
     "cardBook": {
       "afternoon": "오후",
@@ -322,7 +327,51 @@
     "ledger": "장부",
     "closingHint": "4시 44분의 문자",
     "placeRedBox": "문 앞에 빨간 상자 두기",
-    "signboard": "업무폰"
+    "signboard": "업무폰",
+    "goHome": "홈 화면",
+    "leaveHome": "홈 화면 닫기",
+    "back": "목록",
+    "apps": {
+      "book": "고객 명부",
+      "black": "이름 없는 앱"
+    },
+    "bookAfternoon": "고객 명부",
+    "bookDawn": "검은 수첩",
+    "waitReply": "답장을 기다리는 중이에요",
+    "replyWaiting": "답장 대기",
+    "replyField": "답장",
+    "composeSales": "영업 문자",
+    "composeCare": "관리 문자",
+    "composeNone": "지금은 보낼 수 있는 문자가 없어요.",
+    "composeClosed": "문자를 쓸 수 있는 때가 아니에요.",
+    "mode": {
+      "sales": "영업",
+      "care": "관리"
+    },
+    "pickProduct": "추천할 상품을 고르세요",
+    "productSlot": "(상품)",
+    "eventSlot": "(기념일)",
+    "careList": "단골 관리",
+    "cardTitle": "고객 카드",
+    "schedule": "오늘 방문 일정",
+    "dayN": "{n}일차",
+    "rel": {
+      "up": "관계가 조금 가까워졌어요",
+      "down": "관계가 조금 멀어졌어요"
+    },
+    "block": {
+      "phase": "지금은 보낼 수 없어요",
+      "unknown": "보낼 수 없는 문구예요",
+      "sent": "이미 문자를 보냈어요",
+      "noneLeft": "오늘 문자를 다 썼어요",
+      "salesCap": "영업 문자는 2통까지예요",
+      "notRegistered": "단골로 등록한 손님만 가능해요",
+      "noPurchase": "구매한 손님에게만 보내요",
+      "lost": "이탈한 손님이에요",
+      "unreachable": "연락할 수단이 없어요",
+      "noProduct": "상품을 골라야 해요",
+      "noAftercare": "감사 문자를 다 썼어요"
+    }
   },
   "categories": {
     "bag": "가방",
@@ -374,6 +423,21 @@
     "choices": "선택지",
     "phone": "업무폰",
     "display": "진열",
-    "hearts": "호감도"
+    "hearts": "호감도",
+    "status": "상태",
+    "tabbar": "화면 전환"
+  },
+  "mobile": {
+    "tabs": {
+      "serve": "응대",
+      "display": "진열",
+      "phone": "업무폰"
+    },
+    "closeSheet": "아래로 내려 닫기",
+    "displaySign": "진열 · 제안"
+  },
+  "rotate": {
+    "title": "세로로 돌려 주세요",
+    "sub": "이 게임은 세로 화면에서 플레이해요."
   }
 }

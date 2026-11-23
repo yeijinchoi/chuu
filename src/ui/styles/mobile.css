@@ -1,0 +1,235 @@
+/* 모바일 세로 배치 — DESIGN_SYSTEM §7-2.
+   무대(960×540)를 줄이지 않고, 장면 캔버스만 폭에 맞춰 16:9로 두고 나머지는 CSS px로 흐른다.
+   전환 조건과 "세로로 돌려 주세요"는 layout.ts가 html[data-layout], html[data-rotate]로 알려 준다. */
+
+/* ---------- 세로로 돌려 주세요 (작은 가로 화면) ---------- */
+html[data-rotate='1'] .rotate {
+  display: flex; position: fixed; inset: 0; z-index: 100; align-items: center; justify-content: center;
+  background: var(--ink); padding: var(--space-5);
+}
+.rotate__box {
+  display: flex; flex-direction: column; align-items: center; gap: var(--space-3); padding: var(--space-4) var(--space-6);
+  background: var(--color-surface); border: 16px solid transparent; border-image: var(--fr-main) 16 / 16px / 0 stretch; image-rendering: pixelated;
+}
+.rotate__title { font-family: var(--font-logo); font-size: 14px; line-height: 20px; color: var(--color-text); }
+.rotate__sub { font-size: 11px; line-height: 16px; color: var(--color-text-muted); }
+/* 회전 아이콘: 도트 사각형 폰 + 계단식 화살표 */
+.rotate__icon { position: relative; width: 56px; height: 56px; }
+.rotate__phone { position: absolute; left: 20px; top: 8px; width: 16px; height: 32px; background: var(--ink); border: 4px solid var(--color-trim); animation: rotate-hint 2400ms steps(4, end) infinite; }
+.rotate__arrow { position: absolute; right: 0; bottom: 4px; width: 8px; height: 8px; background: var(--color-accent); clip-path: polygon(0 0, 100% 50%, 0 100%); }
+@keyframes rotate-hint { 0%, 30% { transform: rotate(0); } 60%, 100% { transform: rotate(90deg); } }
+
+/* ---------- 모바일 레이아웃 ---------- */
+html[data-layout='mobile'] .stage-wrap { position: fixed; inset: 0; overflow: hidden; }
+html[data-layout='mobile'] .stage {
+  position: absolute; inset: 0; left: 0; top: 0; width: 100%; height: 100%; transform: none; overflow: hidden;
+  display: flex; flex-direction: column; gap: var(--m-gap);
+  padding: var(--m-safe-top) var(--m-gap) 0;
+}
+html[data-layout='mobile'] .stage.shake { animation: shake-m 300ms steps(2, end) 2; }
+@keyframes shake-m { 25% { translate: 2px 0; } 50% { translate: -2px 1px; } 75% { translate: 1px -1px; } 100% { translate: 0 0; } }
+
+/* 상단 상태 명판 */
+html[data-layout='mobile'] .m-status {
+  display: flex; flex: none; order: 0; align-items: center; justify-content: space-between; gap: var(--space-3);
+  height: var(--m-status-h); margin-top: var(--m-gap); padding: 0 var(--space-4);
+  background: var(--color-surface); border: 4px solid transparent; border-image: var(--fr-tiny-base) 4 / 4px / 0 stretch; image-rendering: pixelated;
+  font-size: var(--text-m-sub); line-height: var(--lh-m-sub); color: var(--color-text);
+}
+.m-status__money { color: var(--color-money); }
+.m-status__regs { color: var(--color-text-muted); }
+.m-status .battery { margin-left: auto; border-color: var(--color-text-muted); }
+.m-status .cell--on { background: var(--bone); }
+.m-status .battery[data-level='mid'] .cell--on { background: var(--brass); }
+.m-status .battery[data-level='low'] .cell--on { background: var(--wine); }
+
+/* 응대 프레임: 장면 캔버스가 폭에 맞는다 */
+html[data-layout='mobile'] .frame { position: relative; left: auto; top: auto; border-width: 8px; border-image: var(--fr-main-s) 8 / 8px / 0 stretch; }
+html[data-layout='mobile'] .frame--serve { flex: none; order: 1; width: 100%; height: auto; margin-top: var(--space-3); }
+html[data-layout='mobile'] .viewport { width: 100%; height: auto; aspect-ratio: 16 / 9; }
+html[data-layout='mobile'] .viewport__canvas { width: 100%; height: 100%; image-rendering: pixelated; }
+html[data-layout='mobile'] .cartouche { top: -18px; }
+html[data-layout='mobile'] .hud { left: 4px; top: 4px; right: 4px; flex-wrap: wrap; gap: 2px var(--space-3); font-family: var(--font-body); font-size: var(--text-m-sub); line-height: var(--lh-m-sub); padding: 0 var(--space-3); }
+html[data-layout='mobile'] .heart { font-size: var(--text-m-sub); }
+html[data-layout='mobile'] .tip--serve { left: 4px; right: 4px; top: auto; bottom: 4px; max-width: none; font-size: var(--text-m-sub); }
+
+/* 대화창: 장면 아래, 본문 14px */
+html[data-layout='mobile'] .dialogue {
+  position: relative; order: 2; flex: 1 1 110px; left: auto; top: auto; width: 100%; height: auto; min-height: 96px; margin-top: var(--space-4);
+  padding: var(--space-3) var(--space-4) var(--space-4); border-width: 8px; z-index: 1;
+}
+html[data-layout='mobile'] .dialogue__text { height: auto; max-height: 100%; font-family: var(--font-m-body); font-size: var(--text-m-body); line-height: var(--lh-m-body); overflow-y: auto; }
+html[data-layout='mobile'] .dialogue__plate { top: -22px; left: 4px; height: 20px; font-family: var(--font-body); }
+html[data-layout='mobile'] .dialogue__arrow { right: 4px; bottom: 2px; font-size: var(--text-m-sub); }
+
+/* 선택지: 엄지 영역, 화면 폭 버튼 48px */
+html[data-layout='mobile'] .choices { position: relative; order: 3; flex: none; left: auto; bottom: auto; width: 100%; gap: var(--m-gap); z-index: 1; }
+html[data-layout='mobile'] .choice { height: var(--m-touch); padding: 0 var(--space-4); gap: var(--space-3); font-family: var(--font-m-body); font-size: var(--text-m-body); line-height: var(--lh-m-body); }
+html[data-layout='mobile'] .choice__key { font-size: var(--text-m-sub); }
+html[data-layout='mobile'] .choice__label { -webkit-line-clamp: 1; }
+html[data-layout='mobile'] .choice:hover { background: var(--color-surface); border-image-source: var(--fr-tiny-base); }
+html[data-layout='mobile'] .choice:active { background: var(--color-surface-raised); border-image-source: var(--fr-tiny-hover); transform: none; }
+html[data-layout='mobile'] .choice[data-disabled]:active { background: var(--color-surface); border-image-source: var(--fr-tiny-disabled); }
+
+/* 토스트: 상단 명판 아래 */
+html[data-layout='mobile'] .toasts { position: absolute; left: var(--m-gap); right: var(--m-gap); top: calc(var(--m-safe-top) + var(--m-gap) + var(--m-status-h) + var(--m-gap)); width: auto; padding-right: 0; align-items: center; z-index: 70; }
+html[data-layout='mobile'] .toast { max-width: 100%; font-size: var(--text-m-sub); line-height: var(--lh-m-sub); }
+
+/* 하단 탭 바: 응대 · 진열 · 업무폰 */
+html[data-layout='mobile'] .m-tabbar {
+  display: flex; flex: none; order: 9; gap: var(--m-gap); margin: 0 calc(var(--m-gap) * -1); padding: var(--m-gap) var(--m-gap) calc(var(--m-gap) + var(--m-safe-bottom));
+  border-top: 1px solid var(--color-border); background: var(--color-bg);
+}
+.m-tab { position: relative; flex: 1; height: var(--m-tabbar-h); display: flex; align-items: center; justify-content: center; text-align: center;
+  background: var(--color-surface); color: var(--color-text-muted); font-family: var(--font-m-body); font-size: var(--text-m-body);
+  border: 4px solid transparent; border-image: var(--fr-tiny-base) 4 / 4px / 0 stretch; image-rendering: pixelated; }
+.m-tab[aria-pressed='true'] { background: var(--color-surface-raised); color: var(--color-text); border-image-source: var(--fr-tiny-hover); }
+.m-tab:active { border-image-source: var(--fr-tiny-hover); background: var(--color-surface-raised); }
+.m-tab__dot { display: none; position: absolute; right: 12px; top: 8px; width: 8px; height: 8px; background: var(--color-accent); }
+.m-tab.has-dot .m-tab__dot { display: block; }
+
+/* 바텀시트 공통 */
+html[data-layout='mobile'] .m-backdrop { display: block; position: fixed; inset: 0; z-index: 44; background: var(--ink); opacity: 0; visibility: hidden; transition: opacity var(--dur-base) linear, visibility 0s linear var(--dur-base); }
+html[data-layout='mobile'] .m-backdrop.is-on { opacity: 0.55; visibility: visible; transition-delay: 0s; }
+html[data-layout='mobile'] .frame--display,
+html[data-layout='mobile'] .frame--phone {
+  position: fixed; left: 0; right: 0; top: auto; bottom: 0; width: auto; z-index: 45; margin: 0;
+  padding: 0 0 var(--m-safe-bottom); display: flex; flex-direction: column;
+  transform: translateY(100%); transition: transform var(--dur-slow) var(--ease-out), visibility 0s linear var(--dur-slow);
+}
+html[data-layout='mobile'] .frame--display { height: 55%; }
+html[data-layout='mobile'] .frame--phone { height: 88%; }
+html[data-layout='mobile'] .frame--display.is-open,
+html[data-layout='mobile'] .frame--phone.is-open { transform: translateY(0); transition-delay: 0s; }
+html[data-layout='mobile'] .frame[data-closed] { visibility: hidden; }
+html[data-layout='mobile'] .frame--display.is-open, html[data-layout='mobile'] .frame--phone.is-open { visibility: visible; }
+html[data-layout='mobile'] .cartouche--sheet, html[data-layout='mobile'] .cartouche--phone { display: flex; top: -14px; z-index: 3; }
+html[data-layout='mobile'] .phone__chin { display: none; }
+html[data-layout='mobile'] .sheet-grab { display: flex; position: relative; flex: none; align-items: center; justify-content: center; width: 100%; height: 28px; touch-action: none; cursor: grab; }
+html[data-layout='mobile'] .sheet-grab::before { content: ''; position: absolute; left: 0; right: 0; top: -16px; bottom: 0; }
+.sheet-grab__bar { display: block; width: 48px; height: 4px; background: var(--stone); border-top: 1px solid var(--brass-dark); }
+
+/* 진열 시트: 부서 탭 + 세로 카드 목록 */
+html[data-layout='mobile'] .display { display: flex; flex-direction: column; width: 100%; height: auto; flex: 1; min-height: 0; padding: 0 var(--space-4) var(--space-4); gap: var(--m-gap); overflow: hidden; }
+html[data-layout='mobile'] .display__title { display: none; }
+html[data-layout='mobile'] .display__side { flex: none; flex-direction: row; flex-wrap: wrap; gap: var(--m-gap); align-items: center; }
+html[data-layout='mobile'] .display__label { flex-basis: 100%; font-family: var(--font-m-body); font-size: var(--text-m-body); line-height: var(--lh-m-body); }
+html[data-layout='mobile'] .display__hint { flex-basis: 100%; order: -1; font-family: var(--font-m-body); font-size: var(--text-m-body); line-height: var(--lh-m-body); color: var(--color-text); }
+html[data-layout='mobile'] .display[data-mode='offers'] .display__label { display: none; }
+html[data-layout='mobile'] .dept-tab { flex: 1; height: var(--m-touch); font-size: var(--text-m-sub); }
+html[data-layout='mobile'] .dept-tab:hover { color: var(--color-text-muted); border-image-source: var(--fr-tiny-base); }
+html[data-layout='mobile'] .dept-tab[aria-selected='true'], html[data-layout='mobile'] .dept-tab[aria-selected='true']:hover { color: var(--color-text); border-image-source: var(--fr-tiny-selected); }
+html[data-layout='mobile'] .display__body { flex: 1; min-height: 0; flex-direction: column; gap: var(--m-gap); overflow-y: auto; padding: 2px 0; }
+html[data-layout='mobile'] .display__body[data-count] { gap: var(--m-gap); }
+html[data-layout='mobile'] .slot { flex: none; width: 100%; height: auto; min-height: 72px; margin: 0; padding: var(--space-3); flex-direction: row; align-items: center; gap: var(--space-4); }
+html[data-layout='mobile'] .slot::before { display: none; }
+html[data-layout='mobile'] .slot--empty { display: none; }
+html[data-layout='mobile'] .slot .icon { margin: 0; }
+html[data-layout='mobile'] .slot__name { flex: 1; min-width: 0; font-family: var(--font-m-body); font-size: var(--text-m-body); line-height: var(--lh-m-body); }
+html[data-layout='mobile'] .slot__price { font-size: var(--text-m-sub); line-height: var(--lh-m-sub); }
+html[data-layout='mobile'] .card { flex: none; width: 100%; height: auto; min-height: 88px; margin: 0; padding: var(--space-3) var(--space-3) var(--space-3) var(--space-3); gap: var(--space-4); }
+html[data-layout='mobile'] .card:hover { background: var(--color-surface); border-image-source: var(--fr-tiny-base); }
+html[data-layout='mobile'] .card:active { background: var(--color-surface-raised); border-image-source: var(--fr-tiny-hover); transform: none; }
+html[data-layout='mobile'] .card__name { font-family: var(--font-m-body); font-size: var(--text-m-body); line-height: var(--lh-m-body); padding-right: 24px; -webkit-line-clamp: 1; }
+html[data-layout='mobile'] .card__meta { font-family: var(--font-body); font-size: var(--text-m-sub); line-height: var(--lh-m-sub); }
+html[data-layout='mobile'] .price { font-size: var(--text-m-sub); line-height: var(--lh-m-sub); }
+html[data-layout='mobile'] .price__label { font-size: var(--text-m-sub); }
+html[data-layout='mobile'] .card__desc { font-family: var(--font-body); font-size: var(--text-m-sub); line-height: var(--lh-m-sub); -webkit-line-clamp: 1; }
+html[data-layout='mobile'] .card__key { font-size: var(--text-m-sub); top: 0; }
+html[data-layout='mobile'] .slot .icon, html[data-layout='mobile'] .card .icon { width: 64px; height: 64px; padding: 4px; box-sizing: content-box; background: var(--ink); }
+
+/* 업무폰 시트: 폰 화면이 시트 전체 */
+html[data-layout='mobile'] .phone {
+  flex: 1; width: auto; height: auto; min-height: 0; margin: 0 var(--space-3) var(--space-3); padding: var(--space-4) var(--space-4) 0;
+  font-family: var(--font-m-body); font-size: var(--text-m-body); line-height: var(--lh-m-body);
+}
+html[data-layout='mobile'] .phone__status { gap: var(--space-4); line-height: var(--lh-m-body); }
+html[data-layout='mobile'] .phone__clock, html[data-layout='mobile'] .phone__day { font-size: var(--text-m-sub); font-family: var(--font-mono); }
+html[data-layout='mobile'] .phone__home { width: var(--m-touch); height: var(--m-touch); margin: calc(var(--space-3) * -1) calc(var(--space-4) * -1) calc(var(--space-3) * -1) 0; }
+html[data-layout='mobile'] .phone__home-glyph { width: 14px; height: 14px; }
+html[data-layout='mobile'] .phone__money { font-size: var(--text-m-sub); line-height: var(--lh-m-sub); }
+html[data-layout='mobile'] .phone__sub { font-size: var(--text-m-sub); line-height: var(--lh-m-sub); font-family: var(--font-body); }
+html[data-layout='mobile'] .phone .divider { margin: var(--space-3) 0; }
+html[data-layout='mobile'] .phone__tabs { gap: var(--m-gap); margin-bottom: var(--space-3); }
+html[data-layout='mobile'] .tab { height: 40px; font-family: var(--font-body); font-size: var(--text-m-sub); }
+html[data-layout='mobile'] .tab:hover { border-image-source: var(--fr-tiny-base); }
+html[data-layout='mobile'] .tab[aria-selected='true'], html[data-layout='mobile'] .tab[aria-selected='true']:hover { border-image-source: var(--fr-tiny-hover); }
+html[data-layout='mobile'] .tab:active { border-image-source: var(--fr-tiny-hover); }
+html[data-layout='mobile'] .tab[data-dot]::after { width: 8px; height: 8px; right: 4px; top: 4px; }
+html[data-layout='mobile'] .phone__body { padding-right: 0; -webkit-overflow-scrolling: touch; }
+html[data-layout='mobile'] .phone__foot { gap: var(--m-gap); padding: var(--space-3) 0 var(--space-4); }
+html[data-layout='mobile'] .phone__counter { font-size: var(--text-m-sub); line-height: var(--lh-m-sub); font-family: var(--font-body); }
+html[data-layout='mobile'] .phone-btn { height: var(--m-touch); font-size: var(--text-m-body); }
+html[data-layout='mobile'] .phone-btn--primary { height: 52px; }
+html[data-layout='mobile'] .phone-btn--small { height: var(--m-touch); margin-top: var(--space-3); }
+html[data-layout='mobile'] .phone-btn:hover { border-image-source: var(--fr-tiny-base); }
+html[data-layout='mobile'] .phone-btn--primary:hover { border-image-source: var(--fr-tiny-selected); }
+html[data-layout='mobile'] .phone-btn:active { border-image-source: var(--fr-tiny-hover); transform: none; }
+html[data-layout='mobile'] .phone-btn--choice { height: 52px; }
+html[data-layout='mobile'] .phone__h { font-size: var(--text-m-body); line-height: var(--lh-m-body); }
+html[data-layout='mobile'] .phone__h--sub { font-size: var(--text-m-sub); line-height: var(--lh-m-sub); font-family: var(--font-body); margin-top: var(--space-3); }
+html[data-layout='mobile'] .hint, html[data-layout='mobile'] .empty { font-size: var(--text-m-sub); line-height: var(--lh-m-sub); font-family: var(--font-body); }
+html[data-layout='mobile'] .note-page { font-size: var(--text-m-sub); line-height: var(--lh-m-sub); font-family: var(--font-body); }
+html[data-layout='mobile'] .contacts { gap: var(--space-3); }
+html[data-layout='mobile'] .contact__head { min-height: var(--m-touch); line-height: var(--lh-m-body); }
+html[data-layout='mobile'] .contact__addr, html[data-layout='mobile'] .contact__memo { font-family: var(--font-body); font-size: var(--text-m-sub); line-height: var(--lh-m-sub); }
+html[data-layout='mobile'] .chip-state { font-family: var(--font-body); font-size: var(--text-m-sub); line-height: var(--lh-m-sub); padding: 0 var(--space-3); }
+html[data-layout='mobile'] .thread__head { min-height: var(--m-touch); gap: var(--space-4); }
+html[data-layout='mobile'] .thread__back { min-width: var(--m-touch); min-height: var(--m-touch); display: flex; align-items: center; font-size: var(--text-m-sub); font-family: var(--font-body); }
+html[data-layout='mobile'] .thread-row { min-height: var(--m-touch); padding: var(--space-3) 0; }
+html[data-layout='mobile'] .thread-row__last { font-family: var(--font-body); font-size: var(--text-m-sub); line-height: var(--lh-m-sub); }
+html[data-layout='mobile'] .bubble { padding: var(--space-3) var(--space-4); font-size: var(--text-m-body); line-height: var(--lh-m-body); }
+html[data-layout='mobile'] .bubble__from, html[data-layout='mobile'] .bubble__status, html[data-layout='mobile'] .sys, html[data-layout='mobile'] .compose__label { font-family: var(--font-body); font-size: var(--text-m-sub); line-height: var(--lh-m-sub); }
+html[data-layout='mobile'] .chat { gap: var(--space-3); }
+html[data-layout='mobile'] .reply { gap: var(--m-gap); }
+html[data-layout='mobile'] .reply__opt { min-height: var(--m-touch); padding: var(--space-3) var(--space-4); display: flex; align-items: center; }
+html[data-layout='mobile'] .reply__opt:hover { border-image-source: var(--fr-tiny-base); }
+html[data-layout='mobile'] .reply__opt:active { border-image-source: var(--fr-tiny-hover); }
+html[data-layout='mobile'] .compose { gap: var(--m-gap); }
+html[data-layout='mobile'] .compose__h { line-height: var(--lh-m-body); }
+html[data-layout='mobile'] .seg__btn { height: var(--m-touch); font-size: var(--text-m-body); }
+html[data-layout='mobile'] .radios { gap: var(--space-2); }
+html[data-layout='mobile'] .radio { min-height: var(--m-touch); gap: var(--space-4); padding: var(--space-3) var(--space-3); font-size: var(--text-m-body); line-height: var(--lh-m-body); }
+html[data-layout='mobile'] .radio::before { width: 14px; height: 14px; }
+html[data-layout='mobile'] .radio:hover:not(:disabled) { background: transparent; color: inherit; }
+html[data-layout='mobile'] .radio:active:not(:disabled) { background: var(--stone); color: var(--paper); }
+html[data-layout='mobile'] .radio__why { font-family: var(--font-body); font-size: var(--text-m-sub); line-height: var(--lh-m-sub); padding-left: 26px; }
+html[data-layout='mobile'] .picker__grid { grid-template-columns: repeat(auto-fill, minmax(52px, 1fr)); gap: var(--m-gap); }
+html[data-layout='mobile'] .tile { height: 56px; }
+html[data-layout='mobile'] .picker__name { font-size: var(--text-m-sub); line-height: var(--lh-m-sub); font-family: var(--font-body); }
+html[data-layout='mobile'] .closing-input__field { min-height: var(--m-touch); font-size: var(--text-m-body); }
+html[data-layout='mobile'] .kv { line-height: var(--lh-m-body); }
+html[data-layout='mobile'] .kv__k { width: 84px; font-size: var(--text-m-sub); font-family: var(--font-body); }
+html[data-layout='mobile'] .card-sheet__tier, html[data-layout='mobile'] .sched__state { font-size: var(--text-m-sub); }
+html[data-layout='mobile'] .card-pick { gap: var(--m-gap); }
+html[data-layout='mobile'] .card-pick__btn { min-height: var(--m-touch); padding: 0 var(--space-4); font-size: var(--text-m-body); }
+html[data-layout='mobile'] .sched__row { line-height: var(--lh-m-body); }
+html[data-layout='mobile'] .rules__list { font-size: var(--text-m-body); line-height: var(--lh-m-body); gap: var(--space-3); }
+html[data-layout='mobile'] .tip--phone { top: 120px; font-size: var(--text-m-sub); line-height: var(--lh-m-sub); font-family: var(--font-body); }
+html[data-layout='mobile'] .apps { gap: 32px; }
+html[data-layout='mobile'] .app { width: 80px; }
+html[data-layout='mobile'] .app__icon { width: 64px; height: 64px; }
+html[data-layout='mobile'] .app__label { font-size: var(--text-m-sub); line-height: var(--lh-m-sub); }
+html[data-layout='mobile'] .phone__home-clock { font-size: 28px; line-height: 34px; padding: var(--space-5) 0 var(--space-6); }
+
+/* 화면 오버레이(타이틀·이름·쪽지·정산서)는 모바일 폭에 맞춘다 */
+html[data-layout='mobile'] .screen { padding: var(--space-5) var(--m-gap); padding-top: calc(var(--space-5) + var(--m-safe-top)); padding-bottom: calc(var(--space-5) + var(--m-safe-bottom)); overflow-y: auto; justify-content: flex-start; gap: var(--space-4); }
+html[data-layout='mobile'] .screen > :first-child { margin-top: auto; }
+html[data-layout='mobile'] .screen > :last-child { margin-bottom: auto; }
+html[data-layout='mobile'] .screen--title, html[data-layout='mobile'] .screen--ending { justify-content: center; }
+html[data-layout='mobile'] .title__logo { font-size: 28px; }
+html[data-layout='mobile'] .btn { min-width: 220px; height: var(--m-touch); font-size: var(--text-m-body); font-family: var(--font-m-body); }
+html[data-layout='mobile'] .btn:hover { background: var(--color-surface); border-image-source: var(--fr-tiny-base); }
+html[data-layout='mobile'] .btn:active { background: var(--color-surface-raised); border-image-source: var(--fr-tiny-hover); transform: none; }
+html[data-layout='mobile'] .name { width: 100%; max-width: 360px; }
+html[data-layout='mobile'] .name__label { font-family: var(--font-m-body); font-size: var(--text-m-body); line-height: var(--lh-m-body); }
+html[data-layout='mobile'] .name__input { height: var(--m-touch); font-family: var(--font-m-body); font-size: var(--text-m-body); }
+html[data-layout='mobile'] .note { width: 100%; max-width: 340px; max-height: none; overflow: visible; font-family: var(--font-m-body); font-size: var(--text-m-body); line-height: var(--lh-m-body); }
+html[data-layout='mobile'] .note--dawn { width: 100%; max-width: 360px; }
+html[data-layout='mobile'] .note__line, html[data-layout='mobile'] .note__rule, html[data-layout='mobile'] .note__title, html[data-layout='mobile'] .note__sign { line-height: var(--lh-m-body); }
+html[data-layout='mobile'] .ledger { width: 100%; max-width: 480px; padding: var(--space-4); border-width: 8px; border-image: var(--fr-main-s) 8 / 8px / 0 stretch; }
+html[data-layout='mobile'] .ledger__cols { flex-direction: column; gap: var(--space-4); }
+html[data-layout='mobile'] .ledger__rule { display: none; }
+html[data-layout='mobile'] .ledger__comment, html[data-layout='mobile'] .ledger__teaser, html[data-layout='mobile'] .ledger__thought { padding-right: 0; font-size: var(--text-m-body); line-height: var(--lh-m-body); font-family: var(--font-m-body); }
+html[data-layout='mobile'] .ledger .kv { font-family: var(--font-body); }
+html[data-layout='mobile'] .stamp { position: relative; right: auto; bottom: auto; align-self: flex-end; margin-top: calc(var(--space-6) * -1); }

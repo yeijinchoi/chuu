@@ -121,7 +121,7 @@ export class DisplayPanel {
         const slot = el('div', p ? 'slot' : 'slot slot--empty');
         if (p) {
           slot.title = p.description ? `${p.name}\n${p.description}` : p.name;
-          slot.append(icon(p.id, this.mood), el('span', 'slot__price', shortWon(p.price)));
+          slot.append(icon(p.id, this.mood), el('span', 'slot__name', p.name), el('span', 'slot__price', shortWon(p.price)));
         }
         body.append(slot);
       }

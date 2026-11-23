@@ -113,6 +113,23 @@ function minorFrame(mood: Mood): string {
   }, { 0: 3, 2: 2 });
 }
 
+/** 모바일 주 프레임(응대·시트): 테두리 8px. 모서리에는 진주 한 알만 둔다(§7-2). */
+const MAIN_SMALL_CORNER = [
+  '........',
+  '........',
+  '........',
+  '...lb...',
+  '..bopb..',
+  '...bb...',
+  '........',
+  '........',
+];
+function mainSmallFrame(mood: Mood): string {
+  return frame(32, 8, { 0: 'brass-dark', 2: 'stone', 7: 'ink' }, mood, (px) => {
+    stampCorners(px, 32, symmetrize(MAIN_SMALL_CORNER), LEG);
+  }, { 0: 3, 2: 2 });
+}
+
 export interface TinyStyle { outer: PaletteKey; inner: PaletteKey; corner: PaletteKey }
 const TINY: Record<string, TinyStyle> = {
   base: { outer: 'brass-dark', inner: 'stone', corner: 'brass' },
@@ -165,6 +182,7 @@ export function buildFrames(mood: Mood): FrameSet {
   const vars: Record<string, string> = {
     '--fr-main': url(mainFrame(mood)),
     '--fr-minor': url(minorFrame(mood)),
+    '--fr-main-s': url(mainSmallFrame(mood)),
     '--fr-divider': url(dividerImage(mood)),
     '--fr-v': url(ornamentV(mood)),
     '--fr-diamond': url(diamondImage(mood)),

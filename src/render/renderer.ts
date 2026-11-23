@@ -1,6 +1,6 @@
 import { DRAIN_ORDER, buildLut, type Mood, type PaletteKey } from './palette';
 import { Layer, toImageData } from './pixel';
-import { W, H, bakeScene, drawChandelier, type SceneBake, type Shift } from './scene';
+import { W, H, bakeScene, drawChandelier, drawSilhouette, type SceneBake, type Shift } from './scene';
 import { drawCustomer, drawOutsideColour, type SpriteDef } from './customerSprite';
 import { createFlicker, scanlines, type Flicker } from './effects';
 import { createLoop, type Loop } from './loop';
@@ -55,6 +55,19 @@ export class Renderer {
     x.imageSmoothingEnabled = false;
     return x;
   }
+
+  /** 04:44 문 유리의 실루엣: 현재 짙기, 목표 짙기, 변화 속도(초당) */
+  private sil = { level: 0, target: 0, rate: 0, palm: false };
+  /** 목표 짙기(0~1)로 seconds초에 걸쳐 바꾼다. reduced-motion이면 즉시. */
+  setSilhouette(target: number, seconds = 4, palm = false): void {
+    const s = this.sil;
+    s.target = target;
+    s.palm = palm;
+    if (this.reduced || seconds <= 0) { s.level = target; s.rate = 0; }
+    else s.rate = Math.abs(target - s.level) / seconds;
+    this.acc = 1;
+  }
+  get silhouetteLevel(): number { return this.sil.level; }
 
   setShift(s: Shift): void { this.shift = s; }
   setMood(m: Mood): void { this.mood = m; }
@@ -120,6 +133,12 @@ export class Renderer {
 
   update(dt: number): void {
     this.t += dt;
+    const sil = this.sil;
+    if (sil.level !== sil.target) {
+      const step = sil.rate * dt;
+      sil.level = Math.abs(sil.target - sil.level) <= step ? sil.target : sil.level + Math.sign(sil.target - sil.level) * step;
+      this.acc = 1;
+    }
     this.flicker.update(dt);
     this.acc += dt;
   }
@@ -129,6 +148,7 @@ export class Renderer {
     this.mid.clear();
     this.top.clear();
     drawChandelier(this.mid, this.shift, this.flicker.level);
+    drawSilhouette(this.mid, this.sil.level, this.sil.palm);
     if (this.customer && this.customer.sprite.draw !== 'drawOutsideColour' && !this.imageSprite()) {
       drawCustomer(this.customer, { mid: this.mid, top: this.top }, { t: this.t, reduced: this.reduced, shift: this.shift });
     }

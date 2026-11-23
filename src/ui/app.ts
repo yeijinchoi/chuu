@@ -2,7 +2,7 @@ import customersData from '../data/customers.json';
 import { Game } from '../core/game';
 import { loadGameData } from '../core/gameData';
 import { JsonStorageAdapter } from '../core/save';
-import type { GameEvent, GreetStyle, ProbeId, CloseId, Mood as CoreMood, EncounterState, CustomerDef } from '../core/types';
+import type { Action, GameEvent, GreetStyle, ProbeId, CloseId, Mood as CoreMood, EncounterState, CustomerDef } from '../core/types';
 import type { Mood } from '../render/palette';
 import type { Renderer } from '../render/renderer';
 import { Bridge, type EventSink, type Flow } from './bridge';
@@ -11,6 +11,8 @@ import { DisplayPanel } from './display';
 import { el, t } from './dom';
 import { applyFrames } from './frames';
 import { Phone } from './phone';
+import { sfx } from './sfx';
+import type { SheetId } from './sheets';
 import { endingScreen, nameScreen, noteScreen, resultsScreen, titleScreen, type Overlay } from './screens';
 import type { Stage } from './stage';
 
@@ -20,7 +22,10 @@ const CLOSES: CloseId[] = ['tryOn', 'boxRed', 'boxGold', 'checkout'];
 const STEPS: EncounterState['step'][] = ['greet', 'probe', 'propose', 'close'];
 const STEP_KEYS = ['greet', 'probe', 'propose', 'close'] as const;
 const BREACH_MS = 1200;
-const TOAST_MS = 3000;
+const TOAST_MS = 2000;
+const TIP_MS = 8000;
+/** 업무폰 안에서 일어나는 액션: 이 액션이 낳은 속마음·지문은 대화창 대신 폰 대화방에 놓인다 */
+const PHONE_ACTIONS: ReadonlySet<Action['type']> = new Set(['sendText', 'sendCare', 'chooseReply', 'placeRedBox', 'closingText']);
 
 function safeStorage(): JsonStorageAdapter {
   return new JsonStorageAdapter({
@@ -49,41 +54,64 @@ export function startApp(stage: Stage, renderer: Renderer, opts: { debug: boolea
   toasts.setAttribute('role', 'status');
   const veil = el('div', 'veil');
   veil.hidden = true;
-  stage.viewport.append(hud, veil, choices.root, dialogue.root);
-  stage.stage.append(toasts);
+  const serveTip = el('div', 'tip tip--serve');
+  serveTip.hidden = true;
+  serveTip.setAttribute('role', 'status');
+  stage.viewport.append(hud, veil, serveTip);
+  // 대사창·선택지는 무대 바로 아래에 둔다: 데스크톱은 뷰포트 위에 겹치고, 모바일은 장면 아래로 흐른다(CSS)
+  stage.stage.append(choices.root, dialogue.root, toasts);
 
   const display = new DisplayPanel(stage.display);
+  const mobile = (): boolean => stage.layout.mobile;
   let overlay: Overlay | null = null;
   const notes: string[] = [];
   let baseMood: Mood = 'calm';
   let lastSave: boolean | null = null;
   let phaseKey = '';
+  let wantKey = '';
+  let autoSheet: SheetId | null = null;
+  let closingMode = false;
   const seen = new Set<string>();
   let breachTimer = 0;
+  let toastTimer = 0;
+  let tipTimer = 0;
 
   // ------------------------------------------------------------ 분위기·교대
   const setMood = (m: Mood): void => {
     renderer.setMood(m);
     html.dataset.mood = m;
-    applyFrames(stage.stage, m);
+    applyFrames(stage.root, m); // 무대와 "세로로 돌려 주세요" 안내가 함께 쓴다
     display.setMood(m);
+    phone.setMood(m);
   };
   const setShift = (s: 'afternoon' | 'dawn'): void => {
     renderer.setShift(s);
     html.dataset.shift = s;
     display.setShift(s);
   };
+  /** 토스트는 한 번에 하나: 새것이 옛것을 바꾼다 */
   const toast = (text: string, ms = TOAST_MS): void => {
     const n = el('div', 'toast', text);
-    toasts.append(n);
-    while (toasts.children.length > 3) toasts.firstElementChild?.remove();
-    window.setTimeout(() => n.remove(), ms);
+    toasts.replaceChildren(n);
+    window.clearTimeout(toastTimer);
+    toastTimer = window.setTimeout(() => n.remove(), ms);
   };
-  const once = (key: string, text: string): void => {
+  /** 1일차 튜토리얼 말풍선: 문자 단계는 폰 위에, 응대 단계는 장면 위에. 한 번만 보이고 탭하면 사라진다. */
+  const once = (key: string, text: string, where: 'phone' | 'serve'): void => {
     if (game.getState().day !== 1 || seen.has(key)) return;
     seen.add(key);
-    toast(text, 4000);
+    window.clearTimeout(tipTimer);
+    if (where === 'phone') {
+      serveTip.hidden = true;
+      phone.showTip(text);
+      tipTimer = window.setTimeout(() => phone.hideTip(), TIP_MS * 2);
+    } else {
+      serveTip.textContent = text;
+      serveTip.hidden = false;
+      tipTimer = window.setTimeout(() => { serveTip.hidden = true; }, TIP_MS);
+    }
   };
+  serveTip.addEventListener('click', () => { serveTip.hidden = true; });
   const breach = (): void => {
     window.clearTimeout(breachTimer);
     setMood('breach');
@@ -93,45 +121,96 @@ export function startApp(stage: Stage, renderer: Renderer, opts: { debug: boolea
       stage.stage.classList.remove('shake');
     }, BREACH_MS);
   };
-  const blackout = (): void => {
-    veil.hidden = false;
-    window.setTimeout(() => { if (game.getState().phase.kind !== 'badEnding') veil.hidden = true; }, 1500);
+  /** 블랙아웃 1.5초(스탠드까지 꺼짐). 04:44 답장이면 그 전에 실루엣이 유리에 손바닥을 댄다. */
+  const blackout = (palm: boolean, done: () => void): void => {
+    const go = (): void => {
+      veil.hidden = false;
+      window.setTimeout(() => {
+        if (palm) renderer.setSilhouette(0, 0);
+        if (game.getState().phase.kind !== 'badEnding') veil.hidden = true;
+        done();
+      }, 1500);
+    };
+    if (palm) {
+      renderer.setSilhouette(1, 0, true);
+      sfx.play('glass_tap');
+      window.setTimeout(go, opts.reduced ? 100 : 700);
+    } else go();
   };
 
-  const phone = new Phone(stage.phone, { game, data, dispatch: (a) => bridge.dispatch(a) });
+  // ------------------------------------------------------------ 모바일 시트
+  const sheets = stage.sheets;
+  const syncTabbar = (): void => {
+    const open = sheets.open;
+    for (const id of ['serve', 'display', 'phone'] as const) {
+      const on = id === 'serve' ? open === null : open === id;
+      stage.tabbar[id].setAttribute('aria-pressed', String(on));
+    }
+  };
+  const showSheet = (id: SheetId): void => { if (mobile()) sheets.show(id); };
+  sheets.onChange((open) => {
+    phone.setVisible(!mobile() || open === 'phone');
+    syncTabbar();
+  });
+  stage.tabbar.serve.addEventListener('click', () => sheets.close());
+  stage.tabbar.display.addEventListener('click', () => sheets.toggle('display'));
+  stage.tabbar.phone.addEventListener('click', () => sheets.toggle('phone'));
+  stage.layout.onChange(() => phone.setVisible(!mobile() || sheets.open === 'phone'));
+
+  const phone = new Phone(stage.phone, {
+    game, data,
+    dispatch: (a) => bridge.dispatch(a),
+    busy: () => bridge.busy,
+  }, {
+    reduced: opts.reduced,
+    mirror: stage.mStatus,
+    wallSource: stage.canvas,
+    onBadge: (on) => stage.tabbar.phone.classList.toggle('has-dot', on),
+    onClosing: (reply) => { if (!reply) renderer.setSilhouette(0, 4); },
+  });
 
   // ------------------------------------------------------------ 이벤트
+  /** 이 이벤트의 속마음·지문은 폰 대화방에 놓아야 하는가 */
+  const toPhone = (origin: Action | null): boolean =>
+    game.getState().phase.kind !== 'badEnding' && (closingMode || (origin !== null && PHONE_ACTIONS.has(origin.type)));
+
   const sink: EventSink = {
-    onEvent(e: GameEvent): Flow {
+    onEvent(e: GameEvent, origin: Action | null): Flow {
       switch (e.type) {
         case 'line':
           if (e.kind === 'note') { notes.push(e.text); return 'continue'; }
           if (notes.length) { showNote(); return 'retry'; }
-          dialogue.show(e.speaker, e.text, e.speaker ? 'speech' : 'narration', () => bridge.release());
+          if (toPhone(origin)) { phone.addNote(e.text); return 'continue'; }
+          showDialogue(e.speaker, e.text, e.speaker ? 'speech' : 'narration');
           return 'wait';
         case 'thought':
           if (notes.length) { showNote(); return 'retry'; }
-          dialogue.show(null, e.text, 'thought', () => bridge.release());
+          if (toPhone(origin)) { phone.addNote(`(${e.text})`); return 'continue'; }
+          showDialogue(null, e.text, 'thought');
           return 'wait';
         case 'customerEnter': {
           const c = customers.find((x) => x.id === e.customerId);
           if (c) renderer.setCustomer({ id: c.id, form: c.form, sprite: c.sprite } as never);
           hud.hidden = false;
+          if (game.getState().shift === 'afternoon') sfx.play('door_chime');
           return 'continue';
         }
         case 'customerLeave':
           renderer.setCustomer(null);
           hud.hidden = true;
-          if (e.outcome === 'sold') once('end', t('tutorial.end'));
+          if (e.outcome === 'sold') once('end', t('tutorial.end'), 'serve');
           return 'continue';
         case 'affinity': setHearts(e.value, e.delta); return 'continue';
-        case 'composure': phone.refresh(); return 'continue';
-        case 'horror': if (e.kind === 'breach') breach(); else blackout(); return 'continue';
+        case 'composure': if (e.delta < 0) phone.hitBattery(e.delta); else phone.refresh(); return 'continue';
+        case 'horror':
+          if (e.kind === 'breach') { breach(); return 'continue'; }
+          blackout(origin?.type === 'closingText', () => bridge.release());
+          return 'wait';
         case 'violation': return 'continue';
         case 'mannerSlip': toast(t('toast.manner')); phone.pulse('rules'); return 'continue';
         case 'shift': setShift(e.shift); if (e.shift === 'dawn') phone.unlockDawnRules(); return 'continue';
         case 'mood': baseMood = e.mood as CoreMood; if (!breachTimer || html.dataset.mood !== 'breach') setMood(baseMood); return 'continue';
-        case 'sale': toast(t('toast.sale', { amount: e.amount.toLocaleString('en-US') }), 2000); phone.refresh(); return 'continue';
+        case 'sale': toast(t('toast.sale', { amount: e.amount.toLocaleString('en-US') })); sfx.play('register'); phone.refresh(); return 'continue';
         case 'ledger': phone.refresh(); return 'continue';
         case 'regular': {
           const c = customers.find((x) => x.id === e.customerId);
@@ -141,22 +220,56 @@ export function startApp(stage: Stage, renderer: Renderer, opts: { debug: boolea
         case 'cardUpdate':
           if (e.field !== 'purchases') {
             const key = String(e.field);
-            toast(t('toast.cardRecorded', { field: t(`cardFieldNames.${key}`) }), 2000);
+            toast(t('toast.cardRecorded', { field: t(`cardFieldNames.${key}`) }));
             phone.pulse('cards');
           }
           phone.refresh();
           return 'continue';
-        case 'relationship': case 'replyChoices': phone.refresh(); return 'continue';
-        case 'phone': phone.addMessage('in', e.from, e.text); return 'continue';
+        case 'relationship':
+          if (e.delta !== 0 && origin && PHONE_ACTIONS.has(origin.type)) phone.deferNote(e.customerId, t(e.delta > 0 ? 'phone.rel.up' : 'phone.rel.down'));
+          phone.refresh();
+          return 'continue';
+        case 'replyChoices': phone.refresh(); return 'continue';
+        case 'phone':
+          // 답장은 보냄 칩 뒤 1.5~3초에 온다. 04:44 문자는 줄마다 0.95초 간격으로 쌓인다.
+          phone.deliver(e.from, e.text, closingMode ? 950 : 600 + 1500 + Math.random() * 1500, () => bridge.release());
+          return 'wait';
         case 'clock': phone.refresh(); return 'continue';
+        case 'phase': onPhase(e.phase); return 'continue';
         case 'save': lastSave = e.ok; if (!e.ok) toast(t('toast.saveFail'), 5000); return 'continue';
-        case 'sfx': if (e.id === 'lights_off') setShift('dawn'); return 'continue';
+        case 'sfx':
+          sfx.play(e.id);
+          if (e.id === 'lights_off') setShift('dawn');
+          if (e.id === 'phone_buzz') phone.buzz();
+          return 'continue';
         default: return 'continue';
       }
     },
     onIdle,
   };
   const bridge = new Bridge(game, sink);
+
+  function showDialogue(speaker: string | null, text: string, kind: 'speech' | 'narration' | 'thought'): void {
+    if (mobile()) sheets.close(); // 시트가 대사를 가리지 않게
+    dialogue.show(speaker, text, kind, () => bridge.release());
+  }
+
+  /** 단계가 바뀌었다(이벤트 순서대로 불린다): 04:44는 폰이 강제로 열리고 문 유리의 실루엣이 짙어진다 */
+  function onPhase(kind: string): void {
+    if (kind === 'closingText') {
+      closingMode = true;
+      dialogue.hide();
+      choices.clear();
+      phone.setClosing(true);
+      renderer.setSilhouette(1, 4);
+      showSheet('phone');
+      autoSheet = 'phone';
+    } else if (closingMode) {
+      closingMode = false;
+      phone.setClosing(false);
+    }
+    if (kind === 'badEnding') sheets.close();
+  }
 
   function setHearts(value: number, delta: number): void {
     const n = Math.round(value / 20);
@@ -188,7 +301,7 @@ export function startApp(stage: Stage, renderer: Renderer, opts: { debug: boolea
     const lines = notes.splice(0, notes.length);
     const dawn = game.getState().shift === 'dawn';
     let done = false;
-    showOverlay(noteScreen(stage.viewport, {
+    showOverlay(noteScreen(mobile() ? stage.stage : stage.viewport, {
       lines, dawn, action: t(dawn ? 'choices.briefing.dawn' : 'choices.briefing.afternoon'),
       onDone: () => { if (done) return; done = true; closeOverlay(); bridge.release(); },
     }));
@@ -216,7 +329,33 @@ export function startApp(stage: Stage, renderer: Renderer, opts: { debug: boolea
 
   // ------------------------------------------------------------ 입력 UI
   function pickChoices(items: ChoiceItem[]): void {
-    choices.set(items.map((it) => ({ ...it, pick: () => { choices.clear(); it.pick(); } })));
+    choices.set(items.map((it) => ({ ...it, pick: () => { if (!it.keep) choices.clear(); it.pick(); } })));
+  }
+
+  /** 지금 단계에서 자동으로 열려야 하는 시트와, 같은 단계에서 다시 열리지 않게 하는 키 */
+  function wantedSheet(): { id: SheetId; key: string } | null {
+    const p = game.getState().phase;
+    if (p.kind === 'texting' || p.kind === 'aftercare') return { id: 'phone', key: `phone:${p.kind}:${p.shift}` };
+    if (p.kind === 'closingText') return { id: 'phone', key: 'phone:closing' };
+    if (p.kind === 'encounter' && p.enc.step === 'propose') return { id: 'display', key: `display:${p.slotIndex}` };
+    return null;
+  }
+
+  /** 모바일: 문자·애프터케어·04:44에는 업무폰 시트가, 제안 단계에는 진열 시트가 자동으로 열리고 끝나면 닫힌다 */
+  function syncSheets(): void {
+    if (!mobile()) return;
+    const want = wantedSheet();
+    if (want === null) {
+      if (autoSheet !== null && sheets.open === autoSheet) sheets.close();
+      autoSheet = null;
+      wantKey = '';
+      return;
+    }
+    if (want.key !== wantKey) {
+      wantKey = want.key;
+      autoSheet = want.id;
+      sheets.show(want.id);
+    }
   }
 
   function onIdle(): void {
@@ -226,10 +365,13 @@ export function startApp(stage: Stage, renderer: Renderer, opts: { debug: boolea
     const p = s.phase;
     choices.clear();
     phone.refresh();
+    phone.flushNotes();
     const key = `${p.kind}|${'shift' in p ? p.shift : ''}|${s.day}`;
     const entering = key !== phaseKey;
     phaseKey = key;
     if (p.kind !== 'encounter' && display.proposing) display.showCatalog();
+    if (p.kind !== 'texting' && p.kind !== 'aftercare') phone.hideTip();
+    syncSheets();
     switch (p.kind) {
       case 'briefing':
         pickChoices([{ label: t(p.shift === 'dawn' ? 'choices.briefing.dawn' : 'choices.briefing.afternoon'), pick: () => bridge.dispatch({ type: 'ackBriefing' }) }]);
@@ -239,23 +381,24 @@ export function startApp(stage: Stage, renderer: Renderer, opts: { debug: boolea
         break;
       case 'texting':
         dialogue.hide();
-        if (entering) { phone.openTab('book'); once('texting', t('tutorial.texting')); }
+        if (entering) {
+          if (p.shift === 'dawn') phone.openApp(); else phone.openTab('book');
+          once('texting', t('tutorial.texting'), 'phone');
+        }
         break;
       case 'aftercare':
         dialogue.hide();
-        if (entering) { phone.openTab('book'); once('aftercare', t('tutorial.aftercare')); }
+        if (entering) { phone.openTab('book'); once('aftercare', t('tutorial.aftercare'), 'phone'); }
         break;
       case 'closingText':
-        if (entering) phone.openTab('chat');
-        pickChoices([
-          { label: t('choices.closingReply.reply'), pick: () => bridge.dispatch({ type: 'closingText', reply: true }) },
-          { label: t('choices.closingReply.ignore'), pick: () => bridge.dispatch({ type: 'closingText', reply: false }) },
-        ]);
+        // 선택지는 폰 안에 있다(답장한다 / 폰을 엎어 둔다)
+        dialogue.hide();
         break;
       case 'encounter':
         encounterUi(p.enc);
         break;
       case 'results':
+        sheets.close();
         dialogue.hide();
         toasts.replaceChildren();
         showOverlay(resultsScreen(stage.stage, {
@@ -284,19 +427,21 @@ export function startApp(stage: Stage, renderer: Renderer, opts: { debug: boolea
     if (display.proposing && e.step !== 'propose') display.showCatalog();
     switch (e.step) {
       case 'greet':
-        once('greet', t('tutorial.greet'));
+        once('greet', t('tutorial.greet'), 'serve');
         pickChoices(GREETS.map((style) => ({ label: t(`choices.greet.${style}`), pick: () => bridge.dispatch({ type: 'greet', style }) })));
         break;
       case 'probe':
-        once('probe', t('tutorial.probe'));
+        once('probe', t('tutorial.probe'), 'serve');
         pickChoices(PROBES.map((probe) => {
           const used = e.probesUsed.includes(probe);
           return { label: t(`choices.probe.${probe}`), disabled: used, reason: used ? t('choices.probeUsed') : undefined, pick: () => bridge.dispatch({ type: 'probe', probe }) };
         }));
         break;
       case 'propose':
-        once('propose', t('tutorial.propose'));
+        once('propose', t('tutorial.propose'), 'serve');
         if (!display.proposing) display.showOffers(e.offered, (productId) => { display.showCatalog(); bridge.dispatch({ type: 'propose', productId }); });
+        // 모바일: 시트를 닫았을 때 다시 열 수 있는 버튼
+        if (mobile()) pickChoices([{ label: t('choices.openDisplay'), keep: true, pick: () => sheets.show('display') }]);
         break;
       case 'close':
         pickChoices(CLOSES.map((choice) => ({ label: t(`choices.close.${choice}`), pick: () => bridge.dispatch({ type: 'close', choice }) })));
@@ -311,7 +456,11 @@ export function startApp(stage: Stage, renderer: Renderer, opts: { debug: boolea
   }
 
   // ------------------------------------------------------------ 입력 처리
-  stage.viewport.addEventListener('click', () => { if (dialogue.waiting) dialogue.advance(); });
+  stage.stage.addEventListener('click', (ev) => {
+    if (!dialogue.waiting) return;
+    const hit = ev.target as HTMLElement;
+    if (hit.closest('.frame--serve, .dialogue')) dialogue.advance();
+  });
   window.addEventListener('keydown', (ev) => {
     if (ev.ctrlKey || ev.metaKey || ev.altKey) return;
     if (overlay) { if (overlay.key(ev)) return; return; }
@@ -320,11 +469,16 @@ export function startApp(stage: Stage, renderer: Renderer, opts: { debug: boolea
     if ((ev.key === ' ' || ev.key === 'Enter') && dialogue.waiting) { ev.preventDefault(); dialogue.advance(); return; }
     if (/^[1-4]$/.test(ev.key)) {
       const n = Number(ev.key);
-      if (display.proposing ? display.pick(n) : choices.pick(n)) ev.preventDefault();
+      if (phone.closingKey(n) || (display.proposing ? display.pick(n) : choices.pick(n))) ev.preventDefault();
       return;
     }
-    if (ev.key === 'p' || ev.key === 'P') phone.openTab(phone.tab, true);
-    else if (ev.key === 'r' || ev.key === 'R') phone.openTab('rules', true);
+    if (ev.key === 'Escape' && mobile()) { sheets.close(); return; }
+    if (ev.key === 'p' || ev.key === 'P') {
+      if (mobile()) sheets.toggle('phone'); else phone.openTab(phone.tab, true);
+    } else if (ev.key === 'r' || ev.key === 'R') {
+      showSheet('phone');
+      phone.openTab('rules', true);
+    }
   });
 
   setMood('calm');

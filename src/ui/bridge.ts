@@ -5,14 +5,15 @@ import type { Action, GameEvent, SaveV1 } from '../core/types';
 export type Flow = 'continue' | 'wait' | 'retry';
 
 export interface EventSink {
-  onEvent(e: GameEvent): Flow;
+  /** origin: 이 이벤트를 낳은 액션(이어하기는 null). 업무폰에서 일어난 일인지 가르는 데 쓴다. */
+  onEvent(e: GameEvent, origin: Action | null): Flow;
   /** 큐가 비었다: 지금 phase에 맞는 입력 UI를 보여 준다 */
   onIdle(): void;
 }
 
 /** Game을 감싼다. dispatch 결과를 큐에 넣고 UI에 순서대로 전달한다. 대사 이벤트는 사용자가 넘길 때까지 큐를 멈춘다. */
 export class Bridge {
-  private queue: GameEvent[] = [];
+  private queue: { e: GameEvent; origin: Action | null }[] = [];
   private paused = false;
   private pumping = false;
 
@@ -22,15 +23,15 @@ export class Bridge {
 
   dispatch(a: Action): void {
     if (this.busy) return; // 대사가 진행되는 동안의 입력은 무시한다
-    this.push(this.game.dispatch(a));
+    this.push(this.game.dispatch(a), a);
   }
 
   resume(save: SaveV1): void {
-    this.push(this.game.resume(save));
+    this.push(this.game.resume(save), null);
   }
 
-  private push(events: GameEvent[]): void {
-    this.queue.push(...events);
+  private push(events: GameEvent[], origin: Action | null): void {
+    for (const e of events) this.queue.push({ e, origin });
     this.pump();
   }
 
@@ -46,9 +47,9 @@ export class Bridge {
     try {
       for (;;) {
         while (!this.paused && this.queue.length > 0) {
-          const e = this.queue.shift() as GameEvent;
-          const flow = this.sink.onEvent(e);
-          if (flow === 'retry') { this.queue.unshift(e); this.paused = true; }
+          const item = this.queue.shift() as { e: GameEvent; origin: Action | null };
+          const flow = this.sink.onEvent(item.e, item.origin);
+          if (flow === 'retry') { this.queue.unshift(item); this.paused = true; }
           else if (flow === 'wait') this.paused = true;
         }
         if (this.paused) break;

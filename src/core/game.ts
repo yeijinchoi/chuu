@@ -7,7 +7,8 @@ import {
   doClose, doGreet, doProbe, doPropose, doRegularOffer, stageChoices,
 } from './encounter';
 import {
-  canPlaceRedBox, checkSendCare, checkSendText, doChooseReply, doPlaceRedBox, doSendCare, doSendText,
+  canPlaceRedBox, careBlock, checkSendCare, checkSendText, doChooseReply, doPlaceRedBox, doSendCare, doSendText, textBlock,
+  type BlockReason,
 } from './texting';
 import type {
   Action, CareTemplateId, GameData, GameEvent, GameState, SaveV1, StorageAdapter,
@@ -140,6 +141,15 @@ export class Game {
       default:
         return false;
     }
+  }
+
+  /** 문자 액션이 막힌 이유(보낼 수 있으면 null). UI가 비활성 사유를 보여 줄 때 쓴다. */
+  blockReason(a: Action): BlockReason | null {
+    const ctx = this.makeCtx([]);
+    ctx.emit = () => undefined;
+    if (a.type === 'sendText') return textBlock(ctx, a.contactId, a.template);
+    if (a.type === 'sendCare') return careBlock(ctx, a.customerId, a.template, a.productId);
+    return null;
   }
 
   /** UI 선택지 생성용, 테스트용 */

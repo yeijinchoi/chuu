@@ -532,3 +532,51 @@ export function drawChandelier(l: Layer, shift: Shift, level: 0 | 1): void {
 export function jewelryOf(shift: Shift): string[] {
   return catalog(shift, 'jewelry');
 }
+
+// ───────────────────────── 04:44 문 유리의 실루엣 (SCRIPT S12)
+
+/** 문짝 왼쪽 유리(279..293 × 42..85)에 서 있는 단발머리 실루엣의 몸 모양 */
+const SIL_X = 286;
+function silhouetteHalf(y: number): number {
+  if (y < 49 || y > 85) return -1;
+  if (y < 51) return 3; // 정수리
+  if (y < 53) return 5;
+  if (y <= 66) return 7; // 단발: 턱선에서 일자로 떨어진다
+  if (y <= 71) return 1; // 목
+  return Math.min(7, 2 + (y - 71)); // 어깨
+}
+
+/**
+ * 문 유리에 비친 실루엣. level 0~1이 짙어지는 정도: 2×2 체커 디더와 단색 단계로만 나타낸다.
+ * palm: 유리에 댄 손바닥(블랙아웃 직전). 팔레트 키만 쓰므로 mood와 새벽 조명을 그대로 따른다.
+ */
+export function drawSilhouette(l: Layer, level: number, palm: boolean): void {
+  if (level <= 0.02) return;
+  const steps: [PaletteKey, PaletteKey | null][] = [
+    ['dusk', null], ['dusk', 'shadow'], ['shadow', null], ['shadow', 'ink'], ['ink', null],
+  ];
+  const at = Math.min(steps.length - 1, Math.floor(level * steps.length));
+  const [a, b] = steps[at] as [PaletteKey, PaletteKey | null];
+  for (let y = 49; y <= 85; y++) {
+    const h = silhouetteHalf(y);
+    if (h < 0) continue;
+    for (let x = SIL_X - h; x <= SIL_X + h; x++) {
+      if (x < 279 || x > 293) continue;
+      const pick = b === null ? a : ((x + y) & 1 ? a : b);
+      px(l, pick, x, y);
+    }
+  }
+  if (level > 0.5) {
+    // 유리의 밝은 쪽(왼쪽 반사)에 닿는 머리 윤곽에만 mist 한 점
+    px(l, 'mist', SIL_X - 7, 58);
+    px(l, 'mist', SIL_X - 6, 52);
+  }
+  if (palm && level > 0.9) {
+    // 오른쪽 어깨에서 올라온 손바닥: 손가락 네 개와 엄지
+    rect(l, 'ink', 288, 70, 6, 7);
+    for (const fx of [288, 290, 292]) rect(l, 'ink', fx, 65, 1, 5);
+    rect(l, 'ink', 293, 66, 1, 4);
+    px(l, 'bone', 289, 77);
+    px(l, 'bone', 292, 76);
+  }
+}

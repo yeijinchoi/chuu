@@ -115,6 +115,7 @@ export function beginTexting(ctx: Ctx, shift: Shift): void {
 export function finishTexting(ctx: Ctx, shift: Shift): void {
   ctx.state.slots = buildSlots(ctx, shift);
   if (shift === 'afternoon') {
+    ctx.emit({ type: 'sfx', id: 'sign_flip' }); // 문 위 팻말이 OPEN으로
     const coming = Object.keys(ctx.state.visitors).length;
     if (coming >= 2) thought(ctx, str(ctx.data, 'thoughts.visitorsMany'));
     else if (coming === 0) thought(ctx, str(ctx.data, 'thoughts.visitorsNone'));
@@ -144,6 +145,7 @@ export function beginAftercare(ctx: Ctx, shift: Shift): void {
   ctx.state.aftercareRemaining = d.aftercare.perShift;
   setPhase(ctx, { kind: 'aftercare', shift });
   setClock(ctx, shift === 'afternoon' ? d.clocks.afternoonAftercare : d.clocks.dawnAftercare);
+  if (shift === 'afternoon') ctx.emit({ type: 'sfx', id: 'sign_flip' }); // CLOSED
 }
 
 export function finishAftercare(ctx: Ctx, storage?: StorageAdapter): boolean {
@@ -184,6 +186,7 @@ export function beginClosingText(ctx: Ctx): void {
   const from = str(ctx.data, 'closingText.from');
   for (const text of strList(ctx.data, 'closingText.incoming')) ctx.emit({ type: 'phone', from, text });
   ctx.emit({ type: 'sfx', id: 'phone_buzz' });
+  ctx.emit({ type: 'sfx', id: 'phone_buzz' });
   thought(ctx, str(ctx.data, 'thoughts.closingWho'));
   thought(ctx, str(ctx.data, 'thoughts.closingRule3'));
 }
@@ -195,11 +198,13 @@ export function doClosingText(ctx: Ctx, reply: boolean): boolean {
   s.closingReplied = reply;
   const rule = checkClosingReply(reply, ctx.data.rules);
   if (rule !== null) {
-    for (const text of strList(ctx.data, 'closingText.replied')) ctx.emit({ type: 'phone', from, text });
+    // 블랙아웃이 먼저, 그 뒤에 실루엣의 답장이 온다 (SCRIPT S12)
     s.violations++;
     ctx.emit({ type: 'violation', rule, severe: true });
     ctx.emit({ type: 'horror', customerId: null, kind: 'blackout' });
     ctx.emit({ type: 'sfx', id: 'blackout' });
+    ctx.emit({ type: 'sfx', id: 'glass_tap' });
+    for (const text of strList(ctx.data, 'closingText.replied')) ctx.emit({ type: 'phone', from, text });
     changeComposure(ctx, SCORE.closingReplyComposure);
     if (s.phase.kind === 'badEnding') return true;
   } else {

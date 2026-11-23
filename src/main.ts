@@ -2,6 +2,7 @@ import './ui/styles/fonts.css';
 import './ui/styles/tokens.css';
 import './ui/styles/base.css';
 import './ui/styles/ui.css';
+import './ui/styles/mobile.css';
 import strings from './data/strings.ko.json';
 import { createStage, mountScene } from './ui/stage';
 import { mountDebug } from './ui/debug';

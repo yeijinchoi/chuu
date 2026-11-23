@@ -57,6 +57,19 @@
   --font-mono: 'GalmuriMono11', 'Galmuri11', monospace;
   --font-small: 'Galmuri9', 'Galmuri11', sans-serif;
 
+  /* 모바일 세로 배치 (§7-2): 장면만 줄이고 글자·버튼은 CSS px 원래 크기 */
+  --font-m-body: 'Galmuri14', 'Galmuri11', 'Malgun Gothic', sans-serif;
+  --text-m-body: 14px;
+  --lh-m-body: 20px;
+  --text-m-sub: 11px;
+  --lh-m-sub: 16px;
+  --m-touch: 48px;
+  --m-gap: 8px;
+  --m-status-h: 40px;
+  --m-tabbar-h: 52px;
+  --m-safe-top: env(safe-area-inset-top, 0px);
+  --m-safe-bottom: env(safe-area-inset-bottom, 0px);
+
   /* 간격·모양 */
   --space-1: 2px;
   --space-2: 4px;

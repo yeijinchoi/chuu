@@ -75,7 +75,7 @@ export class Dialogue {
   }
 }
 
-export interface ChoiceItem { label: string; disabled?: boolean; reason?: string; pick: () => void; selected?: boolean }
+export interface ChoiceItem { label: string; disabled?: boolean; reason?: string; pick: () => void; selected?: boolean; keep?: boolean }
 
 /** 선택지 패널: 키 1~4. disabled는 이유를 툴팁으로 보여 준다. */
 export class ChoicePanel {
