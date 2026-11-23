@@ -341,6 +341,15 @@ GDD §6, §7, §11, §12의 표를 **그대로** JSON으로 옮긴다. 대사 �
 - 출입문 실루엣: `closingText`(04:44) 단계에서만 그린다.
 - 효과(`effects.ts`): `flicker`(샹들리에 밝기, 최소 간격 350ms), `scanlines`(짝수 줄 `ink` 20%), `shake`(±2px, 300ms), `breach`(1.2초). `prefers-reduced-motion`이면 shake와 flicker를 끈다.
 
+### 6-1. 손님 스프라이트 (컨셉 아트 기반)
+- 사람 모습 손님 12명은 코드로 그리지 않고 **캐릭터 시트 이미지**에서 만든다. 그림체를 컨셉 아트와 같게 맞추기 위해서다. 배경, 크리처 4종, 상품 아이콘은 계속 코드로 그린다.
+- 원본: `docs/concept/sheets/sheet-{a,b,c}-open.png`(4명씩 같은 크기·구도·얼굴 구조로 한 장에 그린 시트), `-closed.png`(눈만 감은 같은 시트), `-alpha.png`(배경 제거 알파).
+- 변환: `python3 tools/import_customer_sprites.py` → `public/art/customers/<id>.png`, `<id>.blink.png`(눈 감은 프레임에서 달라진 픽셀만), `manifest.json`(장면 좌표, 숨쉬기 분할선). 모든 시트를 같은 배율로 줄여 도트 밀도를 통일한다.
+- 새 손님을 추가할 때는 기존 시트를 참고 이미지로 넣어 같은 형식의 시트를 만들고, 스크립트의 `SHEET_IDS`에 등록한다.
+- **대기 동작(라이브2D 느낌)**: 2.5~5.5초마다 0.12초 눈 깜빡임, 3.2초 주기로 상체 1도트 숨쉬기(카운터 위 손은 고정). 마시 씨(눈꺼풀 없음), 얼굴 없는 여자, 가면 배우는 깜빡이지 않는다. `prefers-reduced-motion`이면 숨쉬기를 끈다.
+- mood가 calm이 아니면 스프라이트 픽셀을 가장 가까운 팔레트 키로 보고 장면과 같은 mood 규칙으로 바꾼다(`src/render/sprites.ts`).
+- 스프라이트를 못 불러오면 그 손님은 코드로 그린 도트로 대체된다.
+
 ## 7. UI
 
 - `bridge.ts`: `Game`을 감싼다. `dispatch` → 이벤트 큐 → 각 UI 모듈과 렌더러에 순서대로 전달한다. 대사 이벤트는 사용자가 넘길 때까지 큐를 멈춘다.

@@ -4,6 +4,7 @@ import './ui/styles/base.css';
 import strings from './data/strings.ko.json';
 import { createStage, mountScene } from './ui/stage';
 import { mountDebug } from './ui/debug';
+import { loadCustomerSprites } from './render/sprites';
 
 const FONT_TIMEOUT_MS = 4000;
 const FACES = [
@@ -70,6 +71,7 @@ async function boot(): Promise<void> {
   loading.remove();
   app.appendChild(stage.root);
   mountDebug(stage.root, renderer);
+  void loadCustomerSprites().then((sp) => renderer.setSprites(sp));
 
   if (!ok) {
     const notice = el('div', 'notice', strings.loading.fontFail);

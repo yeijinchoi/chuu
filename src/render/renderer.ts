@@ -4,6 +4,7 @@ import { W, H, bakeScene, drawChandelier, type SceneBake, type Shift } from './s
 import { drawCustomer, drawOutsideColour, type SpriteDef } from './customerSprite';
 import { createFlicker, scanlines, type Flicker } from './effects';
 import { createLoop, type Loop } from './loop';
+import { spriteFor, type CustomerSprite } from './sprites';
 
 /** 오프스크린 320×180 버퍼에 그린 뒤 화면 캔버스로 복사한다. 정적 배경은 교대·mood별로 한 번만 굽는다. */
 export class Renderer {
@@ -12,6 +13,8 @@ export class Renderer {
   customer: SpriteDef | null = null;
   reduced: boolean;
   scan = false;
+  /** 컨셉 아트에서 오린 손님 스프라이트. 있으면 코드 도트 대신 쓴다. */
+  sprites = new Map<string, CustomerSprite>();
 
   private t = 0;
   private acc = 0;
@@ -55,7 +58,32 @@ export class Renderer {
 
   setShift(s: Shift): void { this.shift = s; }
   setMood(m: Mood): void { this.mood = m; }
-  setCustomer(c: SpriteDef | null): void { this.customer = c; this.t = 0; this.acc = 1; }
+  setCustomer(c: SpriteDef | null): void { this.customer = c; this.t = 0; this.acc = 1; this.nextBlink = 1.5; }
+  setSprites(s: Map<string, CustomerSprite>): void { this.sprites = s; this.acc = 1; }
+  /** 라이브2D 느낌의 대기 동작: 2.5~5.5초마다 0.12초 눈 감기, 3.2초 주기로 상체 1도트 숨쉬기 */
+  private nextBlink = 1.5;
+  private blinkUntil = -1;
+  private idle(): { blink: boolean; breath: number } {
+    if (this.t >= this.nextBlink) {
+      this.blinkUntil = this.t + 0.12;
+      this.nextBlink = this.t + 2.5 + Math.random() * 3;
+    }
+    const breath = this.reduced ? 0 : Math.sin((this.t / 3.2) * Math.PI * 2) > 0.35 ? -1 : 0;
+    return { blink: this.t < this.blinkUntil, breath };
+  }
+  private drawImageSprite(b: CanvasRenderingContext2D, sp: CustomerSprite, id: string): void {
+    const { blink, breath } = this.idle();
+    const body = spriteFor(id, sp, this.mood, false);
+    // 카운터 위 손(아래쪽)은 고정, 그 위 상체만 숨쉰다
+    b.drawImage(body, 0, sp.breathSplit, sp.w, sp.h - sp.breathSplit, sp.x, sp.y + sp.breathSplit, sp.w, sp.h - sp.breathSplit);
+    b.drawImage(body, 0, 0, sp.w, sp.breathSplit, sp.x, sp.y + breath, sp.w, sp.breathSplit);
+    if (blink && sp.blinkImg) {
+      b.drawImage(spriteFor(id, sp, this.mood, true), 0, 0, sp.w, sp.breathSplit, sp.x, sp.y + breath, sp.w, sp.breathSplit);
+    }
+  }
+  private imageSprite(): CustomerSprite | undefined {
+    return this.customer ? this.sprites.get(this.customer.id) : undefined;
+  }
 
   /** 바깥에서 온 색이 머무는 동안, 1초마다 팔레트 키 계열 하나가 회색이 된다. */
   private drained(): ReadonlySet<PaletteKey> {
@@ -97,7 +125,7 @@ export class Renderer {
     this.mid.clear();
     this.top.clear();
     drawChandelier(this.mid, this.shift, this.flicker.level);
-    if (this.customer && this.customer.sprite.draw !== 'drawOutsideColour') {
+    if (this.customer && this.customer.sprite.draw !== 'drawOutsideColour' && !this.imageSprite()) {
       drawCustomer(this.customer, { mid: this.mid, top: this.top }, { t: this.t, reduced: this.reduced, shift: this.shift });
     }
     toImageData(this.mid, lut, this.midImg);
@@ -119,6 +147,8 @@ export class Renderer {
     const b = this.bctx;
     b.drawImage(this.bakedCanvas('back', lut, sig), 0, 0);
     b.drawImage(this.midCv, 0, 0);
+    const sp = this.imageSprite();
+    if (sp && this.customer) this.drawImageSprite(b, sp, this.customer.id);
     if (this.customer?.sprite.draw === 'drawOutsideColour') drawOutsideColour(b, this.t, this.reduced);
     b.drawImage(this.bakedCanvas('front', lut, sig), 0, 0);
     b.drawImage(this.topCv, 0, 0);

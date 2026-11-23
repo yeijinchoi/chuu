@@ -1,0 +1,98 @@
+{
+ "hanyeoreum": {
+  "x": 139,
+  "y": 58,
+  "w": 42,
+  "h": 76,
+  "breathSplit": 66,
+  "blink": true
+ },
+ "kang": {
+  "x": 137,
+  "y": 55,
+  "w": 46,
+  "h": 79,
+  "breathSplit": 69,
+  "blink": true
+ },
+ "jin": {
+  "x": 139,
+  "y": 53,
+  "w": 42,
+  "h": 81,
+  "breathSplit": 71,
+  "blink": true
+ },
+ "oh": {
+  "x": 137,
+  "y": 56,
+  "w": 47,
+  "h": 78,
+  "breathSplit": 68,
+  "blink": true
+ },
+ "cha": {
+  "x": 135,
+  "y": 54,
+  "w": 50,
+  "h": 80,
+  "breathSplit": 70,
+  "blink": true
+ },
+ "park": {
+  "x": 135,
+  "y": 57,
+  "w": 51,
+  "h": 77,
+  "breathSplit": 67,
+  "blink": true
+ },
+ "yoon": {
+  "x": 138,
+  "y": 50,
+  "w": 44,
+  "h": 84,
+  "breathSplit": 74,
+  "blink": true
+ },
+ "seojin": {
+  "x": 136,
+  "y": 57,
+  "w": 48,
+  "h": 77,
+  "breathSplit": 67,
+  "blink": true
+ },
+ "marsh": {
+  "x": 137,
+  "y": 51,
+  "w": 47,
+  "h": 83,
+  "breathSplit": 73,
+  "blink": false
+ },
+ "faceless": {
+  "x": 136,
+  "y": 50,
+  "w": 49,
+  "h": 84,
+  "breathSplit": 74,
+  "blink": false
+ },
+ "baek": {
+  "x": 136,
+  "y": 55,
+  "w": 48,
+  "h": 79,
+  "breathSplit": 69,
+  "blink": true
+ },
+ "actor": {
+  "x": 136,
+  "y": 49,
+  "w": 49,
+  "h": 85,
+  "breathSplit": 75,
+  "blink": false
+ }
+}
