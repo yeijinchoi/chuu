@@ -1,13 +1,13 @@
 /* 디자인 토큰 — DESIGN_SYSTEM §3, §5, §6. 컴포넌트는 의미 토큰(--color-*)만 쓴다. */
 :root {
   /* 원시 팔레트: Dusk Mono 24 (16 + 음영 램프 8) (src/render/palette.ts와 같은 값) */
-  --ink: #0d0b0f;
-  --shadow: #1c1820;
-  --dusk: #2e2833;
-  --stone: #4a4350;
-  --mist: #6f6775;
-  --ash: #9a929e;
-  --bone: #cfc6c4;
+  --ink: #0e0a0a;
+  --shadow: #201415;
+  --dusk: #371f21;
+  --stone: #5b3636;
+  --mist: #845d5c;
+  --ash: #ab9894;
+  --bone: #d5c7c3;
   --paper: #ece4da;
   --rose: #b85c78;
   --brass: #a88c52;
