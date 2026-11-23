@@ -99,6 +99,8 @@ html[data-layout='mobile'] .frame--phone {
 }
 html[data-layout='mobile'] .frame--display { height: 55%; }
 html[data-layout='mobile'] .frame--phone { height: 88%; }
+/* 04:44: 문 유리의 실루엣이 시트 위로 보이도록 업무폰을 반쯤만 올린다 */
+html[data-layout='mobile'] .frame--phone.is-half { height: 52%; }
 html[data-layout='mobile'] .frame--display.is-open,
 html[data-layout='mobile'] .frame--phone.is-open { transform: translateY(0); transition-delay: 0s; }
 html[data-layout='mobile'] .frame[data-closed] { visibility: hidden; }

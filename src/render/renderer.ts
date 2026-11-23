@@ -1,6 +1,6 @@
 import { DRAIN_ORDER, buildLut, type Mood, type PaletteKey } from './palette';
 import { Layer, toImageData } from './pixel';
-import { W, H, bakeScene, drawChandelier, drawSilhouette, type SceneBake, type Shift } from './scene';
+import { W, H, bakeScene, drawChandelier, drawMannequinHeadOverlay, drawSilhouette, type SceneBake, type Shift } from './scene';
 import { drawCustomer, drawOutsideColour, type SpriteDef } from './customerSprite';
 import { createFlicker, scanlines, type Flicker } from './effects';
 import { createLoop, type Loop } from './loop';
@@ -148,6 +148,7 @@ export class Renderer {
     this.mid.clear();
     this.top.clear();
     drawChandelier(this.mid, this.shift, this.flicker.level);
+    drawMannequinHeadOverlay(this.mid, this.mood);
     drawSilhouette(this.mid, this.sil.level, this.sil.palm);
     if (this.customer && this.customer.sprite.draw !== 'drawOutsideColour' && !this.imageSprite()) {
       drawCustomer(this.customer, { mid: this.mid, top: this.top }, { t: this.t, reduced: this.reduced, shift: this.shift });
@@ -172,7 +173,7 @@ export class Renderer {
     b.drawImage(this.bakedCanvas('back', lut, sig), 0, 0);
     b.drawImage(this.midCv, 0, 0);
     if (this.customer?.sprite.draw === 'drawOutsideColour') drawOutsideColour(b, this.t, this.reduced);
-    if (this.scan) scanlines(b, W, H);
+    if (this.scan || this.mood === 'collapse') scanlines(b, W, H);
     // 화면 캔버스는 장면의 2배(640×360). 장면은 2배로 키워 깔고,
     // 사람 모습 손님은 2배 촘촘한 도트로 그 위에 그린 뒤 카운터(앞 레이어)를 덮는다.
     const k = target.canvas.width / W;

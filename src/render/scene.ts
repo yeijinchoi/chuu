@@ -1,6 +1,6 @@
 import products from '../data/products.json';
 import { Layer, circle, dimLayer, dither, ellipse, hline, line, lit, polygon, px, rect, stamp, vline, T } from './pixel';
-import { KEYS, KEY_INDEX, type PaletteKey } from './palette';
+import { KEYS, KEY_INDEX, type Mood, type PaletteKey } from './palette';
 import { drawMini } from './productIcon';
 
 export type Shift = 'afternoon' | 'dawn';
@@ -207,6 +207,26 @@ function drawDoor(l: Layer): void {
   vline(l, 'ink', 296, 26 + 12, 72);
   // 문턱 그림자
   hline(l, 'ink', x0 - 2, bot, x1 - x0 + 4);
+}
+
+/** 왼쪽 마네킹(드레스) 머리 위 얼굴 연출. 평소엔 얼굴이 없지만, dread부터 고개가 손님 쪽으로 돌고 눈이 생긴다.
+ * collapse·breach에서는 여기에 단발 가발(서윤의 보브)이 더해진다. 그 외 mood는 아무것도 그리지 않는다. */
+export function drawMannequinHeadOverlay(l: Layer, mood: Mood): void {
+  if (mood !== 'dread' && mood !== 'collapse' && mood !== 'breach') return;
+  const cx = 66;
+  // 고개가 1도트 왼쪽 아래로 기울어 정면을 본다
+  ellipse(l, 'bone', cx - 1, 57, 4, 6);
+  if (mood !== 'dread') {
+    // 보브 가발: 정수리 캡(48~54), 양옆 단발(52~59), 목 높이에서 평평하게 자른 밑단(60)
+    ellipse(l, 'hair', cx, 51, 5, 3);
+    hline(l, 'hair', cx - 4, 54, 9); // 정수리 캡과 단발 사이의 앞머리 줄
+    rect(l, 'hair', cx - 5, 52, 2, 8);
+    rect(l, 'hair', cx + 4, 52, 2, 8);
+    hline(l, 'ink', cx - 5, 60, 11);
+  }
+  // 눈 두 개 (얼굴 중앙, 가발 안쪽)
+  px(l, 'ink', cx - 2, 55);
+  px(l, 'ink', cx + 1, 55);
 }
 
 /** 마네킹 (키 크기 약 70). cx = 중심 x */

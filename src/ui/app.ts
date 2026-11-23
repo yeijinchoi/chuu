@@ -183,7 +183,7 @@ export function startApp(stage: Stage, renderer: Renderer, opts: { debug: boolea
           if (e.kind === 'note') { notes.push(e.text); return 'continue'; }
           if (notes.length) { showNote(); return 'retry'; }
           if (toPhone(origin)) { phone.addNote(e.text); return 'continue'; }
-          showDialogue(e.speaker, e.text, e.speaker ? 'speech' : 'narration');
+          showDialogue(speakerPlate(e.speaker), e.text, e.speaker ? 'speech' : 'narration');
           return 'wait';
         case 'thought':
           if (notes.length) { showNote(); return 'retry'; }
@@ -256,8 +256,17 @@ export function startApp(stage: Stage, renderer: Renderer, opts: { debug: boolea
     dialogue.show(speaker, text, kind, () => bridge.release());
   }
 
+  /** 괴물 손님은 말하는 방식을 이름표에 덧붙인다: "모퉁이의 개 · 업무폰 문자" */
+  function speakerPlate(name: string | null): string | null {
+    if (!name) return name;
+    const via = customers.find((x) => x.name === name)?.speaksVia;
+    return via && via !== 'voice' ? `${name} · ${t(`speaksVia.${via}`)}` : name;
+  }
+
   /** 단계가 바뀌었다(이벤트 순서대로 불린다): 04:44는 폰이 강제로 열리고 문 유리의 실루엣이 짙어진다 */
   function onPhase(kind: string): void {
+    // 04:44 동안만 업무폰을 반쯤 올려 문 유리의 실루엣이 보이게 한다
+    stage.phone.classList.toggle('is-half', kind === 'closingText');
     if (kind === 'closingText') {
       closingMode = true;
       dialogue.hide();

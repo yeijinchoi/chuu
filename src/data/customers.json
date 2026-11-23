@@ -86,7 +86,8 @@
   "hospitality": {
    "pref": "chocolate",
    "match": "와, 이거 먹어도 돼요? 헤헤.",
-   "mismatch": "아, 탄산은 좀… 괜찮아요."
+   "mismatch": "아, 탄산은 좀… 괜찮아요.",
+   "none": "아, 괜찮아요! 저 목 안 말라요. 헤헤."
   }
  },
  {
@@ -175,7 +176,8 @@
   "hospitality": {
    "pref": "water",
    "match": "물 좋네요. 한 번에 마실게요.",
-   "mismatch": "단 건 안 먹어요. 시간 없어요."
+   "mismatch": "단 건 안 먹어요. 시간 없어요.",
+   "none": "물 한 잔도 없네요. 뭐, 바쁘니까."
   }
  },
  {
@@ -368,7 +370,8 @@
   "hospitality": {
    "pref": "water",
    "match": "거품이… 숨 같군요. 좋습니다.",
-   "mismatch": "단 것은 물에 녹습니다."
+   "mismatch": "단 것은 물에 녹습니다.",
+   "none": "…물 위에선 아무것도 주지 않는군요."
   }
  },
  {
@@ -455,7 +458,8 @@
   "hospitality": {
    "pref": "any",
    "match": "……아무거나요. 좋아요.",
-   "mismatch": ""
+   "mismatch": "",
+   "none": "……아무거나요."
   }
  },
  {
@@ -544,7 +548,8 @@
   "hospitality": {
    "pref": "chocolate",
    "match": "차가운 초콜릿. 고마워요. 늘 고마워요.",
-   "mismatch": "거품이 얼어 버렸어요."
+   "mismatch": "거품이 얼어 버렸어요.",
+   "none": "괜찮아요. 늘 그랬어요."
   }
  },
  {
@@ -604,7 +609,8 @@
   "hospitality": {
    "pref": "chocolate",
    "match": "어머 이 집 초콜릿 맛있어! 하나 더 줘~",
-   "mismatch": "탄산은 배불러서 쇼핑을 못 해~"
+   "mismatch": "탄산은 배불러서 쇼핑을 못 해~",
+   "none": "어머, 여긴 초콜릿도 안 줘? 서운하다~"
   }
  },
  {
@@ -661,7 +667,8 @@
   "hospitality": {
    "pref": "water",
    "match": "오 감사합니다. 사진 찍어도 돼요?",
-   "mismatch": "초콜릿은 됐어요. 손에 묻어요."
+   "mismatch": "초콜릿은 됐어요. 손에 묻어요.",
+   "none": "> 차은호가 빈 손으로 휴대폰만 만지작거린다."
   }
  },
  {
@@ -718,7 +725,8 @@
   "hospitality": {
    "pref": "chocolate",
    "match": "하나만 챙겨 가도 될까요. 집사람이 좋아해서.",
-   "mismatch": "탄산은 속이 좀… 괜찮습니다."
+   "mismatch": "탄산은 속이 좀… 괜찮습니다.",
+   "none": "> 박정호가 모자를 고쳐 쥔다. 괜찮다는 듯 웃는다."
   }
  },
  {
@@ -774,7 +782,8 @@
   "hospitality": {
    "pref": "water",
    "match": "촬영 전이라 단 건 못 먹어요. 딱 좋네요.",
-   "mismatch": "아, 지금 단 건 좀."
+   "mismatch": "아, 지금 단 건 좀.",
+   "none": "다음엔 탄산수 부탁드려요. 촬영 날이 많아서요."
   }
  },
  {
@@ -828,7 +837,8 @@
   "hospitality": {
    "pref": "chocolate",
    "match": "…언니가 이거 맛있다고 했어요.",
-   "mismatch": "탄산 싫어해요. 언니도요."
+   "mismatch": "탄산 싫어해요. 언니도요.",
+   "none": "…언니는 초콜릿을 줬다던데."
   }
  },
  {
@@ -890,7 +900,8 @@
   "hospitality": {
    "pref": "chocolate",
    "match": "…오랜만이에요. 고마워요.",
-   "mismatch": "저는 마실 수가 없어요. 이젠."
+   "mismatch": "저는 마실 수가 없어요. 이젠.",
+   "none": "> 원통에서 짧은 잡음이 난다."
   }
  },
  {
@@ -1011,7 +1022,8 @@
   "hospitality": {
    "pref": "chocolate",
    "match": "이 바스락 소리. 박수 같군요.",
-   "mismatch": "거품 소리는 야유처럼 들립니다."
+   "mismatch": "거품 소리는 야유처럼 들립니다.",
+   "none": "> 객석이 조용하다. 너무 조용하다."
   }
  },
  {
@@ -1073,7 +1085,8 @@
   "hospitality": {
    "pref": "water",
    "match": "거품. 터졌다. 터질 것이다.",
-   "mismatch": "단 냄새. 맡았다. 맡았었다."
+   "mismatch": "단 냄새. 맡았다. 맡았었다.",
+   "none": "> 업무폰에 문자가 온다. \"없다. 없었다. 없을 것이다.\""
   }
  },
  {

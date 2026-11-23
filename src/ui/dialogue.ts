@@ -1,4 +1,5 @@
 import { el } from './dom';
+import { prefersReducedMotion } from '../render/effects';
 
 export type LineKind = 'speech' | 'narration' | 'thought';
 
@@ -14,6 +15,9 @@ export class Dialogue {
   private shown = 0;
   private timer = 0;
   private onDone: (() => void) | null = null;
+  /** collapse: 줄이 끝난 뒤 가끔 글자 하나가 ▒로 깨졌다가 돌아온다 (표시만. 저장된 글은 그대로) */
+  private glitchTimer = 0;
+  private glitchRestore = 0;
 
   constructor(private readonly instant: boolean) {
     this.root.hidden = true;
@@ -29,6 +33,7 @@ export class Dialogue {
 
   show(speaker: string | null, text: string, kind: LineKind, done: () => void): void {
     this.stop();
+    this.clearGlitch();
     this.root.hidden = false;
     this.root.dataset.kind = kind;
     this.root.dataset.state = 'typing';
@@ -55,12 +60,43 @@ export class Dialogue {
     this.shown = this.full.length;
     this.text.textContent = this.full;
     this.root.dataset.state = 'complete';
+    this.armGlitch();
+  }
+
+  private clearGlitch(): void {
+    window.clearTimeout(this.glitchTimer);
+    window.clearTimeout(this.glitchRestore);
+    this.glitchTimer = 0;
+    this.glitchRestore = 0;
+  }
+
+  /** collapse에서만, 줄이 다 나온 뒤 2.5~4초마다 한 번 */
+  private armGlitch(): void {
+    this.clearGlitch();
+    if (this.instant || prefersReducedMotion() || document.documentElement.dataset.mood !== 'collapse') return;
+    this.glitchTimer = window.setTimeout(() => this.glitch(), 2500 + Math.random() * 1500);
+  }
+
+  private glitch(): void {
+    this.glitchTimer = 0;
+    if (this.root.dataset.state !== 'complete' || document.documentElement.dataset.mood !== 'collapse') return;
+    const idx: number[] = [];
+    for (let i = 0; i < this.full.length; i++) if (/\S/.test(this.full[i] as string)) idx.push(i);
+    if (idx.length === 0) { this.armGlitch(); return; }
+    const at = idx[Math.floor(Math.random() * idx.length)] as number;
+    this.text.textContent = this.full.slice(0, at) + '▒' + this.full.slice(at + 1);
+    this.glitchRestore = window.setTimeout(() => {
+      this.glitchRestore = 0;
+      this.text.textContent = this.full;
+      this.armGlitch();
+    }, 120);
   }
 
   /** Space/Enter/클릭: 타이핑 중이면 전체 표시, 끝났으면 다음으로. 소비했으면 true. */
   advance(): boolean {
     if (!this.onDone) return false;
     if (this.timer) { this.finish(); return true; }
+    this.clearGlitch();
     const d = this.onDone;
     this.onDone = null;
     this.root.dataset.state = 'await';
@@ -70,6 +106,7 @@ export class Dialogue {
 
   hide(): void {
     this.stop();
+    this.clearGlitch();
     this.onDone = null;
     this.root.hidden = true;
   }
