@@ -110,7 +110,7 @@ html[data-layout='mobile'] .sheet-grab { display: flex; position: relative; flex
 html[data-layout='mobile'] .sheet-grab::before { content: ''; position: absolute; left: 0; right: 0; top: -16px; bottom: 0; }
 .sheet-grab__bar { display: block; width: 48px; height: 4px; background: var(--stone); border-top: 1px solid var(--brass-dark); }
 
-/* 진열 시트: 부서 탭 + 세로 카드 목록 */
+/* 진열 시트: 카테고리 탭 + 세로 카드 목록 */
 html[data-layout='mobile'] .display { display: flex; flex-direction: column; width: 100%; height: auto; flex: 1; min-height: 0; padding: 0 var(--space-4) var(--space-4); gap: var(--m-gap); overflow: hidden; }
 html[data-layout='mobile'] .display__title { display: none; }
 html[data-layout='mobile'] .display__side { flex: none; flex-direction: row; flex-wrap: wrap; gap: var(--m-gap); align-items: center; }

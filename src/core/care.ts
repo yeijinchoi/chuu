@@ -77,7 +77,7 @@ export function baseKind(t: CareTemplateId): 'thanks' | 'occasion' | 'recommend'
 /**
  * 관리 문자 점수 변화 (GDD §6-2).
  * thanks 구매 당일 +1(다음 날부터 +0) / occasion 기록된 기념일 당일 +2, 아니면 −1 /
- * recommend 부서·색이 카드와 맞으면 +1, 아니면 −1 / checkin 싫어하면 −1, 아니면 +1 /
+ * recommend 카테고리·색이 카드와 맞으면 +1, 아니면 −1 / checkin 싫어하면 −1, 아니면 +1 /
  * 싫어하는 연락은 −1 / 같은 날 2통째는 −1 추가 (오미란 제외).
  */
 export function scoreCare(

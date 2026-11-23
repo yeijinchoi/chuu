@@ -1,7 +1,7 @@
 // 도메인 타입. core는 브라우저 API를 쓰지 않는다 (유니티 이식 경계).
 
 export type Shift = 'afternoon' | 'dawn';
-export type Category = 'bag' | 'apparel' | 'jewelry'; // 부서: 가방 · 의류 · 파인주얼리
+export type Category = 'bag' | 'apparel' | 'jewelry'; // 카테고리: 가방 · 의류 · 파인주얼리
 export type Color = 'beige' | 'pink' | 'black' | 'white';
 export type GreetStyle = 'warm' | 'quiet' | 'direct';
 export type ProbeId = 'askCategory' | 'askOccasion' | 'askBudget' | 'observe';

@@ -418,7 +418,7 @@
     "noServed": "오늘 응대한 손님이 없어요",
     "cardEmpty": "아직 기록된 손님이 없어요",
     "cardFields": {
-      "category": "부서",
+      "category": "선호 카테고리",
       "occasion": "기념일",
       "budget": "예산",
       "color": "취향 색",

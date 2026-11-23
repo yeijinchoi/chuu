@@ -39,8 +39,8 @@ export const SCORE = {
   regularOffer: 85,
   violationComposure: -25,
   closingReplyComposure: -30,
-  wrongProduct: -15, // 다른 부서 상품을 권했다 → 거절
-  wrongColor: -10, // 부서는 맞지만 원하는 색이 아니다 → 거절
+  wrongProduct: -15, // 다른 카테고리 상품을 권했다 → 거절
+  wrongColor: -10, // 카테고리는 맞지만 원하는 색이 아니다 → 거절
   maxProbes: 2,
   maxRerolls: 3, // 제안 카드를 다시 뽑을 수 있는 횟수
 } as const;
@@ -49,7 +49,7 @@ export const EMPTY_BOX = 'empty_box';
 const PROBE_FIELDS: ProbeId[] = ['askCategory', 'askOccasion', 'askBudget', 'observe'];
 
 /**
- * 제안 카드: ① 부서·색 일치 ② 부서만 일치 ③ 다른 부서. 후보가 여럿이면 시드 RNG로 고르고 순서도 섞는다.
+ * 제안 카드: ① 카테고리·색 일치 ② 카테고리만 일치 ③ 다른 카테고리. 후보가 여럿이면 시드 RNG로 고르고 순서도 섞는다.
  * 손님과 같은 교대의 상품만 쓴다. "아무거나" 손님은 무작위 3장. onlyProduct 손님은 +1장(총 4장).
  */
 export function pickOffers(customer: CustomerDef, products: readonly Product[], rng: Rng): string[] {
@@ -62,7 +62,7 @@ export function pickOffers(customer: CustomerDef, products: readonly Product[], 
     for (const p of shuffle(rng, pool).slice(0, 3)) add(p);
   } else {
     const sameCat = pool.filter((p) => p.category === customer.category);
-    // 원하는 상품: 색이 맞고(색 제한이 없으면 부서만) 예산 안에 드는 것. 그런 상품이 없으면 예산을 무시한다.
+    // 원하는 상품: 색이 맞고(색 제한이 없으면 카테고리만) 예산 안에 드는 것. 그런 상품이 없으면 예산을 무시한다.
     const colorOk = sameCat.filter((p) => customer.color === null || p.color === customer.color);
     const affordable = colorOk.filter((p) => customer.budget === null || p.price <= customer.budget);
     const exact = affordable.length > 0 ? affordable : colorOk.filter(() => customer.color !== null);
@@ -315,7 +315,7 @@ export function doPropose(ctx: Ctx, productId: string): boolean {
   const product = ctx.products[productId] as Product;
   const miss = checkRequire(c, 'propose', [productId], ctx.data.rules, e.shift);
   if (miss !== null) { e.chosenProductId = productId; return violate(ctx, e, miss); }
-  // 손님이 원하는 상품(부서·색·예산이 모두 맞음)이 아니면 호감이 깎이고 그 상품은 거절된다. 다른 상품을 권할 수 있다.
+  // 손님이 원하는 상품(카테고리·색·예산이 모두 맞음)이 아니면 호감이 깎이고 그 상품은 거절된다. 다른 상품을 권할 수 있다.
   const kind = classifyProposal(ctx, c, product);
   if (kind !== 'perfect') return rejectProduct(ctx, e, c, product, kind);
   e.chosenProductId = productId;

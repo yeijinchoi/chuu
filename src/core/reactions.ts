@@ -48,7 +48,7 @@ export function reactGreet(ctx: Ctx, c: CustomerDef, style: GreetStyle): void {
 
 export type ProposeKind = 'perfect' | 'deptOnly' | 'wrong' | 'overBudget';
 
-/** 제안 결과 분류: 다른 부서 → wrong, 예산 초과 → overBudget, 색까지 맞음 → perfect, 아니면 deptOnly. "아무거나" 손님은 항상 perfect */
+/** 제안 결과 분류: 다른 카테고리 → wrong, 예산 초과 → overBudget, 색까지 맞음 → perfect, 아니면 deptOnly. "아무거나" 손님은 항상 perfect */
 export function classifyProposal(ctx: Ctx, c: CustomerDef, product: Product): ProposeKind {
   if (c.traits.wantsAnything || c.category === 'any') return 'perfect';
   if (product.category !== c.category) return 'wrong';
@@ -70,6 +70,8 @@ export function reactClose(ctx: Ctx, c: CustomerDef, choice: CloseId): void {
 export function reactThought(ctx: Ctx, c: CustomerDef, key: keyof NonNullable<CustomerReactions['thought']>): void {
   // 재방문이면 첫 만남의 속마음("나도 처음인데", "첫 판매다")을 되풀이하지 않는다
   if (effectiveVisit(ctx, c.id) >= 2) thought(ctx, returnsFor(ctx, c)?.thought?.[key]);
+  // "첫 판매다"는 정말 그날 첫 판매일 때만
+  else if (key === 'sold' && ctx.state.salesCount > 1) return;
   else thought(ctx, c.reactions?.thought?.[key]);
 }
 
