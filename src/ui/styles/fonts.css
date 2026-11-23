@@ -44,7 +44,7 @@
   font-weight: 400;
   font-style: normal;
   font-display: swap;
-  size-adjust: 109%;
+  size-adjust: 127%;
 }
 @font-face {
   font-family: 'GameBody';
@@ -53,14 +53,14 @@
   font-style: normal;
   font-display: swap;
 }
-/* 본문 크기: 델타돋움은 같은 크기에서 갈무리보다 작아 보여 size-adjust로 키운다(데스크톱 11px→12px, 모바일 14px→16px) */
+/* 본문 크기: 델타돋움은 같은 크기에서 갈무리보다 작아 보여 size-adjust로 키운다(데스크톱 11px→14px, 모바일 14px→18px) */
 @font-face {
   font-family: 'GameBodyM';
   src: url('./../fonts/DeltaDotumKR-subset.woff2') format('woff2');
   font-weight: 400;
   font-style: normal;
   font-display: swap;
-  size-adjust: 114%;
+  size-adjust: 128%;
 }
 @font-face {
   font-family: 'GameBodyM';
