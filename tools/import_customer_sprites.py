@@ -237,13 +237,50 @@ def process_sheet(key, ids, manifest):
         sprite = Image.new('RGBA', (sw, sh), (0, 0, 0, 0))
         blink = Image.new('RGBA', (sw, sh), (0, 0, 0, 0))
         sp, bp = sprite.load(), blink.load()
-        blink_px = 0
         for (x, y), k in keys.items():
             sp[x - bx0, y - by0] = cols[k] + (255,)
-            # 깜빡임: 눈 높이(위 15~45%)에서 팔레트 키가 바뀐 픽셀만
-            if ckeys and sh * 0.15 < (y - by0) < sh * 0.45 and ckeys.get((x, y), k) != k:
-                bp[x - bx0, y - by0] = cols[ckeys[(x, y)]] + (255,)
-                blink_px += 1
+        # 깜빡임: 눈 두 곳만. 눈 높이(위 15~45%), 가운데 70% 폭에서 달라진 픽셀을 모아
+        # 가장 큰 덩어리 두 개(양쪽 눈)를 찾고, 그 상자 안만 눈 감은 프레임으로 바꾼다.
+        # 그 밖에서 미세하게 달라진 픽셀은 버린다(얼룩 방지).
+        blink_px = 0
+        if ckeys:
+            cx0, cx1 = bx0 + sw * 0.15, bx0 + sw * 0.85
+            changed = {(x, y) for (x, y), k in keys.items()
+                       if sh * 0.15 < (y - by0) < sh * 0.45 and cx0 <= x < cx1 and ckeys.get((x, y), k) != k}
+            blobs, seen = [], set()
+            for p0 in changed:
+                if p0 in seen: continue
+                q = deque([p0]); seen.add(p0); blob = [p0]
+                while q:
+                    px, py = q.popleft()
+                    for dx in (-1, 0, 1):
+                        for dy in (-1, 0, 1):
+                            n = (px + dx, py + dy)
+                            if n in changed and n not in seen:
+                                seen.add(n); q.append(n); blob.append(n)
+                blobs.append(blob)
+            # 눈 후보: 크기 6 이상. 양쪽 눈은 높이가 비슷하고 좌우로 떨어져 있으므로,
+            # 큰 덩어리 6개 중 세로 중심이 가장 가깝고 가로로 떨어진 한 쌍을 고른다.
+            cands = [b for b in sorted(blobs, key=len, reverse=True)[:6] if len(b) >= 6]
+            cy = lambda b: sum(y for _, y in b) / len(b)
+            cxm = lambda b: sum(x for x, _ in b) / len(b)
+            best, score = cands[:2], None
+            for a_ in range(len(cands)):
+                for b_ in range(a_ + 1, len(cands)):
+                    A, B = cands[a_], cands[b_]
+                    gap = abs(cxm(A) - cxm(B))
+                    if gap < sw * 0.12: continue
+                    sc = abs(cy(A) - cy(B)) - 0.05 * (len(A) + len(B))
+                    if score is None or sc < score: best, score = [A, B], sc
+            eyes = best
+            for b in eyes:
+                ex0 = min(x for x, _ in b) - 1; ex1 = max(x for x, _ in b) + 2
+                ey0 = min(y for _, y in b) - 1; ey1 = max(y for _, y in b) + 2
+                for y in range(ey0, ey1):
+                    for x in range(ex0, ex1):
+                        if (x, y) in keys and (x, y) in ckeys:
+                            bp[x - bx0, y - by0] = cols[ckeys[(x, y)]] + (255,)
+                            blink_px += 1
         sprite.save(os.path.join(OUT, f'{cid}.png'))
         entry = {'x': CUSTOMER_X - sw // 2, 'y': COUNTER_Y + 2 - sh, 'w': sw, 'h': sh,
                  'breathSplit': sh - HANDS_ROWS, 'blink': False}
