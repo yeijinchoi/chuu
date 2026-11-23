@@ -1,4 +1,5 @@
-import { resolve } from '../render/palette';
+import { Renderer } from '../render/renderer';
+import { prefersReducedMotion } from '../render/effects';
 
 export const STAGE_W = 640;
 export const STAGE_H = 360;
@@ -49,20 +50,9 @@ export function createStage(label: string): Stage {
   return { root, stage, canvas, ctx };
 }
 
-/** M0 임시 장면: 뒷벽 선반과 카운터. 진짜 장면은 M2. */
-export function drawPlaceholder(ctx: CanvasRenderingContext2D): void {
-  const fill = (key: Parameters<typeof resolve>[0], x: number, y: number, w: number, h: number): void => {
-    ctx.fillStyle = resolve(key);
-    ctx.fillRect(x, y, w, h);
-  };
-  fill('dusk', 0, 0, CANVAS_W, CANVAS_H);
-  // 뒷벽 선반
-  for (const x of [24, 124, 224]) {
-    fill('stone', x, 40, 72, 3);
-    fill('stone', x, 72, 72, 3);
-    fill('stone', x, 104, 72, 3);
-  }
-  // 카운터
-  fill('shadow', 0, 132, CANVAS_W, CANVAS_H - 132);
-  fill('brass', 0, 132, CANVAS_W, 1);
+/** 장면 렌더러를 stage 캔버스에 붙이고 루프를 시작한다. */
+export function mountScene(s: Stage): Renderer {
+  const r = new Renderer(prefersReducedMotion());
+  r.start(s.ctx);
+  return r;
 }

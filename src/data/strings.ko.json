@@ -81,5 +81,11 @@
     "phone": "업무폰 문자",
     "speaker": "원통의 음성",
     "none": "색 띠"
+  },
+  "debug": {
+    "shift": { "afternoon": "오후", "dawn": "새벽" },
+    "mood": { "calm": "평온", "uneasy": "불안", "dread": "공포", "collapse": "붕괴", "breach": "위반" },
+    "icons": "아이콘 격자",
+    "hint": "F1 손님 · F2 교대 · F3 아이콘 · F4 분위기"
   }
 }

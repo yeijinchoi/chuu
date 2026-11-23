@@ -105,3 +105,43 @@ canvas {
   height: 360px;
   z-index: var(--z-scene);
 }
+
+/* 디버그 뷰 (F1~F4) */
+.debug-label {
+  position: absolute;
+  left: var(--space-3);
+  top: var(--space-3);
+  z-index: var(--z-fx);
+  padding: var(--space-1) var(--space-3);
+  background: var(--color-surface);
+  border: var(--border-w) solid var(--color-border);
+  color: var(--color-text);
+  font-family: var(--font-small);
+  font-size: 9px;
+  line-height: 13px;
+}
+.debug-hint {
+  position: absolute;
+  left: var(--space-3);
+  bottom: var(--space-3);
+  z-index: var(--z-fx);
+  color: var(--color-text-muted);
+  font-family: var(--font-small);
+  font-size: 9px;
+}
+.debug-icons {
+  position: absolute;
+  inset: 0;
+  z-index: var(--z-modal);
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  align-content: start;
+  gap: var(--space-3);
+  padding: var(--space-5);
+  background: var(--color-bg);
+  overflow: auto;
+}
+.debug-icons[hidden] { display: none; }
+.debug-icons__cell { background: var(--color-surface); border: var(--border-w) solid var(--color-border); padding: var(--space-2); }
+.debug-icons__row { display: flex; align-items: flex-end; gap: var(--space-3); }
+.debug-icons__name { margin-top: var(--space-2); color: var(--color-text-muted); font-family: var(--font-small); font-size: 9px; }

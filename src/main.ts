@@ -2,7 +2,8 @@ import './ui/styles/fonts.css';
 import './ui/styles/tokens.css';
 import './ui/styles/base.css';
 import strings from './data/strings.ko.json';
-import { createStage, drawPlaceholder } from './ui/stage';
+import { createStage, mountScene } from './ui/stage';
+import { mountDebug } from './ui/debug';
 
 const FONT_TIMEOUT_MS = 4000;
 const FACES = [
@@ -64,10 +65,11 @@ async function boot(): Promise<void> {
     fill.style.width = `${w}px`;
   });
 
-  const { root, ctx } = createStage(strings.stage.label);
-  drawPlaceholder(ctx);
+  const stage = createStage(strings.stage.label);
+  const renderer = mountScene(stage);
   loading.remove();
-  app.appendChild(root);
+  app.appendChild(stage.root);
+  mountDebug(stage.root, renderer);
 
   if (!ok) {
     const notice = el('div', 'notice', strings.loading.fontFail);
