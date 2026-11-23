@@ -286,11 +286,21 @@ def process_sheet(key, ids, manifest):
                         if k in SKIN: skin_counts[k] = skin_counts.get(k, 0) + 1
                 if not skin_counts: continue
                 skin = max(skin_counts, key=skin_counts.get)
+                # 뜬 눈 선 색: 기본 이미지의 눈 영역에서 가장 많이 쓰인 어두운(피부·흰자 아닌) 색
+                LIGHT = {'paper', 'bone'}
+                line_counts = {}
+                for y in range(ey0, ey1):
+                    for x in range(ex0, ex1):
+                        k = keys.get((x, y))
+                        if k and k not in SKIN and k not in LIGHT and L[k][0] < L[skin][0] - 25:
+                            line_counts[k] = line_counts.get(k, 0) + 1
+                line = max(line_counts, key=line_counts.get) if line_counts else 'dusk'
                 for y in range(ey0, ey1):
                     for x in range(ex0, ex1):
                         if (x, y) not in keys or (x, y) not in ckeys: continue
                         ck = ckeys[(x, y)]
-                        if ck in SKIN: ck = skin
+                        # 피부는 대표 피부색 하나로, 눈꺼풀 선은 뜬 눈 선과 같은 색으로
+                        ck = skin if ck in SKIN or ck in LIGHT else line
                         if ck != keys[(x, y)]:
                             bp[x - bx0, y - by0] = cols[ck] + (255,)
                             blink_px += 1
