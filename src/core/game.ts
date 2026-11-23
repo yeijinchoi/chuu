@@ -4,8 +4,9 @@ import {
 } from './dayFlow';
 import { makeLookups, str, type Ctx } from './ctx';
 import {
-  doClose, doGreet, doProbe, doPropose, doRegularOffer, doServe, stageChoices,
+  doClose, doGreet, doProbe, doPropose, doRegularOffer, doServe, doTalk, stageChoices, talkOptions,
 } from './encounter';
+import { doFinale, hasFlag } from './plot';
 import {
   canPlaceRedBox, careBlock, checkSendCare, checkSendText, doChooseReply, doPlaceRedBox, doSendCare, doSendText, textBlock,
   type BlockReason,
@@ -29,7 +30,7 @@ function initialState(data: GameData): GameState {
       dawn: { sent: {}, remaining: d?.texting.dawn.total ?? 0, salesSent: 0 },
     },
     aftercareRemaining: 0, visitors: {}, slots: [], pendingUninvited: [], earlierSlots: {},
-    pendingReplies: {}, redBoxDay: null, closingReplied: null, results: null,
+    pendingReplies: {}, redBoxDay: null, flags: {}, clues: [], closingReplied: null, results: null,
     phase: { kind: 'title' }, log: [],
   };
 }
@@ -68,6 +69,8 @@ export class Game {
     s.cards = JSON.parse(JSON.stringify(save.regulars)) as GameState['cards'];
     s.pendingUninvited = [...(save.pendingUninvited ?? [])];
     s.earlierSlots = { ...(save.earlierSlots ?? {}) };
+    s.clues = [...(save.clues ?? [])];
+    s.flags = { ...(save.flags ?? {}) };
     rollToNextDay(this.makeCtx(out));
     return out;
   }
@@ -132,6 +135,10 @@ export class Game {
         return doClose(ctx, a.choice);
       case 'regularOffer':
         return doRegularOffer(ctx, a.accept);
+      case 'talk':
+        return doTalk(ctx, a.option);
+      case 'finale':
+        return doFinale(ctx, a.choice);
       case 'advance':
         return advanceFromEncounter(ctx);
       case 'closingText':
@@ -210,6 +217,7 @@ export class Game {
         else if (e.step === 'propose') for (const productId of e.offered) out.push({ type: 'propose', productId });
         else if (e.step === 'close') for (const choice of ch.closes) out.push({ type: 'close', choice });
         else if (e.step === 'regularOffer') out.push({ type: 'regularOffer', accept: true }, { type: 'regularOffer', accept: false });
+        else if (e.step === 'talk') for (const i of talkOptions(this.data.customers.find((x) => x.id === e.customerId) as never).keys()) out.push({ type: 'talk', option: i as 0 | 1 });
         else out.push({ type: 'advance' });
         break;
       }
@@ -219,6 +227,11 @@ export class Game {
       case 'results':
         out.push({ type: 'nextDay' });
         break;
+      case 'finale':
+        out.push({ type: 'finale', choice: 'yes' }, { type: 'finale', choice: 'leave' });
+        if (hasFlag(ctx, 'ally') && !p.allyTried) out.push({ type: 'finale', choice: 'ally' });
+        break;
+      case 'ending':
       case 'between':
       case 'badEnding':
         break;

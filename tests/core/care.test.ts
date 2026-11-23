@@ -303,16 +303,13 @@ describe('새벽 단골 관리 (뒤틀린 규칙)', () => {
     const ev = act(g, { type: 'finishTexting' });
     expect(st(g).slots.find((s) => s.customerId === 'baek')).toMatchObject({ uninvited: true, forgotten: true });
     expect(st(g).pendingUninvited).toEqual([]);
-    // 얼굴 없는 여자 → 백설
-    expect(ofType(ev, 'customerEnter')[0]!.customerId).toBe('faceless');
-    act(g, { type: 'greet', style: 'quiet' });
-    act(g, { type: 'probe', probe: 'askCategory' });
-    act(g, { type: 'probe', probe: 'askOccasion' });
-    act(g, { type: 'propose', productId: encOf(g).offered[0]! });
-    act(g, { type: 'close', choice: 'boxRed' });
-    if (encOf(g).step === 'regularOffer') act(g, { type: 'regularOffer', accept: false });
-    const ev2 = act(g, { type: 'advance' });
-    expect(encOf(g).customerId).toBe('baek');
+    // 2일차 새벽 일정: 원통 → 배우 → 개를 건너뛰고 04:10 잊힌 단골(백설)까지
+    expect(ofType(ev, 'customerEnter')[0]!.customerId).toBe('cylinder');
+    let ev2 = ev;
+    while (encOf(g).customerId !== 'baek') {
+      encOf(g).step = 'done';
+      ev2 = act(g, { type: 'advance' });
+    }
     expect(encOf(g).affinity).toBe(30);
     expect(st(g).composure).toBe(90);
     expect(ofType(ev2, 'composure')[0]).toMatchObject({ delta: -10 });

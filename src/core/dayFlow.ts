@@ -2,7 +2,8 @@ import { rolloverCards } from './care';
 import { changeComposure, dayDef, narrate, setClock, setPhase, str, strList, thought, type Ctx } from './ctx';
 import { startEncounter, SCORE } from './encounter';
 import { moodFor } from './mood';
-import { checkClosingReply } from './rules';
+import { checkClosingReply, ruleText } from './rules';
+import { beginFinale } from './plot';
 import { computeResults } from './results';
 import { buildSave } from './save';
 import type { ResolvedSlot, ScheduleSlot, Shift, StorageAdapter } from './types';
@@ -20,7 +21,14 @@ export function buildSlots(ctx: Ctx, shift: Shift): ResolvedSlot[] {
   const pending = new Set(s.pendingUninvited);
   const slots: ResolvedSlot[] = [];
   const present = new Set<string>();
-  for (const sl of day.schedule.filter((x: ScheduleSlot) => x.shift === shift)) {
+  for (const sl0 of day.schedule.filter((x: ScheduleSlot) => x.shift === shift)) {
+    let sl = sl0;
+    if (sl.condition === 'returning') {
+      const pick = pickReturning(ctx, sl);
+      if (pick === null) continue;
+      sl = { ...sl, customerId: pick, condition: 'always' };
+    }
+    if (present.has(sl.customerId)) continue; // 같은 손님이 한 교대에 두 번 오지 않는다
     const v = s.visitors[sl.customerId];
     const forgotten = !v && pending.has(sl.customerId);
     if (sl.condition === 'always') {
@@ -60,6 +68,21 @@ export function buildSlots(ctx: Ctx, shift: Shift): ResolvedSlot[] {
   return slots;
 }
 
+/** 재방문 슬롯: 한 번이라도 판매한 후보 중 관계 점수가 가장 높은 손님 (동점이면 앞 순서). 없으면 슬롯을 비운다. */
+function pickReturning(ctx: Ctx, sl: ScheduleSlot): string | null {
+  let best: string | null = null;
+  let bestScore = -Infinity;
+  for (const id of sl.candidates ?? [sl.customerId]) {
+    const card = ctx.state.cards[id];
+    if (!card || card.purchases.length === 0 || card.tier === 'lost') continue;
+    if (card.score > bestScore) {
+      best = id;
+      bestScore = card.score;
+    }
+  }
+  return best;
+}
+
 function enterShift(ctx: Ctx, shift: Shift): void {
   ctx.state.shift = shift;
   ctx.emit({ type: 'shift', shift });
@@ -75,7 +98,15 @@ export function beginBriefing(ctx: Ctx, shift: Shift): void {
   // 쪽지 본문은 kind 'note'로 보낸다. UI는 이 줄들을 모아 RulesNote로 펼친다.
   const say = (text: string): void => ctx.emit({ type: 'line', speaker: who, text, kind: 'note' });
   const first = ctx.state.day === 1;
-  if (shift === 'afternoon') {
+  if (shift === 'afternoon' && !first) {
+    // 2일차 이후: 쪽지 대신 점장의 알림 한 통과 새로 추가된 수칙
+    const day = ctx.state.day;
+    for (const l of strList(ctx.data, `briefing.day${day}.head`)) say(l.replace('{name}', ctx.state.playerName));
+    say(str(ctx.data, `briefing.day${day}.title`));
+    for (const r of ctx.data.rules.filter((x) => x.day === day || x.reveal?.day === day)) say(`${r.id}. ${ruleText(r, day)}`);
+    say(str(ctx.data, 'briefing.dawn.outro'));
+    for (const l of strList(ctx.data, `briefing.day${day}.thoughts`)) thought(ctx, l);
+  } else if (shift === 'afternoon') {
     if (first) {
       for (const l of strList(ctx.data, 'briefing.afternoon.intro')) narrate(ctx, l);
       thought(ctx, str(ctx.data, 'thoughts.afternoonOpen'));
@@ -88,7 +119,7 @@ export function beginBriefing(ctx: Ctx, shift: Shift): void {
   } else {
     say(str(ctx.data, 'briefing.dawn.intro'));
     say(str(ctx.data, 'briefing.dawn.title'));
-    for (const r of ctx.data.rules.filter((x) => x.day <= ctx.state.day)) say(`${r.id}. ${r.text}`);
+    for (const r of ctx.data.rules.filter((x) => x.day <= ctx.state.day)) say(`${r.id}. ${ruleText(r, ctx.state.day)}`);
     say(str(ctx.data, 'briefing.dawn.outro'));
     thought(ctx, str(ctx.data, 'thoughts.dawnNote'));
   }
@@ -129,6 +160,7 @@ function advanceToSlot(ctx: Ctx, index: number, shift: Shift): void {
     return;
   }
   if (shift === 'afternoon') beginAftercare(ctx, 'afternoon');
+  else if (dayDef(ctx).closing === 'finale') beginFinale(ctx);
   else beginClosingText(ctx);
 }
 
@@ -180,15 +212,24 @@ export function ackShiftBreak(ctx: Ctx): boolean {
 
 // ------------------------------------------------------------------ 04:44
 
+/** 04:44 문자는 날마다 조금씩 달라진다: closingText.d<day>가 있으면 그것을, 없으면 1일차 문구를 쓴다 */
+function closingList(ctx: Ctx, key: 'incoming' | 'replied' | 'ignored'): string[] {
+  const day = strList(ctx.data, `closingText.d${ctx.state.day}.${key}`);
+  return day.length > 0 ? day : strList(ctx.data, `closingText.${key}`);
+}
+
 export function beginClosingText(ctx: Ctx): void {
   setPhase(ctx, { kind: 'closingText' });
   setClock(ctx, dayDef(ctx).clocks.closingText);
   const from = str(ctx.data, 'closingText.from');
-  for (const text of strList(ctx.data, 'closingText.incoming')) ctx.emit({ type: 'phone', from, text });
+  for (const text of closingList(ctx, 'incoming')) ctx.emit({ type: 'phone', from, text });
   ctx.emit({ type: 'sfx', id: 'phone_buzz' });
   ctx.emit({ type: 'sfx', id: 'phone_buzz' });
-  thought(ctx, str(ctx.data, 'thoughts.closingWho'));
-  thought(ctx, str(ctx.data, 'thoughts.closingRule3'));
+  if (ctx.state.day >= 2) thought(ctx, str(ctx.data, `closingText.d${ctx.state.day}.thought`));
+  else {
+    thought(ctx, str(ctx.data, 'thoughts.closingWho'));
+    thought(ctx, str(ctx.data, 'thoughts.closingRule3'));
+  }
 }
 
 export function doClosingText(ctx: Ctx, reply: boolean): boolean {
@@ -204,12 +245,12 @@ export function doClosingText(ctx: Ctx, reply: boolean): boolean {
     ctx.emit({ type: 'horror', customerId: null, kind: 'blackout' });
     ctx.emit({ type: 'sfx', id: 'blackout' });
     ctx.emit({ type: 'sfx', id: 'glass_tap' });
-    for (const text of strList(ctx.data, 'closingText.replied')) ctx.emit({ type: 'phone', from, text });
+    for (const text of closingList(ctx, 'replied')) ctx.emit({ type: 'phone', from, text });
     changeComposure(ctx, SCORE.closingReplyComposure);
     if (s.phase.kind === 'badEnding') return true;
   } else {
-    for (const text of strList(ctx.data, 'closingText.ignored')) ctx.emit({ type: 'phone', from, text });
-    thought(ctx, str(ctx.data, 'thoughts.closingIgnored'));
+    for (const text of closingList(ctx, 'ignored')) ctx.emit({ type: 'phone', from, text });
+    if (ctx.state.day === 1) thought(ctx, str(ctx.data, 'thoughts.closingIgnored'));
   }
   beginAftercare(ctx, 'dawn');
   return true;

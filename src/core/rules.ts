@@ -64,3 +64,8 @@ export function checkClosingReply(reply: boolean, ruleDefs: readonly RuleDef[]):
   if (!reply) return null;
   return ruleDefs.some((r) => r.id === CLOSING_TEXT_RULE && r.stage === 'event') ? CLOSING_TEXT_RULE : null;
 }
+
+/** 수칙 문장. 6번처럼 날이 지나면 더 읽히는 수칙은 그 날의 문장을 돌려준다. */
+export function ruleText(rule: RuleDef, day: number): string {
+  return rule.reveal && day >= rule.reveal.day ? rule.reveal.text : rule.text;
+}

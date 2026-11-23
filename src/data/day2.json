@@ -1,0 +1,98 @@
+{
+  "day": 2,
+  "startComposure": 100,
+  "clocks": {
+    "afternoonBriefing": "12:30",
+    "afternoonTexting": "12:40",
+    "afternoonAftercare": "20:00",
+    "dawnBriefing": "00:30",
+    "dawnTexting": "01:50",
+    "closingText": "04:44",
+    "dawnAftercare": "05:00",
+    "uninvited": "04:10"
+  },
+  "texting": {
+    "afternoon": {
+      "total": 4,
+      "sales": 2
+    },
+    "dawn": {
+      "total": 3,
+      "sales": 2
+    }
+  },
+  "aftercare": {
+    "perShift": 2
+  },
+  "schedule": [
+    {
+      "shift": "afternoon",
+      "time": "13:30",
+      "customerId": "oh",
+      "condition": "always"
+    },
+    {
+      "shift": "afternoon",
+      "time": "15:00",
+      "customerId": "hanyeoreum",
+      "condition": "returning",
+      "candidates": [
+        "hanyeoreum"
+      ]
+    },
+    {
+      "shift": "afternoon",
+      "time": "16:30",
+      "customerId": "yoon",
+      "condition": "always"
+    },
+    {
+      "shift": "afternoon",
+      "time": "18:00",
+      "customerId": "park",
+      "condition": "always"
+    },
+    {
+      "shift": "afternoon",
+      "time": "14:15",
+      "customerId": "kang",
+      "condition": "invited"
+    },
+    {
+      "shift": "afternoon",
+      "time": "17:15",
+      "customerId": "jin",
+      "condition": "invited"
+    },
+    {
+      "shift": "dawn",
+      "time": "02:00",
+      "customerId": "cylinder",
+      "condition": "always"
+    },
+    {
+      "shift": "dawn",
+      "time": "03:00",
+      "customerId": "actor",
+      "condition": "always"
+    },
+    {
+      "shift": "dawn",
+      "time": "03:40",
+      "customerId": "hound",
+      "condition": "always"
+    },
+    {
+      "shift": "dawn",
+      "time": "02:30",
+      "customerId": "marsh",
+      "condition": "invited"
+    },
+    {
+      "shift": "dawn",
+      "time": "03:20",
+      "customerId": "baek",
+      "condition": "invited"
+    }
+  ]
+}

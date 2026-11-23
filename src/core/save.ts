@@ -19,6 +19,8 @@ export function buildSave(state: Readonly<GameState>): SaveV1 {
     savedAtClock: state.clock,
     pendingUninvited: [...state.pendingUninvited],
     earlierSlots: { ...state.earlierSlots },
+    clues: [...state.clues],
+    flags: { ...state.flags },
   };
 }
 

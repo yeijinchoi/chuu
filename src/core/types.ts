@@ -80,6 +80,7 @@ export interface RuleDef {
   universal?: boolean; // 2번: 모든 새벽 손님에게 적용
   unlessMentionsPrice?: boolean; // 2번: 손님이 먼저 가격을 언급했으면 적용하지 않는다
   exempts?: RuleId[]; // 9번: 이 수칙이 걸린 손님에게는 해당 수칙을 적용하지 않는다
+  reveal?: { day: number; text: string }; // 6번: 이 날부터 찢긴 글자가 더 읽힌다
 }
 export type Mood = 'calm' | 'uneasy' | 'dread' | 'collapse';
 
@@ -136,6 +137,25 @@ export interface Hospitality {
   none?: string;
 }
 
+/** 판매 직후·방문 직후의 줄거리 사건 (단서·플래그). "> "로 시작하는 줄은 지문이다. */
+export interface PlotBeat {
+  day?: number; // 이 날에만
+  visit?: number; // N번째 방문에만 (이상이 아니라 정확히)
+  lines?: string[];
+  thought?: string;
+  clue?: string; // strings.clues.<id> 단서 메모를 연다
+  flag?: string;
+}
+
+/** 판매 뒤 짧은 선택 대화 (한서진: 서윤은 그만둔 게 아니죠?) */
+export interface TalkDef {
+  day?: number;
+  visit?: number;
+  prompt: string[];
+  options: [TalkOption, TalkOption];
+}
+export interface TalkOption { label: string; reply: string[]; clue?: string; flag?: string }
+
 export interface CustomerDef {
   id: string;
   name: string;
@@ -164,6 +184,9 @@ export interface CustomerDef {
   returns?: Partial<Record<'2' | '3', CustomerReturnLines>>;
   vvip?: boolean; // 처음부터 VIP 대접을 받는 손님
   hospitality?: Hospitality;
+  onVisit?: PlotBeat[]; // 입장 직후(첫 대사 뒤)
+  afterSale?: PlotBeat[]; // 판매 직후
+  talk?: TalkDef; // 판매 직후 선택 대화
 }
 
 export interface ContactDef {
@@ -185,8 +208,10 @@ export interface ScheduleSlot {
   shift: Shift;
   time: string;
   customerId: string;
-  condition: 'always' | 'invited' | 'invitedElse';
+  condition: 'always' | 'invited' | 'invitedElse' | 'returning';
   altTime?: string;
+  /** returning: 후보 순서. 카드가 있는 후보 중 관계 점수가 가장 높은 손님이 온다(동점이면 앞 순서). */
+  candidates?: string[];
 }
 
 /** 문자 한도·시각 등 하루 설정 (day1.json) */
@@ -201,6 +226,8 @@ export interface DayDef {
   texting: Record<Shift, { total: number; sales: number }>;
   aftercare: { perShift: number };
   schedule: ScheduleSlot[];
+  /** 새벽 마지막 장면: text(04:44 문자) 또는 finale(서윤의 04:44, 엔딩 분기) */
+  closing?: 'text' | 'finale';
 }
 
 export interface TemplateDef {
@@ -243,12 +270,16 @@ export type Phase =
   | { kind: 'shiftBreak' }
   | { kind: 'closingText' }
   | { kind: 'results' }
+  | { kind: 'finale'; allyTried: boolean }
+  | { kind: 'ending'; ending: EndingId }
   | { kind: 'badEnding' };
+
+export type EndingId = 'display' | 'resign' | 'regulars';
 
 export interface EncounterState {
   customerId: string;
   shift: Shift;
-  step: 'greet' | 'serve' | 'probe' | 'propose' | 'close' | 'regularOffer' | 'done';
+  step: 'greet' | 'serve' | 'probe' | 'propose' | 'close' | 'talk' | 'regularOffer' | 'done';
   affinity: number;
   probesUsed: ProbeId[];
   offered: string[];
@@ -302,6 +333,8 @@ export interface GameState {
   earlierSlots: Record<string, number>; // 다음 등장이 빨라질 횟수
   pendingReplies: Record<string, true>; // 답장 선택을 기다리는 손님
   redBoxDay: number | null;
+  flags: Record<string, true>; // 줄거리 플래그(협력자·서윤의 마지막 말·서윤의 시계·새벽 매장 사진 …)
+  clues: string[]; // 얻은 단서 메모 id (strings.clues.<id>)
   closingReplied: boolean | null;
   results: DayResult | null;
   phase: Phase;
@@ -326,6 +359,8 @@ export type Action =
   | { type: 'regularOffer'; accept: boolean }
   | { type: 'advance' }
   | { type: 'closingText'; reply: boolean }
+  | { type: 'talk'; option: 0 | 1 }
+  | { type: 'finale'; choice: 'yes' | 'ally' | 'leave' }
   | { type: 'nextDay' };
 
 export type GameEvent =
@@ -350,6 +385,8 @@ export type GameEvent =
   | { type: 'clock'; time: string }
   | { type: 'phase'; phase: Phase['kind'] }
   | { type: 'save'; ok: boolean }
+  | { type: 'clue'; id: string }
+  | { type: 'ending'; ending: EndingId }
   | { type: 'sfx'; id: string };
 
 export interface SaveV1 {
@@ -362,6 +399,8 @@ export interface SaveV1 {
   savedAtClock: string;
   pendingUninvited?: string[];
   earlierSlots?: Record<string, number>;
+  clues?: string[];
+  flags?: Record<string, true>;
 }
 
 export interface StorageAdapter {

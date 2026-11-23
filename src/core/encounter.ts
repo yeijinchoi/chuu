@@ -4,6 +4,7 @@ import {
   emitReaction, react, reactClose, reactGreet, reactPropose, reactThought,
 } from './reactions';
 import { checkChoice, checkRequire, type CheckResult } from './rules';
+import { effectiveVisit, grantClue, runBeats, sayLine, setFlag } from './plot';
 import { deriveRng, shuffle, pickOne, type Rng } from './rng';
 import type {
   CloseId, ClientCard, CustomerDef, CustomerLines, CustomerReturnLines, EncounterState, GreetStyle, ProbeId, Product, RuleId,
@@ -123,7 +124,7 @@ type LineKey = keyof Omit<CustomerLines, 'violation'>;
 
 /** 재방문이면 returns의 대사를, 없으면 첫 방문 대사를 돌려준다 (3회째 → 2회째 → 첫 방문 순). */
 export function pickLine(ctx: Ctx, c: CustomerDef, key: LineKey | 'openingRegular'): string | undefined {
-  const visits = ctx.state.cards[c.id]?.visits ?? 1;
+  const visits = effectiveVisit(ctx, c.id);
   const chain: (CustomerReturnLines | undefined)[] = [];
   if (visits >= 3) chain.push(c.returns?.['3']);
   if (visits >= 2) chain.push(c.returns?.['2']);
@@ -176,6 +177,7 @@ export function startEncounter(ctx: Ctx, slotIndex: number): void {
     : (registered ? pickLine(ctx, c, 'openingRegular') : undefined) ?? pickLine(ctx, c, 'opening'));
   if (vip) say(ctx, c, c.care.vipReveal);
   reactThought(ctx, c, 'opening');
+  runBeats(ctx, c, c.onVisit);
   if (slot.forgotten) {
     narrate(ctx, str(ctx.data, 'text.uninvitedNote'));
     changeComposure(ctx, SCORE.uninvitedComposure);
@@ -322,13 +324,46 @@ export function doClose(ctx: Ctx, choice: CloseId): boolean {
     return true;
   }
   recordSale(ctx, e, c);
+  runBeats(ctx, c, c.afterSale);
+  if (hasTalk(ctx, c)) {
+    e.step = 'talk';
+    for (const l of (c.talk as NonNullable<CustomerDef['talk']>).prompt) sayLine(ctx, c, l);
+    return true;
+  }
+  afterSold(ctx, e, c);
+  return true;
+}
+
+/** 판매 뒤 마무리: 단골 제안 또는 퇴장 */
+function afterSold(ctx: Ctx, e: EncounterState, c: CustomerDef): void {
   const card = ensureCard(ctx, c);
   const offerOk = e.shift === 'dawn' ? true : e.affinity >= SCORE.regularOffer;
-  if (offerOk && !isRegistered(card) && card.tier !== 'lost') {
-    e.step = 'regularOffer';
-  } else {
-    finish(ctx, e);
-  }
+  if (offerOk && !isRegistered(card) && card.tier !== 'lost') e.step = 'regularOffer';
+  else finish(ctx, e);
+}
+
+function hasTalk(ctx: Ctx, c: CustomerDef): boolean {
+  const t = c.talk;
+  if (!t) return false;
+  const visit = effectiveVisit(ctx, c.id);
+  return (t.day === undefined || t.day === ctx.state.day) && (t.visit === undefined || t.visit === visit);
+}
+
+/** 판매 뒤 선택 대화 */
+export function talkOptions(c: CustomerDef): string[] {
+  return c.talk ? c.talk.options.map((o) => o.label) : [];
+}
+
+export function doTalk(ctx: Ctx, option: 0 | 1): boolean {
+  const e = enc(ctx);
+  if (!e || e.step !== 'talk') return false;
+  const c = ctx.customers[e.customerId] as CustomerDef;
+  const opt = c.talk?.options[option];
+  if (!opt) return false;
+  for (const l of opt.reply) sayLine(ctx, c, l);
+  if (opt.clue) grantClue(ctx, opt.clue);
+  if (opt.flag) setFlag(ctx, opt.flag);
+  afterSold(ctx, e, c);
   return true;
 }
 

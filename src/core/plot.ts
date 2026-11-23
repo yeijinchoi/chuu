@@ -1,0 +1,124 @@
+import { narrate, setClock, setPhase, str, strList, thought, type Ctx } from './ctx';
+import { isRegistered } from './care';
+import type { CustomerDef, EndingId, PlotBeat } from './types';
+
+/** 줄거리 단서·플래그와 3일차 마지막 장면(서윤의 04:44) 및 엔딩 3종 (SCRIPT_DAY2_3 §2~3). */
+
+export function hasFlag(ctx: Ctx, flag: string): boolean {
+  return ctx.state.flags[flag] === true;
+}
+
+export function setFlag(ctx: Ctx, flag: string): void {
+  ctx.state.flags[flag] = true;
+}
+
+/** 단서 메모를 얻는다 (메모 앱 「손님 메모」 폴더). 같은 단서는 한 번만. */
+export function grantClue(ctx: Ctx, id: string): void {
+  if (ctx.state.clues.includes(id)) return;
+  ctx.state.clues.push(id);
+  ctx.emit({ type: 'clue', id });
+}
+
+/**
+ * 재방문 대사·사건에 쓰는 방문 횟수. 여러 날 쉬었다 와도 날짜만큼은 지난 것이다:
+ * 두 번 이상 방문한 손님은 3일차에 3회째 대사를 쓴다 (SCRIPT_DAY2_3 §0-1, S3-04).
+ */
+export function effectiveVisit(ctx: Ctx, customerId: string): number {
+  const v = ctx.state.cards[customerId]?.visits ?? 1;
+  return v >= 2 ? Math.max(v, ctx.state.day) : v;
+}
+
+/** "> "로 시작하면 지문, 아니면 손님의 대사 */
+export function sayLine(ctx: Ctx, c: CustomerDef | null, text: string): void {
+  if (text.startsWith('> ')) ctx.emit({ type: 'line', speaker: null, text: text.slice(2) });
+  else ctx.emit({ type: 'line', speaker: c?.name ?? null, text });
+}
+
+export function playBeat(ctx: Ctx, c: CustomerDef, beat: PlotBeat): void {
+  for (const l of beat.lines ?? []) sayLine(ctx, c, l);
+  thought(ctx, beat.thought);
+  if (beat.clue) grantClue(ctx, beat.clue);
+  if (beat.flag) setFlag(ctx, beat.flag);
+}
+
+/** 이 방문에 해당하는 사건만 골라 실행 */
+export function runBeats(ctx: Ctx, c: CustomerDef, beats: readonly PlotBeat[] | undefined): void {
+  if (!beats) return;
+  const s = ctx.state;
+  const visit = effectiveVisit(ctx, c.id);
+  for (const b of beats) {
+    if (b.day !== undefined && b.day !== s.day) continue;
+    if (b.visit !== undefined && b.visit !== visit) continue;
+    playBeat(ctx, c, b);
+  }
+}
+
+// ------------------------------------------------------------------ 3일차 04:44
+
+export const SEOYUN = '서윤';
+
+/** 엔딩 C 조건 (§S3-10): ① 한서진 협력 ② 서윤의 마지막 말 ③ 서윤의 시계 ④ 새벽 VIP 2명 이상 */
+export function trueEndingMissing(ctx: Ctx): string[] {
+  const s = ctx.state;
+  const miss: string[] = [];
+  if (!hasFlag(ctx, 'ally')) miss.push('ally');
+  if (!hasFlag(ctx, 'lastWords')) miss.push('lastWords');
+  if (!hasFlag(ctx, 'watch')) miss.push('watch');
+  const dawnVips = ctx.data.customers.filter((c) => {
+    const card = s.cards[c.id];
+    return c.shift === 'dawn' && card !== undefined && (card.tier === 'vip' || card.tier === 'lifetime');
+  }).length;
+  if (dawnVips < 2) miss.push('vip');
+  return miss;
+}
+
+export function beginFinale(ctx: Ctx): void {
+  setPhase(ctx, { kind: 'finale', allyTried: false });
+  setClock(ctx, ctx.data.days[ctx.state.day]?.clocks.closingText ?? '04:44');
+  const from = str(ctx.data, 'finale.from');
+  for (const text of strList(ctx.data, 'finale.incoming')) ctx.emit({ type: 'phone', from, text });
+  ctx.emit({ type: 'sfx', id: 'phone_buzz' });
+  ctx.emit({ type: 'sfx', id: 'phone_buzz' });
+  ctx.emit({ type: 'horror', customerId: null, kind: 'blackout' });
+  for (const l of strList(ctx.data, 'finale.scene')) narrate(ctx, l);
+  for (const l of strList(ctx.data, 'finale.seoyun')) ctx.emit({ type: 'line', speaker: SEOYUN, text: l });
+}
+
+export function doFinale(ctx: Ctx, choice: 'yes' | 'ally' | 'leave'): boolean {
+  const p = ctx.state.phase;
+  if (p.kind !== 'finale') return false;
+  if (choice === 'yes') return endWith(ctx, 'display');
+  if (choice === 'leave') return endWith(ctx, 'resign');
+  // 한서진에게 문자한다: 협력자여야만 가능
+  if (!hasFlag(ctx, 'ally') || p.allyTried) return false;
+  for (const l of strList(ctx.data, 'finale.allyText')) ctx.emit({ type: 'phone', from: str(ctx.data, 'finale.allyFrom'), text: l });
+  ctx.emit({ type: 'sfx', id: 'phone_buzz' });
+  const miss = trueEndingMissing(ctx);
+  if (miss.length === 0) return endWith(ctx, 'regulars');
+  p.allyTried = true;
+  for (const l of strList(ctx.data, 'finale.notEnough')) ctx.emit({ type: 'line', speaker: SEOYUN, text: l });
+  const hint = str(ctx.data, `finale.hint.${miss[0]}`);
+  if (hint) ctx.emit({ type: 'line', speaker: SEOYUN, text: hint });
+  return true;
+}
+
+function endWith(ctx: Ctx, ending: EndingId): boolean {
+  for (const raw of strList(ctx.data, `ending.${ending}.scene`)) {
+    const l = raw.replace(/\{name\}/g, ctx.state.playerName);
+    if (l.startsWith('> ')) narrate(ctx, l.slice(2));
+    else {
+      const i = l.indexOf(': ');
+      const speaker = i > 0 && i < 14 ? l.slice(0, i) : null;
+      ctx.emit({ type: 'line', speaker, text: speaker ? l.slice(i + 2) : l });
+    }
+  }
+  ctx.emit({ type: 'ending', ending });
+  if (ctx.state.phase.kind !== 'badEnding') setPhase(ctx, { kind: 'ending', ending });
+  return true;
+}
+
+/** 엔딩 요약용: 얼마나 모았나 */
+export function endingSummary(ctx: Ctx): { vips: number; regulars: number } {
+  const cards = Object.values(ctx.state.cards);
+  return { vips: cards.filter((c) => c.tier === 'vip' || c.tier === 'lifetime').length, regulars: cards.filter((c) => isRegistered(c)).length };
+}
