@@ -66,6 +66,32 @@ export type GreetStyle = 'warm' | 'quiet' | 'direct';
 export type ProbeId = 'askCategory' | 'askOccasion' | 'askBudget' | 'observe';
 export type CloseId = 'tryOn' | 'boxRed' | 'boxGold' | 'checkout';
 export type TemplateId = 'new_arrival' | 'private' | 'greeting' | 'dawn_open' | 'dawn_offer' | 'dawn_name';
+export type CareTemplateId = 'thanks' | 'occasion' | 'recommend' | 'checkin'
+  | 'dawn_thanks' | 'dawn_occasion' | 'dawn_recommend' | 'dawn_checkin';
+export type Tier = 'new' | 'regular' | 'vip' | 'lifetime' | 'lost';
+
+/** 고객 카드: 응대 중 알아낸 정보만 채운다. 모르는 칸은 undefined → UI는 "아직 몰라요" */
+export interface ClientCard {
+  customerId: string; book: Shift;
+  category?: Category; wants?: string; color?: Color; budget?: number;
+  occasion?: { label: string; day: number };      // 용도 답변으로 기록
+  notes: string[];                                 // 관찰로 얻은 메모
+  purchases: { productId: string; day: number }[];
+  score: number; tier: Tier;
+  lastContactDay: number | null;
+  sentToday: number;                               // 과잉 연락 판정
+}
+
+/** 손님별 관리 성향 (customers.json의 care 필드) */
+export interface CareProfile {
+  likes: CareTemplateId[]; dislikes: CareTemplateId[];
+  occasionDay?: number; occasionLabel?: string;
+  forbid?: { template: CareTemplateId | 'any'; composure?: number; scoreDelta?: number; note: string }[]; // 새벽 관리 금기
+  neglectEvent?: string;                           // 새벽: 방치 시 이벤트 id
+  noContact?: boolean;                             // 문 밖의 손님: 연락이 곧 위반
+  redBoxCare?: boolean;                            // 얼굴 없는 여자
+  vipReveal?: string;                              // VIP 보상 대사
+}
 export type RuleId = number;               // 1~11. 6번(찢김)은 데이터에만 있고 판정 없음
 export type Stage = 'greet' | 'probe' | 'propose' | 'close';
 
@@ -97,6 +123,7 @@ export interface CustomerDef {
   speaksVia?: 'voice' | 'tapping' | 'phone' | 'speaker' | 'none'; // 크리처의 전달 방식 (대화창 이름표에 표시)
   rules: RuleId[];                                   // 이 손님에게 걸린 수칙 (2번은 universal이라 생략)
   onlyProduct?: string;                              // D8: 'empty_box'만 정답
+  care: CareProfile;
   traits: { frostHands?: boolean; wantsAnything?: boolean; extraFingers?: boolean };
   specialPayment?: { label: string; amount: number }; // 새벽 장부
   sprite: SpriteParams;
@@ -130,7 +157,8 @@ export type Phase =
   | { kind: 'texting'; shift: Shift }
   | { kind: 'encounter'; slotIndex: number; enc: EncounterState }
   | { kind: 'between'; nextSlotIndex: number }
-  | { kind: 'shiftBreak' }                           // 20:00 오후 마감 → 새벽 진열 전환
+  | { kind: 'aftercare'; shift: Shift }             // 20:00 / 05:00 감사 문자, 고객 카드 확인
+  | { kind: 'shiftBreak' }                           // 오후 애프터케어 뒤 → 새벽 진열 전환
   | { kind: 'closingText' }                          // 04:44
   | { kind: 'results' } | { kind: 'badEnding' };
 
@@ -152,8 +180,9 @@ export interface GameState {
   dawnLedger: { customerId: string; label: string; amount: number }[];
   salesCount: number; composure: number;
   mannerSlips: number; violations: number;
-  regulars: { customerId: string; book: Shift }[];
-  texting: Record<Shift, { sent: Record<string, TemplateId>; remaining: number }>; // 오후 2, 새벽 2
+  cards: Record<string, ClientCard>;               // 고객 카드 (단골이 아니어도 응대한 손님은 생성)
+  texting: Record<Shift, { sent: Record<string, TemplateId | CareTemplateId>; remaining: number }>; // 하루 문자: 오후 4, 새벽 3 (영업+관리 공유)
+  aftercareRemaining: number;                        // 애프터케어 감사 문자 2통
   visitors: Record<string, { time: string; bonus: number }>;
   closingReplied: boolean | null;
   phase: Phase;
@@ -169,6 +198,10 @@ export type Action =
   | { type: 'ackShiftBreak' }
   | { type: 'sendText'; contactId: string; template: TemplateId }
   | { type: 'finishTexting' }
+  | { type: 'sendCare'; customerId: string; template: CareTemplateId; productId?: string }
+  | { type: 'chooseReply'; customerId: string; option: 0 | 1 }
+  | { type: 'placeRedBox' }
+  | { type: 'finishAftercare' }
   | { type: 'greet'; style: GreetStyle }
   | { type: 'probe'; probe: ProbeId }
   | { type: 'propose'; productId: string }
@@ -191,6 +224,9 @@ export type GameEvent =
   | { type: 'horror'; customerId: string | null; kind: 'breach' | 'blackout' }
   | { type: 'sale'; productId: string; amount: number; shift: Shift }
   | { type: 'regular'; customerId: string; book: Shift }
+  | { type: 'cardUpdate'; customerId: string; field: keyof ClientCard }
+  | { type: 'relationship'; customerId: string; delta: number; score: number; tier: Tier }
+  | { type: 'replyChoices'; customerId: string; options: [string, string] }
   | { type: 'mood'; mood: Mood }
   | { type: 'clock'; time: string }
   | { type: 'phase'; phase: Phase['kind'] }
@@ -217,6 +253,12 @@ UI는 `dispatch` 결과 이벤트를 **큐로 순서대로 재생**한다(대사
   - `require`는 그 단계가 **끝날 때** 검사한다. 9번은 니즈 파악 두 칸을 다 썼는데 `askBudget`이 없으면 위반, 10번은 `empty_box`가 아닌 상품을 고르면 위반, 4번은 `boxRed`가 아닌 클로징이면 위반이다.
   - 3번(04:44 답장)은 `stage: 'event'`라 `closingText` 처리에서 직접 검사한다.
 - `pickOffers`: `onlyProduct`가 있는 손님(D8)이면 일반 카드 3장 + `empty_box` 1장, 총 4장을 낸다.
+- **고객 관리(`care.ts`)**: 순수 함수로 둔다.
+  - 니즈 파악·관찰 결과가 나올 때마다 `ClientCard` 칸을 채우고 `cardUpdate` 이벤트를 보낸다.
+  - `scoreCare(card, profile, template, day, productId?)` → 점수 변화. GDD §6-2 표를 따른다(`thanks` 당일 +1, `occasion` 정확한 날 +2·틀리면 −1, `recommend` 부서·색 일치 +1·불일치 −1, `checkin`은 likes/dislikes, 같은 날 2통째 −1).
+  - 새벽 금기(`forbid`)는 수칙 위반처럼 처리하되 공포 이벤트 대신 평정심만 깎는다. `noContact` 손님에게는 어떤 문자든 금기다.
+  - 하루가 바뀔 때 `lastContactDay`가 2일 이상 지난 단골은 −1. 새벽 단골은 대신 `neglectEvent`가 예약된다(초대 없이 방문, 시작 호감 30, 평정심 −10).
+  - 등급: score ≤0 `lost`, 2~4 `regular`, 5~9 `vip`, 10+ `lifetime`.
 - 새 손님이나 수칙을 추가할 때는 코드를 고치지 않고 `customers.json`과 `rules.json`만 고친다. 이게 이 구조의 목적이다.
 - 처리: `manner`면 호감 −10, `mannerSlips++`, 응대를 계속한다. 새벽 `rule`이면 `violation` + `horror` 이벤트, 평정심 −25, `outcome='horror'`로 즉시 응대를 끝낸다.
 - 평정심은 새벽에만 바뀐다. 오후 판매 성공으로 평정심이 오르지 않는다.
@@ -264,7 +306,7 @@ GDD §6, §7, §11, §12의 표를 **그대로** JSON으로 옮긴다. 대사 �
 - 정적인 배경은 처음 한 번만 오프스크린에 굽는다. 매 프레임 다시 그리는 건 샹들리에, 진열 글로우, 손님, 효과뿐이다.
 - **mood 팔레트**: 그리기 함수는 hex가 아니라 **팔레트 키**(`'rose'`)를 받는다. `palette.resolve(key, mood)`가 실제 색을 돌려준다. `breach`일 때는 밝기에 따라 키를 `ink` 또는 `wine`으로 바꾸고, 가장 밝은 키만 `paper`로 남긴다. 이렇게 하면 팔레트 스왑이 셰이더 없이 된다. 유니티에서는 팔레트 LUT 셰이더 하나로 옮기면 된다.
 - 거울: 배경 장식일 뿐 **아무것도 비추지 않는다**(반사 렌더링 없음). 유리 하이라이트 사선 2줄만 그린다.
-- 크리처(D5~D8)는 손님별 전용 그리기 함수와 위치를 쓴다(`CUSTOMERS.md` §5).
+- 크리처(D5~D8)는 손님별 전용 그리기 함수와 위치를 쓴다(`CUSTOMERS.md` §7).
 - 새벽 손님의 이상한 특징(깜빡이지 않는 눈, 얼굴 없음, 서리 맺힌 손, 많은 손가락)은 **숨기지 않고 처음부터 그린다.** 정체를 가려내는 숨은 단서는 없다.
 - **부서 배치**: 한 화면에 세 부서를 둔다. 뒷벽 선반 = 가방, 양쪽 마네킹과 행거 = 의류, 앞쪽 유리 카운터 = 파인주얼리. 손님이 입장하면 자기 부서 쪽으로 2초간 고개를 돌린다(첫 힌트).
 - **교대 전환**: 오후 진열은 GDD §12-1 상품, 새벽 진열은 GDD §12-2 아이템이다. 새벽에는 샹들리에를 끄고 카운터 스탠드 하나만 켠다(빛 반경 밖은 무채색 한 단계 어둡게). 새벽 기본 mood는 `uneasy`다.
@@ -293,9 +335,10 @@ interface StorageAdapter { load(): SaveV1 | null | 'corrupt'; save(s: SaveV1): b
 
 ## 9. 테스트 (Vitest) — 통과 기준
 
-1. **전체 플레이 시나리오**: 코드로 1일차 정답 루트를 끝까지 진행한다. 오후 문자는 kang=new_arrival, jin=private, 새벽 문자는 marsh=dawn_offer, baek=dawn_name이다. 판매 6건, 매너 실수 0, 수칙 위반 0, 등급 S가 나와야 한다.
+1. **전체 플레이 시나리오**: 코드로 1일차 정답 루트를 끝까지 진행한다. 오후 문자는 kang=new_arrival, jin=private, 새벽 문자는 marsh=dawn_offer, baek=dawn_name이다. 애프터케어는 오후 `thanks` 2통(한여름, 진영숙), 새벽 `dawn_thanks` 2통(백설, 마시 씨)이다. 판매 6건, 매너 실수 0, 수칙 위반 0, 감사 문자 4통, 등급 S가 나와야 한다.
 2. 수칙 판정 단위 테스트: `rules.json`의 판정 가능한 수칙 10개(1~5, 7~11) 각각 × (위반 / 비위반). 같은 `askBudget`이 오후에는 `manner`, 새벽에는 규칙 2, 문 밖의 손님에게는 **필수**인지 확인.
 3. 문자 판정: 선호·중립·비선호·미발송·`baek` 예외·`zero` 평정심·교대별 발송 한도(2/2).
+4-2. 고객 관리: 감사 문자 당일/다음 날 점수 차이, 기념일 정확/오류, 과잉 연락, 2일 방치 감소, 등급 경계(2·5·10), 새벽 금기(배우 `occasion`, 문 밖의 손님 모든 문자), 백설 미감사 → 다음 새벽 방문 예약. 고객 카드의 모르는 칸이 0이나 빈 문자열이 아니라 `undefined`인지 확인.
 4-1. 교대 분리: 오후 손님에게 새벽 상품이 제안되지 않는다. 오후에는 평정심이 바뀌지 않는다.
 4. `pickOffers`: 같은 시드면 같은 결과가 나오고, 매칭 상품이 항상 포함된다.
 5. 평정심 0이면 배드엔딩으로 넘어간다.
@@ -310,7 +353,7 @@ interface StorageAdapter { load(): SaveV1 | null | 'corrupt'; save(s: SaveV1): b
 | M1 | `core/` 전부 + `data/` + 테스트 | `npm test` 전부 통과 (§9) |
 | M2 | 렌더러: 오후/새벽 배경, 손님 6명 도트, 상품 아이콘 26종(오후 14, 새벽 12) | 디버그 키 `F1`로 손님 순환, `F2`로 교대 전환하며 스크린샷을 확인한다 |
 | M3 | UI: 타이틀·이름 입력, HUD, 대화창, 선택지, 단계 표시, 하트, 수칙 쪽지, 상품 카드 | 문자 단계를 건너뛰고 손님 응대를 마우스와 키보드로 끝까지 할 수 있다 |
-| M4 | 업무폰: 오후 명부와 검은 수첩, 발송, 답장, 휴게 전환, 04:44 문자 이벤트 | GDD §3, §6, §9가 화면에서 그대로 동작한다 |
+| M4 | 업무폰: 오후 명부와 검은 수첩, 영업·관리 문자, 고객 카드, 답장 선택, 애프터케어, 휴게 전환, 04:44 문자 이벤트 | GDD §3, §6, §6-2, §9가 화면에서 그대로 동작한다 |
 | M5 | 공포 연출: mood 단계, 위반 이벤트, 배드엔딩 | 일부러 위반하는 루트로 확인. reduced-motion에서 흔들림이 없다 |
 | M6 | 정산서, 저장·이어하기, 2일차 예고 | 저장 실패를 흉내 내면(localStorage 차단) 실패 토스트가 뜬다 |
 | M7 | `impeccable`로 다듬기 | 사용자 지침. 깨진·낡은 연출은 의도이므로 "고치지" 않는다 |
