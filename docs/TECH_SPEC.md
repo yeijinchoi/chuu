@@ -37,7 +37,7 @@ src/
     products.json  customers.json  contacts.json  templates.json
     rules.json  day1.json  strings.ko.json
   render/
-    palette.ts             # Candy Noir 24 + mood별 팔레트 맵
+    palette.ts             # Dusk Mono 16 + mood별 팔레트 맵
     pixel.ts               # rect, hline, circle, dither, flipX 등 기본 도형
     scene.ts               # 배경 레이어
     customerSprite.ts      # 파라미터로 손님 도트 그리기
@@ -59,69 +59,87 @@ tests/
 ## 3. 코어 타입 (`src/core/types.ts`)
 
 ```ts
-export type Category = 'bag' | 'watch' | 'jewelry' | 'scarf' | 'glove' | 'wallet';
+export type Shift = 'afternoon' | 'dawn';
+export type Category = 'bag' | 'watch' | 'jewelry' | 'scarf' | 'glove' | 'wallet' | 'perfume';
 export type Color = 'beige' | 'pink' | 'black' | 'white';
 export type GreetStyle = 'warm' | 'quiet' | 'direct';
 export type ProbeId = 'askCategory' | 'askOccasion' | 'askBudget' | 'observe';
 export type CloseId = 'tryOn' | 'boxRed' | 'boxGold' | 'checkout';
-export type TemplateId = 'new_arrival' | 'private' | 'greeting';
-export type RuleId = 1 | 2 | 3 | 4;
-export type Mood = 'calm' | 'uneasy' | 'dread';
+export type TemplateId = 'new_arrival' | 'private' | 'greeting' | 'dawn_open' | 'dawn_offer' | 'dawn_name';
+export type RuleId = 1 | 2 | 3 | 4 | 5;     // 새벽 수칙. 6번(찢김)은 데이터에만 있고 판정 없음
+export type Mood = 'calm' | 'uneasy' | 'dread' | 'collapse';
 
-export interface Product { id: string; name: string; category: Category; color: Color; price: number; }
+export interface Product {
+  id: string; name: string; shift: Shift;
+  category: Category; color: Color; price: number;   // 새벽 상품의 price는 원화 환산가
+  description?: string;                              // 새벽 상품 설명
+}
 
 export interface CustomerDef {
-  id: string; name: string; isAnomaly: boolean;
+  id: string; name: string; shift: Shift;            // 새벽 손님 = 미지의 존재
+  motif?: string;                                    // 기획 메모용, 화면에 쓰지 않음
+  entranceNote?: string;                             // 입장 지문 (새벽)
   greetPref: GreetStyle;
   category: Category | 'any'; color: Color | null; budget: number | null;
   mentionsPrice: boolean; occasionIsGift: boolean;
-  traits: { noReflection?: boolean; wantsAnything?: boolean; extraFingers?: boolean };
-  specialPayment?: { label: string; amount: number };
+  traits: { noReflection?: boolean; wantsAnything?: boolean; noEyeContact?: boolean; extraFingers?: boolean };
+  specialPayment?: { label: string; amount: number }; // 새벽 장부
   sprite: SpriteParams;
   lines: {
     opening: string; openingUninvited?: string;
     askCategory: string; askOccasion: string; askBudget: string;
     observe: string; success: string; fail: string;
-    violation: Partial<Record<RuleId, string>>;   // 위반 시 대사
+    farewell?: string;                               // 진영숙의 새벽 복선
+    violation: Partial<Record<RuleId | 'manner', string>>;
   };
 }
 
 export interface ContactDef {
-  id: string; name: string; memo: string; memoStruck?: string;
-  customerId: string | null;          // 방문하는 손님 id (zero, oh는 null)
+  id: string; name: string; book: Shift;             // afternoon = 오후 명부, dawn = 검은 수첩
+  address?: string; memo: string; memoStruck?: string;
+  customerId: string | null;                         // 방문하는 손님 id (zero, oh는 null)
   prefers: TemplateId | null; dislikes: TemplateId | null;
-  comesUninvited?: boolean;           // baek
-  composureOnSend?: number;           // zero: -5
+  comesUninvited?: boolean;                          // baek
+  composureOnSend?: number;                          // zero: -5
   replies: { prefer?: string; neutral?: string; dislike?: string; any?: string };
 }
 
-export interface ScheduleSlot { time: string; customerId: string; condition: 'always' | 'invited' | 'invitedElse'; altTime?: string; }
+export interface ScheduleSlot {
+  shift: Shift; time: string; customerId: string;
+  condition: 'always' | 'invited' | 'invitedElse'; altTime?: string;
+}
 
 export type Phase =
-  | { kind: 'title' } | { kind: 'briefing' } | { kind: 'texting' }
+  | { kind: 'title' }
+  | { kind: 'briefing'; shift: Shift }               // 오후: 접객 매너 / 새벽: 휴게 쪽지 + 수칙
+  | { kind: 'texting'; shift: Shift }
   | { kind: 'encounter'; slotIndex: number; enc: EncounterState }
   | { kind: 'between'; nextSlotIndex: number }
-  | { kind: 'closingText' } | { kind: 'results' } | { kind: 'badEnding' };
+  | { kind: 'shiftBreak' }                           // 20:00 오후 마감 → 새벽 진열 전환
+  | { kind: 'closingText' }                          // 04:44
+  | { kind: 'results' } | { kind: 'badEnding' };
 
 export interface EncounterState {
-  customerId: string;
+  customerId: string; shift: Shift;
   step: 'greet' | 'probe' | 'propose' | 'close' | 'regularOffer' | 'done';
   affinity: number;
   probesUsed: ProbeId[];              // 최대 2개
-  offered: string[];                  // 상품 3개 id
+  offered: string[];                  // 상품 3개 id (해당 교대 카탈로그에서)
   chosenProductId: string | null;
-  violated: RuleId[];
+  violated: RuleId[]; mannerSlips: number;
   outcome: 'pending' | 'sold' | 'walked' | 'horror';
 }
 
 export interface GameState {
   version: 1; day: number; seed: number; playerName: string;
-  clock: string;                      // "HH:MM"
-  revenue: number; salesCount: number; composure: number;
-  violations: number;
-  regulars: { customerId: string; kind: 'human' | 'other' }[];
-  texting: { sent: Record<string, TemplateId>; remaining: number };
-  visitors: Record<string, { time: string; bonus: number }>; // 오늘 올 손님
+  shift: Shift; clock: string;        // "HH:MM"
+  revenue: number;                    // 오후 원화 매출
+  dawnLedger: { customerId: string; label: string; amount: number }[];
+  salesCount: number; composure: number;
+  mannerSlips: number; violations: number;
+  regulars: { customerId: string; book: Shift }[];
+  texting: Record<Shift, { sent: Record<string, TemplateId>; remaining: number }>; // 오후 2, 새벽 2
+  visitors: Record<string, { time: string; bonus: number }>;
   closingReplied: boolean | null;
   phase: Phase;
   log: GameEvent[];                   // 디버그·리플레이용 (저장에는 제외)
@@ -133,6 +151,7 @@ export interface GameState {
 export type Action =
   | { type: 'start'; playerName: string; seed?: number }
   | { type: 'ackBriefing' }
+  | { type: 'ackShiftBreak' }
   | { type: 'sendText'; contactId: string; template: TemplateId }
   | { type: 'finishTexting' }
   | { type: 'greet'; style: GreetStyle }
@@ -151,9 +170,12 @@ export type GameEvent =
   | { type: 'affinity'; delta: number; value: number }
   | { type: 'composure'; delta: number; value: number }
   | { type: 'violation'; rule: RuleId; severe: boolean }
+  | { type: 'mannerSlip'; text: string }
+  | { type: 'shift'; shift: Shift }                              // 진열·조명 전환
+  | { type: 'ledger'; label: string; amount: number }
   | { type: 'horror'; customerId: string | null; kind: 'breach' | 'blackout' }
-  | { type: 'sale'; productId: string; amount: number; label?: string }
-  | { type: 'regular'; customerId: string; kind: 'human' | 'other' }
+  | { type: 'sale'; productId: string; amount: number; shift: Shift }
+  | { type: 'regular'; customerId: string; book: Shift }
   | { type: 'mood'; mood: Mood }
   | { type: 'clock'; time: string }
   | { type: 'phase'; phase: Phase['kind'] }
@@ -173,16 +195,20 @@ UI는 `dispatch` 결과 이벤트를 **큐로 순서대로 재생**한다(대사
 
 - 점수 상수는 `encounter.ts` 상단 `export const SCORE = {...}`에 모은다. 값은 GDD §5를 따른다.
 - 호감은 매번 `clamp(0, 100)`로 자른다. 평정심은 `0..100`.
-- 수칙 판정(`rules.ts`)은 순수 함수로 둔다:
-  - `checkProbe(c, probe)`: probe가 `askBudget`이고 `!c.mentionsPrice`이면 규칙 2 위반
-  - `checkClose(c, choice)`: `tryOn`이고 `traits.noReflection`이면 규칙 1, `traits.wantsAnything`이고 choice가 `boxRed`가 아니면 규칙 4
-  - 마감 답장 → 규칙 3
-- 위반 처리: 사람 손님이면 GDD 표대로 처리하고 응대를 계속한다. 이상 손님이면 `horror` 이벤트를 보내고 `outcome='horror'`로 즉시 응대를 끝낸다.
+- **교대 구분이 판정을 바꾼다.** 같은 행동이라도 `shift === 'afternoon'`이면 매너 실수, `'dawn'`이면 수칙 위반이다.
+- 수칙 판정(`rules.ts`)은 순수 함수로 둔다. 반환값은 `{ kind: 'manner' } | { kind: 'rule'; rule: RuleId } | null`:
+  - `checkProbe(c, probe)`: `askBudget` && `!c.mentionsPrice` → 오후는 `manner`, 새벽은 규칙 2. `observe` && `traits.noEyeContact` → 규칙 5
+  - `checkClose(c, choice)`: `tryOn` && `traits.noReflection` → 규칙 1. `traits.wantsAnything` && choice ≠ `boxRed` → 규칙 4
+  - 04:44 답장 → 규칙 3
+- 처리: `manner`면 호감 −10, `mannerSlips++`, 응대를 계속한다. 새벽 `rule`이면 `violation` + `horror` 이벤트, 평정심 −25, `outcome='horror'`로 즉시 응대를 끝낸다.
+- 평정심은 새벽에만 바뀐다. 오후 판매 성공으로 평정심이 오르지 않는다.
 - 손님별 위반 대사는 `lines.violation[rule]`에서 가져온다. 없으면 `strings.ko.json`의 기본값을 쓴다.
 - 상품 3장 구성(`pickOffers`): GDD §5-3 규칙. 후보가 여럿이면 시드 RNG로 고르고 순서도 섞는다. 해당 후보가 없으면(예: 색 다른 같은 품목이 없음) 다른 품목으로 채운다. `wantsAnything`이면 무작위 3장.
-- 이상 손님 성공: 특수 지불 금액을 매출에 더하고 `sale` 이벤트의 `label`에 지불 수단 이름을 넣는다. 그다음 `regularOffer` 단계로 간다.
+- `pickOffers`는 손님의 교대와 같은 `shift`의 상품만 후보로 쓴다.
+- 새벽 손님 성공: `revenue`가 아니라 `dawnLedger`에 특수 지불을 추가하고 `ledger` 이벤트를 보낸다. 그다음 호감과 상관없이 `regularOffer` 단계로 간다.
+- 교대 전환: 오후 마지막 슬롯이 끝나면 `shiftBreak` → `briefing(dawn)` → `texting(dawn)` → 새벽 슬롯 순서로 진행한다. 전환 시 `shift` 이벤트를 보내 렌더러가 진열과 조명을 바꾼다.
 - 평정심이 0이 되면 어느 단계에서든 `badEnding`으로 넘어간다.
-- 시각: 각 손님 슬롯 시각으로 `clock` 이벤트를 보낸다. 백설 `invitedElse`: 초대받았으면 `time`, 아니면 `altTime`.
+- 시각: 각 손님 슬롯 시각으로 `clock` 이벤트를 보낸다. 백설 `invitedElse`: 초대받았으면 `time`(03:33), 아니면 `altTime`(04:20). 새벽 슬롯 뒤 04:44에 `closingText`.
 
 ## 5. 데이터 파일
 
@@ -191,12 +217,13 @@ GDD §6, §7, §11, §12의 표를 **그대로** JSON으로 옮긴다. 대사 �
 ```json
 // customers.json (일부)
 [{
-  "id": "baek", "name": "백설", "isAnomaly": true, "greetPref": "quiet",
-  "category": "glove", "color": "white", "budget": 1500000,
+  "id": "baek", "name": "백설", "shift": "dawn", "motif": "바람 위를 걷는 존재",
+  "entranceNote": "매장 안 온도가 내려간다. 발소리가 없다.", "greetPref": "quiet",
+  "category": "glove", "color": "white", "budget": 5000000,
   "mentionsPrice": false, "occasionIsGift": false,
   "traits": { "noReflection": true },
-  "specialPayment": { "label": "눈송이 모양 수표", "amount": 6000000 },
-  "sprite": { "hair": "long", "hairColor": "silk-50", "skin": "skin-a", "outfit": "silk-50", "accent": "cyan-400" },
+  "specialPayment": { "label": "녹지 않는 서리 한 병", "amount": 4400000 },
+  "sprite": { "hair": "long", "hairColor": "paper", "skin": "skin-a", "outfit": "paper", "accent": "steel" },
   "lines": { "opening": "문자 고마워요. 늘 고마워요.", "openingUninvited": "문자를… 안 주셨더라고요. 그래서 제가 왔어요.", "...": "..." }
 }]
 ```
@@ -204,23 +231,26 @@ GDD §6, §7, §11, §12의 표를 **그대로** JSON으로 옮긴다. 대사 �
 손님 도트 파라미터 제안:
 | 손님 | 머리 | 머리색 | 옷 | 액센트 |
 |---|---|---|---|---|
-| 한여름 | bob | 갈색(`skin-b`를 어둡게 쓰지 말고 팔레트에 `hair-brown #5a3426` 추가) | mint-400 카디건 | pink-300 머리핀 |
-| 강도윤 | slick | ink-950 | onyx-800 수트 | gold-400 시계 |
-| 분홍 코트 | long, 얼굴을 가림 | pink-500 | pink-500 코트 | blood-500 립 |
-| 진영숙 | bun | silk-50(은발) | plum-700 | 진주 목걸이(알 하나 빠짐) |
-| 백설 | long | silk-50 | silk-50 | cyan-400 눈 |
+| 한여름 | bob | hair | shadow 원피스 | rose 머리핀 |
+| 강도윤 | slick | ink | dusk 수트 | brass 시계 |
+| 진영숙 | bun | bone(은발) | shadow 상복 | paper 진주 목걸이(알 하나 빠짐) |
+| 마시 씨 | 젖어 붙은 짧은 머리 | stone | dusk 정장, 소매에서 물방울 | steel 큰 눈(깜빡이지 않음), 목 옆 아가미 선 1줄 |
+| 얼굴 없는 여자 | long, 얼굴을 가림 | ink | **rose 코트** (새벽 매장에서 유일하게 넓은 색 면적) | ash 손가락 |
+| 백설 | long | paper | paper | steel 눈, 발이 2px 떠 있음 |
 
-> 팔레트에 색을 추가하면 `palette.ts`와 `tokens.css` 두 곳 모두에 넣는다.
+> 팔레트는 16색 고정이다. 색을 추가하지 않는다. 포인트 색(rose/brass/steel/wine)은 손님 한 명당 1~2곳에만 쓴다.
 
 ## 6. 렌더러
 
 - `loop.ts`: 고정 타임스텝 1/60초. `update(dt)`에서 애니메이션 타이머를 돌리고, `render()`는 오프스크린 320×180 버퍼에 그린 뒤 화면 캔버스로 복사한다.
 - 정적인 배경은 처음 한 번만 오프스크린에 굽는다. 매 프레임 다시 그리는 건 샹들리에, 진열 글로우, 손님, 거울 반사, 효과뿐이다.
-- **mood 팔레트**: 그리기 함수는 hex가 아니라 **팔레트 키**(`'pink-500'`)를 받는다. `palette.resolve(key, mood)`가 실제 색을 돌려준다. `breach`일 때는 밝기에 따라 키를 `blood-500` 또는 `cyan-400`으로 바꾼다. 이렇게 하면 팔레트 스왑이 셰이더 없이 된다. 유니티에서는 팔레트 LUT 셰이더 하나로 옮기면 된다.
-- 거울 반사: 거울 영역에 손님을 50% 크기로 좌우 반전하고 `mint-200`을 25% 섞어 그린다. `noReflection`이면 반사를 그리지 않는다. 플레이어가 관찰하지 않아도 거울을 보면 알 수 있다 — **의도된 단서**다.
-- 마네킹: `uneasy` 이상이면 왼쪽 마네킹 머리가 돌아가고, `dread`면 머리가 단발(서윤)로 바뀐다.
-- 출입문 실루엣: `closingText` 단계에서만 그린다.
-- 효과(`effects.ts`): `flicker`(샹들리에 밝기, 최소 간격 350ms), `scanlines`(짝수 줄 `ink-950` 20%), `shake`(±2px, 300ms), `breach`(1.2초). `prefers-reduced-motion`이면 shake와 flicker를 끈다.
+- **mood 팔레트**: 그리기 함수는 hex가 아니라 **팔레트 키**(`'rose'`)를 받는다. `palette.resolve(key, mood)`가 실제 색을 돌려준다. `breach`일 때는 밝기에 따라 키를 `ink` 또는 `wine`으로 바꾸고, 가장 밝은 키만 `paper`로 남긴다. 이렇게 하면 팔레트 스왑이 셰이더 없이 된다. 유니티에서는 팔레트 LUT 셰이더 하나로 옮기면 된다.
+- 거울 반사: 거울 영역에 손님을 50% 크기로 좌우 반전하고 `steel`을 20% 섞어 그린다. `noReflection`이면 반사를 그리지 않는다. 플레이어가 관찰하지 않아도 거울을 보면 알 수 있다 — **의도된 단서**다.
+- **교대 전환**: 오후 진열은 가방·시계·주얼리, 새벽 진열은 GDD §12-2 아이템이다. 새벽에는 샹들리에를 끄고 카운터 스탠드 하나만 켠다(빛 반경 밖은 무채색 한 단계 어둡게). 새벽 기본 mood는 `uneasy`다.
+- 마시 씨가 있는 동안 바닥에 물웅덩이(steel 하이라이트 1도트)가 번진다.
+- 마네킹: `dread` 이상이면 왼쪽 마네킹 머리가 돌아가고, `collapse`면 머리가 단발(서윤)로 바뀐다.
+- 출입문 실루엣: `closingText`(04:44) 단계에서만 그린다.
+- 효과(`effects.ts`): `flicker`(샹들리에 밝기, 최소 간격 350ms), `scanlines`(짝수 줄 `ink` 20%), `shake`(±2px, 300ms), `breach`(1.2초). `prefers-reduced-motion`이면 shake와 flicker를 끈다.
 
 ## 7. UI
 
@@ -234,16 +264,17 @@ GDD §6, §7, §11, §12의 표를 **그대로** JSON으로 옮긴다. 대사 �
 
 ```ts
 interface SaveV1 { version: 1; day: number; playerName: string; totalRevenue: number;
-  regulars: GameState['regulars']; savedAtClock: string; }
+  dawnLedger: GameState['dawnLedger']; regulars: GameState['regulars']; savedAtClock: string; }
 interface StorageAdapter { load(): SaveV1 | null | 'corrupt'; save(s: SaveV1): boolean; }
 ```
 키는 `closing-time.save.v1`. `save()`는 예외를 잡아 `false`를 돌려준다. 버전 필드로 나중에 마이그레이션한다.
 
 ## 9. 테스트 (Vitest) — 통과 기준
 
-1. **전체 플레이 시나리오**: 코드로 1일차 정답 루트를 끝까지 진행한다. 판매 5건, 위반 0, 등급 S가 나와야 한다.
-2. 수칙 판정 단위 테스트: 4개 수칙 × (위반 / 비위반).
-3. 문자 판정: 선호·중립·비선호·미발송·`baek` 예외·`zero` 평정심.
+1. **전체 플레이 시나리오**: 코드로 1일차 정답 루트를 끝까지 진행한다. 오후 문자는 kang=new_arrival, jin=private, 새벽 문자는 marsh=dawn_offer, baek=dawn_name이다. 판매 6건, 매너 실수 0, 수칙 위반 0, 등급 S가 나와야 한다.
+2. 수칙 판정 단위 테스트: 규칙 1·2·4·5 × (위반 / 비위반) + 같은 `askBudget`이 오후에는 `manner`, 새벽에는 규칙 2인지 확인.
+3. 문자 판정: 선호·중립·비선호·미발송·`baek` 예외·`zero` 평정심·교대별 발송 한도(2/2).
+4-1. 교대 분리: 오후 손님에게 새벽 상품이 제안되지 않는다. 오후에는 평정심이 바뀌지 않는다.
 4. `pickOffers`: 같은 시드면 같은 결과가 나오고, 매칭 상품이 항상 포함된다.
 5. 평정심 0이면 배드엔딩으로 넘어간다.
 6. 저장: 왕복(save → load)이 일치하고, 손상된 JSON은 `'corrupt'`를 돌려준다.
@@ -255,9 +286,9 @@ interface StorageAdapter { load(): SaveV1 | null | 'corrupt'; save(s: SaveV1): b
 |---|---|---|
 | M0 | 스캐폴드: `index.html`, 글꼴, 토큰 CSS, stage 스케일링, 로딩 화면 | `npm run dev`로 640×360 무대가 정수배로 뜨고 Galmuri가 적용된다 |
 | M1 | `core/` 전부 + `data/` + 테스트 | `npm test` 전부 통과 (§9) |
-| M2 | 렌더러: 배경, 손님 5명 도트, 거울 반사, 상품 아이콘 | 디버그 키 `F1`로 손님을 순환하며 스크린샷을 확인한다 |
+| M2 | 렌더러: 오후/새벽 배경, 손님 6명 도트, 거울 반사, 상품 아이콘 17종 | 디버그 키 `F1`로 손님 순환, `F2`로 교대 전환하며 스크린샷을 확인한다 |
 | M3 | UI: 타이틀·이름 입력, HUD, 대화창, 선택지, 단계 표시, 하트, 수칙 쪽지, 상품 카드 | 문자 단계를 건너뛰고 손님 응대를 마우스와 키보드로 끝까지 할 수 있다 |
-| M4 | 업무폰: 명부, 발송, 답장, 마감 문자 이벤트 | GDD §6, §9가 화면에서 그대로 동작한다 |
+| M4 | 업무폰: 오후 명부와 검은 수첩, 발송, 답장, 휴게 전환, 04:44 문자 이벤트 | GDD §3, §6, §9가 화면에서 그대로 동작한다 |
 | M5 | 공포 연출: mood 단계, 위반 이벤트, 배드엔딩 | 일부러 위반하는 루트로 확인. reduced-motion에서 흔들림이 없다 |
 | M6 | 정산서, 저장·이어하기, 2일차 예고 | 저장 실패를 흉내 내면(localStorage 차단) 실패 토스트가 뜬다 |
 | M7 | `impeccable`로 다듬기 | 사용자 지침. 깨진·낡은 연출은 의도이므로 "고치지" 않는다 |

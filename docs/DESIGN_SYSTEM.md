@@ -1,4 +1,4 @@
-# 디자인 시스템 — "캔디 누아르"
+# 디자인 시스템 — "더스크 모노"
 
 > `ui-design` 절차로 정의했고 HUD·패널 규칙에는 `desktop-uiux-pro`를 적용했다. 마지막 다듬기는 `impeccable`로 한다.
 > 모든 색·간격·글꼴은 여기서 정의한 **토큰**으로만 쓴다. 컴포넌트에 hex 값을 직접 쓰지 않는다.
@@ -8,8 +8,9 @@
 ## 1. 제품 유형과 비주얼 방향
 
 - **제품 유형**: 내러티브 접객 시뮬레이션 게임. 화면은 하나이고 UI 비중이 높다.
-- **스타일**: **네오레트로 픽셀 럭스**. 명품관의 금색 트림, 퀼팅 패턴, 유리 진열장을 16비트 도트로 옮긴다. 사탕 같은 핑크·민트 위에 플럼 블랙 그림자를 깐다.
-- **피할 것**: AI 기본 룩(Inter, 보라 그라데이션, 둥근 카드), 글래스모피즘, 블러 그림자, 둥근 모서리. 이 게임에는 블러가 없다.
+- **스타일**: **저해상도 절제 도트**. 90년대 초 어드벤처 게임처럼 형태를 단순하게 그린다. 화면 대부분은 탁한 회보라 무채색이고, 색은 명품의 포인트(로즈 가방, 황동 프레임)와 이상 징후에만 조금 넣는다. 화사함 대신 **조용하고 쓸쓸한 명품관**이 기본 톤이다.
+- **색 사용 원칙**: 장면 면적의 90% 이상은 무채색 8단계로 그린다. 포인트 색은 한 장면에 **최대 2가지**, 면적은 **10% 이하**로 쓴다. 색이 드물어야 색이 나타나는 순간이 무섭다(예: 회색 매장에 혼자 로즈색인 분홍 코트).
+- **피할 것**: 채도 높은 네온·색, 글로우, 그라데이션, AI 기본 룩(Inter, 보라 그라데이션, 둥근 카드), 블러 그림자, 둥근 모서리, 디테일 과잉. 참고 이미지: `docs/concept/v2-*.png` (v1은 너무 화려해서 기각했다).
 - **다크 모드만 쓴다**: 매장은 밤의 무대이고, 공포 연출이 어두운 바탕을 전제로 한다. 라이트 테마는 만들지 않는다. 대신 분위기 테마(`data-mood`)를 바꾼다(§3).
 
 ### 디자인 다이얼
@@ -31,73 +32,81 @@
 
 ## 3. 색 토큰
 
-### 3-1. 원시 팔레트 (Candy Noir 24)
-장면 렌더러와 CSS가 **같은 팔레트**를 쓴다. 정의 위치: `src/render/palette.ts`, `src/ui/styles/tokens.css`.
+### 3-1. 원시 팔레트 (Dusk Mono 16)
+장면 렌더러와 CSS가 **같은 팔레트**를 쓴다. 정의 위치: `src/render/palette.ts`, `src/ui/styles/tokens.css`. 이 16색 밖의 색은 쓰지 않는다.
 
+**무채색 8단계 (화면의 90%)**
 | 토큰 | Hex | 용도 메모 |
 |---|---|---|
-| `ink-950` | `#0e0812` | 가장 깊은 바탕, 하드 섀도 |
-| `plum-900` | `#1d0f24` | 패널 바탕 |
-| `plum-800` | `#2a1533` | 올라온 패널 |
-| `plum-700` | `#3e1d4a` | 벽 퀼팅 어두운 면 |
-| `plum-500` | `#6a2c6f` | 테두리, 벽 퀼팅 밝은 면 |
-| `mauve-300` | `#c4a3c8` | 보조 텍스트 |
-| `pink-500` | `#ff4f9a` | 핵심 액센트, 주요 버튼 |
-| `pink-300` | `#ff9cc8` | 보낸 말풍선, 호버 |
-| `pink-100` | `#ffd9ea` | 강조 배경 |
-| `gold-600` | `#b8801c` | 트림 그림자 |
-| `gold-400` | `#f2c14e` | 금색 트림, 금액 |
-| `gold-200` | `#ffe6a3` | 샹들리에 빛 |
-| `cream-50` | `#fff6e6` | 본문 텍스트, 폰 화면 |
-| `mint-400` | `#4fe3c1` | 성공, 진열장 빛 |
-| `mint-200` | `#b5f5e4` | 유리 하이라이트 |
-| `cyan-400` | `#49c6ff` | 정보, 공포 2색 중 하나 |
-| `violet-400` | `#a07bff` | 보조 진열 빛 |
-| `blood-500` | `#e01b3c` | 위험, 수칙 위반 |
-| `blood-700` | `#8a0f26` | 공포 바탕 |
-| `beige-400` | `#d9b99b` | 상품 색 "베이지" |
-| `onyx-800` | `#22202c` | 상품 색 "블랙" (순흑 금지) |
-| `silk-50` | `#f4f1ff` | 상품 색 "화이트" |
-| `skin-a` | `#f5c9a8` | 피부 톤 |
-| `skin-b` | `#c98f6b` | 피부 톤 |
+| `ink` | `#0d0b0f` | 가장 깊은 바탕, 외곽선, 하드 섀도 |
+| `shadow` | `#1c1820` | 패널 바탕, 상품 색 "블랙" |
+| `dusk` | `#2e2833` | 올라온 패널, 벽 어두운 면 |
+| `stone` | `#4a4350` | 테두리, 벽 밝은 면, 선반 |
+| `mist` | `#6f6775` | 바닥 타일, 비활성 |
+| `ash` | `#9a929e` | 보조 텍스트, 마네킹 그림자 |
+| `bone` | `#cfc6c4` | 마네킹, 하이라이트 |
+| `paper` | `#ece4da` | 본문 텍스트, 폰 화면, 상품 색 "화이트" |
+
+**포인트 4색 (아껴 쓴다)**
+| 토큰 | Hex | 용도 메모 |
+|---|---|---|
+| `rose` | `#b85c78` | 핵심 액센트: 선택된 선택지, 하트, 로즈 상품, 분홍 코트 |
+| `brass` | `#a88c52` | 금속 장식: 패널 테두리, 거울·문 프레임, 샹들리에, 금액 |
+| `steel` | `#7a9cb0` | 차가운 기운: 유리, 거울 반사 틴트, 백설의 눈, 정보 |
+| `wine` | `#9e2236` | 위험: 수칙 위반, 빨간 상자, 공포 단계 |
+
+**피부·상품 보조 4색**
+| 토큰 | Hex | 용도 메모 |
+|---|---|---|
+| `skin-a` | `#d8c2b4` | 밝은 피부 |
+| `skin-b` | `#a8887a` | 어두운 피부, 피부 그림자 |
+| `taupe` | `#a89a88` | 상품 색 "베이지" |
+| `hair` | `#3a2e2a` | 갈색 머리(한여름) |
 
 ### 3-2. 의미 토큰 (컴포넌트는 이것만 쓴다)
 ```css
 :root {
-  --color-bg: var(--ink-950);
-  --color-surface: var(--plum-900);
-  --color-surface-raised: var(--plum-800);
-  --color-border: var(--plum-500);
-  --color-trim: var(--gold-400);
-  --color-trim-shadow: var(--gold-600);
-  --color-text: var(--cream-50);
-  --color-text-muted: var(--mauve-300);
-  --color-accent: var(--pink-500);
-  --color-accent-soft: var(--pink-300);
-  --color-money: var(--gold-400);
-  --color-success: var(--mint-400);
-  --color-warning: var(--gold-400);
-  --color-danger: var(--blood-500);
-  --color-info: var(--cyan-400);
-  /* 폰은 밝은 화면으로 대비를 준다 */
-  --color-phone-body: var(--pink-500);
-  --color-phone-screen: var(--cream-50);
-  --color-phone-text: var(--ink-950);
-  --color-bubble-out: var(--pink-300);
-  --color-bubble-in: var(--silk-50);
+  --color-bg: var(--ink);
+  --color-surface: var(--shadow);
+  --color-surface-raised: var(--dusk);
+  --color-border: var(--stone);
+  --color-trim: var(--brass);
+  --color-trim-shadow: var(--stone);
+  --color-text: var(--paper);
+  --color-text-muted: var(--ash);
+  --color-accent: var(--rose);
+  --color-accent-text: var(--paper);   /* rose 위 글자 */
+  --color-money: var(--brass);
+  --color-success: var(--steel);
+  --color-warning: var(--brass);
+  --color-danger: var(--wine);
+  --color-info: var(--steel);
+  /* 업무폰: 회색 기기, 밝은 화면. 색은 보낸 말풍선에만 */
+  --color-phone-body: var(--stone);
+  --color-phone-screen: var(--bone);
+  --color-phone-text: var(--ink);
+  --color-bubble-out: var(--rose);
+  --color-bubble-out-text: var(--paper);
+  --color-bubble-in: var(--paper);
   /* 수칙 쪽지 */
-  --color-paper: var(--cream-50);
-  --color-paper-ink: var(--plum-700);
+  --color-paper: var(--paper);
+  --color-paper-ink: var(--dusk);
 }
 ```
 
-### 3-3. 분위기 테마 — `<html data-mood="calm|uneasy|dread|breach">`
+### 3-3. 교대 테마 — `<html data-shift="afternoon|dawn">`
+| shift | 화면 |
+|---|---|
+| `afternoon` | 매장 조명이 고르게 켜져 있다. 포인트 색은 가방 몇 개(rose)와 금속 장식(brass) 정도. 공포 연출 없음 |
+| `dawn` | 샹들리에가 꺼지고 카운터 스탠드 하나만 켜진다. 빛 반경 밖은 무채색이 한 단계 어두워진다. 진열장에는 기괴한 아이템이 놓인다. 기본 mood는 `uneasy`. 업무폰은 검은 수첩 화면(`shadow` 바탕, `paper` 글자)으로 바뀐다 |
+
+### 3-4. 분위기 테마 — `<html data-mood="calm|uneasy|dread|breach">`
 | mood | 바뀌는 토큰 |
 |---|---|
 | `calm` | 기본값 |
-| `uneasy` | `--color-trim`이 `gold-600`이 되고, `--color-accent`의 채도를 살짝 낮춘다 |
-| `dread` | `--color-surface: blood-700`에 가깝게, `--color-text-muted: pink-300` |
-| `breach` (위반 1.2초) | 모든 의미 토큰을 `blood-500`/`cyan-400` 두 색으로 반전 |
+| `uneasy` (새벽 기본) | 포인트 색이 빠지기 시작한다: `brass`→`mist`, `rose`는 그대로. 무채색이 한 단계 어두워진다 |
+| `dread` / `collapse` | 포인트 색은 `wine`만 남고 나머지는 무채색으로 바뀐다. 무채색이 두 단계 어두워진다 |
+| `breach` (위반 1.2초) | 화면 전체를 `ink`/`wine` 2색으로 바꾸고, 하이라이트만 `paper`로 남긴다 |
 
 장면 캔버스에도 같은 mood를 전달한다. 캔버스는 팔레트 맵을 바꿔서 같은 효과를 낸다(`TECH_SPEC.md` §6).
 
@@ -122,7 +131,7 @@
 | `--space-1` … `--space-6` | 2 / 4 / 8 / 12 / 16 / 24 px |
 | `--border-w` | 2px |
 | `--radius` | 0. 모서리는 2px 계단 노치(`clip-path`)로 처리한다 |
-| `--shadow-hard` | `0 2px 0 var(--ink-950)`. 블러 0 |
+| `--shadow-hard` | `0 2px 0 var(--ink)`. 블러 0 |
 | `--z-scene` / `--z-hud` / `--z-dialogue` / `--z-overlay` / `--z-phone` / `--z-modal` / `--z-fx` | 0 / 10 / 20 / 30 / 40 / 50 / 60 |
 
 **럭스 패널**(대화창, 정산서, 상품 카드): 바깥 2px `--color-trim`, 안쪽 2px `--color-surface-raised`, 위쪽 안쪽에 1도트 `--color-trim-shadow` 하이라이트, 모서리 계단 노치.
@@ -167,15 +176,15 @@
 
 | 컴포넌트 | 명세 |
 |---|---|
-| **ChoiceButton** | 높이 32, 왼쪽에 키 태그 `[1]`(Galmuri9, `--color-trim`). hover: 바탕 `--color-accent-soft`, 글자 `ink-950`, 커서 대신 왼쪽 2도트 ▶. focus-visible: 2px `--color-info` 외곽선. disabled: `--color-text-muted`에 이유를 툴팁으로 표시(예: "이미 물어봤어요"). 위험할 수 있는 선택지에도 아무 표시를 하지 않는다. 판단은 플레이어 몫이다 |
+| **ChoiceButton** | 높이 32, 왼쪽에 키 태그 `[1]`(Galmuri9, `--color-trim`). hover: 바탕 `--color-surface-raised`, 테두리 `--color-trim`. selected: 바탕 `--color-accent`, 글자 `--color-accent-text`, 커서 대신 왼쪽 2도트 ▶. focus-visible: 2px `--color-info` 외곽선. disabled: `--color-text-muted`에 이유를 툴팁으로 표시(예: "이미 물어봤어요"). 위험할 수 있는 선택지에도 아무 표시를 하지 않는다. 판단은 플레이어 몫이다 |
 | **DialogueBox** | 럭스 패널. 이름표 탭은 손님별 대표색. 상태: `typing`(▼ 숨김) → `complete`(▼ 깜빡임, 1초 주기) → `awaitChoice`(▼ 없음, 선택지 패널 활성) |
-| **HUD** | 한 줄. 평정심 바는 10칸 블록. 70/40 경계에서 바 색이 mint→gold→blood로 바뀐다. 값이 바뀌면 숫자가 2프레임 튄다 |
+| **HUD** | 한 줄. 평정심 바는 10칸 블록. 70/40 경계에서 바 색이 ash→brass→wine으로 바뀐다. 값이 바뀌면 숫자가 2프레임 튄다 |
 | **AffinityHearts** | 하트 5칸. 손님 응대 중에만 보인다. 변화가 생기면 해당 칸이 반짝인다 |
 | **StageStepper** | 인사·니즈·제안·클로징. 현재 단계 `--color-accent`, 지난 단계 `--color-text-muted`, 남은 단계는 점선 |
-| **Phone** | 분홍 기기 프레임에 밝은 화면. 탭: 명부 / 대화. 명부 행: 이름, 서윤의 메모(손글씨체 대신 Galmuri9 기울임 없음 + 취소선 지원), 상태칩(`보냄`, `답장 옴`, `방문 예정`, `안 옴`). 작성 화면은 템플릿 3개 라디오. 남은 발송 수 `2/3` |
+| **Phone** | 회색 기기 프레임에 밝은 화면. 탭: 명부 / 대화. 명부 행: 이름, 서윤의 메모(손글씨체 대신 Galmuri9 기울임 없음 + 취소선 지원), 상태칩(`보냄`, `답장 옴`, `방문 예정`, `안 옴`). 작성 화면은 템플릿 3개 라디오. 남은 발송 수 `2/3` |
 | **RulesNote** | 크림색 종이, 살짝 기운(−2°) 포스트잇. 5번 줄은 찢긴 가장자리 도트 |
-| **ProductCard** | 럭스 패널, 상단에 상품 도트 아이콘 64×64(장면 도트 32×32를 2배), 이름, 색칩, 가격(Mono, `--color-money`) |
-| **Ledger (정산서)** | 결재 서류 모양. 도장 영역에 등급을 S/A/B/C 고무도장 도트로 찍는다 |
+| **ProductCard** | 럭스 패널, 상단에 상품 도트 아이콘 64×64(장면 도트 32×32를 2배), 이름, 색칩, 가격(Mono, `--color-money`). 새벽 카드는 가격 대신 "환산가" 라벨을 쓰고, 설명 한 줄을 `--color-text-muted`로 덧붙인다 |
+| **Ledger (정산서)** | 결재 서류 모양. 왼쪽 면은 오후(원화), 오른쪽 면은 새벽 장부(지불 목록 + 환산액). 도장 영역에 등급을 S/A/B/C 고무도장 도트로 찍는다 |
 | **Toast** | 점장 문자, 저장 결과. 오른쪽 위, 3초 뒤 사라짐 |
 
 ### 빈 상태·로딩·오류 (정직한 상태)
@@ -204,6 +213,7 @@
 ## 10. 장면 아트 가이드 (320×180)
 
 - **구도**: 카운터 뒤에서 정면을 본다. 손님은 카운터 건너편 가운데(x≈160)에 상반신이 보이게 선다.
-- **레이어 (뒤→앞)**: 벽(퀼팅 마름모 패턴, plum-700/500) → 진열 니치 3칸(상품 도트 + mint/violet/pink 글로우) → 출입문(오른쪽 뒤, 유리에 cyan 반사) → 마네킹 2개(양쪽 구석) → 전신 거울(왼쪽, 금색 프레임, 반사 레이어) → 샹들리에(위 가운데) → 대리석 바닥(체커, 원근 3단) → **손님** → 유리 진열 카운터(전경, y 132~180, 주얼리 반짝임).
-- **도트 규칙**: 외곽선은 순흑이 아니라 `ink-950`. 빛은 하이라이트 1도트. 디더링은 2×2 체커만 쓴다.
+- **레이어 (뒤→앞)**: 벽(희미한 마름모 퀼팅, dusk/stone) → 선반 3단(가방 9개, 대부분 무채색이고 로즈 2개) → 출입문(오른쪽 뒤, brass 손잡이, 유리는 steel 1도트 하이라이트) → 마네킹 2개(bone, 양쪽 구석) → 전신 거울(왼쪽, brass 프레임, 반사 레이어) → 샹들리에(brass 팔 + bone 갓, 빛 번짐 없음) → 체커 바닥(mist/ash, 원근 3단) → **손님** → 카운터(전경, y 132~180, shadow 상판에 brass 선 1줄).
+- 참고: `docs/concept/v2-01-scene-calm.png`가 기준 구도와 톤이다.
+- **도트 규칙**: 외곽선은 `ink`. 빛은 하이라이트 1도트로만 표현하고 글로우는 없다. 디더링은 2×2 체커만 쓴다. 얼굴은 점 눈 2개 + 입 1줄 수준으로 단순하게 그린다.
 - **손님 도트**: 약 48×88, 머리 스타일 5종(단발/긴머리/올림머리/짧은머리/포마드), 피부 2톤, 옷 대표색, 액센트 소품. 이상 특성은 덧씌우는 레이어로 그린다(손가락 추가, 거울 반사 없음).
