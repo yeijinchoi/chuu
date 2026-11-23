@@ -144,7 +144,7 @@ html[data-layout='mobile'] .screen { padding: var(--space-5) var(--m-gap); paddi
 html[data-layout='mobile'] .screen > :first-child { margin-top: auto; }
 html[data-layout='mobile'] .screen > :last-child { margin-bottom: auto; }
 html[data-layout='mobile'] .screen--title, html[data-layout='mobile'] .screen--ending { justify-content: center; }
-html[data-layout='mobile'] .title__frame { width: calc(100% - 32px); max-width: 440px; }
+html[data-layout='mobile'] .title__frame { width: calc(100% - 32px); max-width: 440px; margin: auto 0; } /* 숨은 h1이 첫 자식이라 위아래 auto를 직접 준다 */
 html[data-layout='mobile'] .title__menu .btn { width: 100%; height: var(--m-touch); min-width: 0; }
 html[data-layout='mobile'] .title__from, html[data-layout='mobile'] .title__time { font-family: var(--font-body); font-size: var(--text-m-sub); line-height: var(--lh-m-sub); }
 html[data-layout='mobile'] .title__msg .bubble { font-family: var(--font-m-body); font-size: var(--text-m-body); line-height: var(--lh-m-body); }
