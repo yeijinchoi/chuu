@@ -423,3 +423,9 @@ html[data-layout='mobile'] .notif__text { font-family: var(--font-m-body); font-
 html[data-layout='mobile'] .notes__large { font-family: var(--font-m-body); font-size: 22px; line-height: 28px; }
 html[data-layout='mobile'] .folder-row, html[data-layout='mobile'] .note-group { font-family: var(--font-m-body); font-size: var(--text-m-body); line-height: var(--lh-m-body); }
 html[data-layout='mobile'] .folder-row { padding: var(--space-3) var(--space-3); min-height: 48px; }
+
+/* 연락처: 이름은 한 단계 작게, 이름과 메모 사이를 좁힌다 */
+.contact__name { font-size: 10px; line-height: 14px; }
+.contact__addr, .contact__memo { margin-top: -9px; }
+html[data-layout='mobile'] .contact__name { font-size: 13px; line-height: 18px; }
+html[data-layout='mobile'] .contact__addr, html[data-layout='mobile'] .contact__memo { margin-top: -12px; }
