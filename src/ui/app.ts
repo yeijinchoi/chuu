@@ -389,7 +389,7 @@ export function startApp(stage: Stage, renderer: Renderer, opts: { debug: boolea
       case 'texting':
         dialogue.hide();
         if (entering) {
-          if (p.shift === 'dawn') phone.openApp(); else phone.openTab('contacts');
+          if (p.shift === 'dawn') phone.openApp(); else phone.openHome(); // 오후: 홈 화면(S01)에서 연락처 앱을 연다
           once('texting', t('tutorial.texting'), 'phone');
         }
         break;

@@ -84,7 +84,7 @@ const avatar = (name: string, cls = ''): HTMLElement => el('span', `avatar ${cls
 export class Phone {
   tab: PhoneTab = 'contacts';
   /** 홈 화면이 떠 있다 */
-  home = false;
+  home = true; // 처음에는 홈 화면(S01)
   /** 열려 있는 대화방: 손님 id(영업 연락처는 contact id) */
   private view: string | null = null;
   private feed: Msg[] = [];

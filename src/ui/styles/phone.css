@@ -104,10 +104,10 @@
 .home-clock { display: flex; flex-direction: column; align-items: center; gap: 2px; padding-top: 22px; color: var(--paper); }
 .home-clock__time { font-size: 33px; line-height: 36px; font-weight: 700; }
 .home-clock__date { font-size: 11px; line-height: 13px; color: var(--bone); }
-.apps { display: flex; justify-content: space-around; padding: 52px 2px 0; }
-.app { position: relative; display: flex; flex-direction: column; align-items: center; gap: 5px; width: 54px; color: var(--color-phone-text); }
+.apps { display: flex; justify-content: space-between; padding: 52px 8px 0; }
+.app { position: relative; display: flex; flex-direction: column; align-items: center; gap: 5px; width: 46px; color: var(--color-phone-text); }
 .app__tile {
-  position: relative; display: flex; align-items: center; justify-content: center; width: 48px; height: 48px; border-radius: 12px;
+  position: relative; display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 11px;
   background: var(--bone); --g-a: var(--ink); --g-b: var(--wine); --g-c: var(--bone);
 }
 .app[data-app='messages'] .app__tile { background: var(--steel-dark); --g-a: var(--paper); --g-c: var(--steel-dark); }
@@ -253,7 +253,7 @@
 /* ---------- 연락처 (명부 · 카드) ---------- */
 .note-page { margin: 2px 0 6px; padding: 4px 8px; border-left: 2px solid var(--brass-dark); color: var(--c-sub); font-size: 11px; line-height: 15px; }
 [data-shift='dawn'] .note-page { border-left-color: var(--brass-light); }
-.contacts { display: flex; flex-direction: column; gap: 4px; }
+.contacts { display: flex; flex-direction: column; gap: 4px; padding-top: 6px; }
 .contact { padding-bottom: 6px; border-bottom: 1px solid var(--c-field); }
 .contact__head { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 36px; }
 .contact__head--static { cursor: default; }
