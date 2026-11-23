@@ -166,7 +166,6 @@ export function startApp(stage: Stage, renderer: Renderer, opts: { debug: boolea
   }, {
     reduced: opts.reduced,
     mirror: stage.mStatus,
-    wallSource: stage.canvas,
     onBadge: (on) => stage.tabbar.phone.classList.toggle('has-dot', on),
     onClosing: (reply) => { if (!reply) renderer.setSilhouette(0, 4); },
   });
@@ -504,6 +503,9 @@ export function startApp(stage: Stage, renderer: Renderer, opts: { debug: boolea
     const w = window as unknown as { __game: Game; __data: (id: string) => string };
     w.__game = game;
     (w as unknown as { __busy: () => boolean }).__busy = () => bridge.busy;
+    // 검증용: 브리지(사건 흐름)와 업무폰을 콘솔에서 직접 부른다
+    (w as unknown as { __bridge: unknown }).__bridge = bridge;
+    (w as unknown as { __phone: unknown }).__phone = phone;
     (w as unknown as { __best: () => number }).__best = () => {
       const p = game.getState().phase;
       if (p.kind !== 'encounter') return 0;

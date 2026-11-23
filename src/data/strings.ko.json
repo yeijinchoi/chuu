@@ -224,8 +224,9 @@
     }
   },
   "title": {
-    "logo": "방문 일정을 말씀해 주세요",
-    "sub": "메종 뤼미에르",
+    "message": "방문 일정을 말씀해 주세요.",
+    "from": "메종 뤼미에르",
+    "time": "오전 9:00",
     "start": "출근하기",
     "resume": "이어하기",
     "corrupt": "저장 데이터를 읽지 못했어요",
@@ -233,11 +234,7 @@
     "nameLabel": "명찰",
     "confirm": "확인",
     "keyEnter": "Enter",
-    "keyC": "C",
-    "logoLines": [
-      "방문 일정을",
-      "말씀해 주세요"
-    ]
+    "keyC": "C"
   },
   "frame": {
     "signboard": "MAISON LUMIÈRE"
@@ -311,11 +308,11 @@
     "noServed": "오늘 응대한 손님이 없어요",
     "cardEmpty": "아직 기록된 손님이 없어요",
     "cardFields": {
-      "category": "찾는 것",
+      "category": "부서",
       "occasion": "기념일",
       "budget": "예산",
       "color": "취향 색",
-      "notes": "성격",
+      "notes": "메모",
       "purchases": "구매",
       "relation": "관계",
       "lastContact": "마지막 연락",
@@ -350,7 +347,8 @@
       "messages": "메시지",
       "contacts": "연락처",
       "notes": "메모",
-      "black": "검은 수첩"
+      "black": "검은 수첩",
+      "blackHidden": "이름 없는 검은 아이콘"
     },
     "bookDawn": "검은 수첩",
     "waitReply": "답장을 기다리는 중이에요",
@@ -387,6 +385,16 @@
       "unreachable": "연락할 수단이 없어요",
       "noProduct": "상품을 골라야 해요",
       "noAftercare": "감사 문자를 다 썼어요"
+    },
+    "banner": {
+      "now": "지금"
+    },
+    "callBlocked": "통화는 받지 않아요",
+    "act": {
+      "message": "메시지",
+      "call": "통화",
+      "tier": "단골",
+      "memo": "메모"
     }
   },
   "categories": {

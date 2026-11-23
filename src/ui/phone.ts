@@ -60,8 +60,6 @@ export interface PhoneOpts {
   reduced: boolean;
   /** 모바일 상단 명판 (데스크톱에서는 숨겨진다) */
   mirror: HTMLElement;
-  /** 홈 화면 배경(매장 사진)으로 쓸 장면 캔버스 */
-  wallSource: HTMLCanvasElement;
   /** 알림 점이 켜지거나 꺼질 때 (모바일 탭 바의 점) */
   onBadge(on: boolean): void;
   /** 04:44 선택이 시작될 때 (장면의 실루엣을 옅게 하는 데 쓴다) */
@@ -105,6 +103,18 @@ export class Phone {
   private facedown = false;
   private dawnRules = false;
   private cardSel: string | null = null;
+  /** 연락처 명부에서 연 고객 카드(키) */
+  private contactKey: string | null = null;
+  /** 고객 카드의 버튼 중 펼쳐 둔 줄: 단골 등급 · 메모 · 통화(거절) */
+  private cardAct: 'tier' | 'memo' | 'call' | null = null;
+  /** 메모 앱에서 연 수칙 */
+  private noteSel: 'afternoon' | 'dawn' | null = null;
+  /** 새벽 수칙이 막 열렸다: 메모 목록에서 한 번 맥박친다 */
+  private dawnNew = false;
+  /** 알림 배너: 보낸 대화방 키와 자동 숨김 타이머 */
+  private readonly banner = button('banner', '', () => this.bannerTap());
+  private bannerKey: string | null = null;
+  private bannerTimer = 0;
   private visible = true;
   private mood: Mood = 'calm';
   /** 앱별 알림 점(메시지 배지는 unreadKeys로 센다) */
@@ -131,8 +141,13 @@ export class Phone {
   constructor(root: HTMLElement, private readonly host: PhoneHost, private readonly opts: PhoneOpts) {
     this.root = root;
     root.append(this.screen);
-    this.screen.append(this.island, this.status, this.money, this.bar, this.tip, this.body, this.dock, this.foot, this.homeBar);
+    this.screen.append(this.island, this.status, this.money, this.bar, this.tip, this.body, this.dock, this.foot, this.banner, this.homeBar);
     this.island.setAttribute('aria-hidden', 'true');
+    this.banner.hidden = true;
+    this.banner.setAttribute('role', 'status');
+    const bIcon = el('span', 'banner__icon');
+    bIcon.append(phoneGlyph('messages', 'pico pico--banner'));
+    this.banner.append(bIcon, el('span', 'banner__body'));
     this.tip.hidden = true;
     this.tip.setAttribute('role', 'status');
     this.tip.addEventListener('click', () => this.hideTip());
@@ -147,7 +162,7 @@ export class Phone {
   // ---------------------------------------------------------------- 바깥에서 쓰는 것
 
   setMood(m: Mood): void { this.mood = m; this.refresh(); }
-  unlockDawnRules(): void { this.dawnRules = true; this.pulse('notes'); }
+  unlockDawnRules(): void { this.dawnRules = true; this.dawnNew = true; this.pulse('notes'); }
   get hasUnread(): boolean { return this.unread.size > 0 || this.unreadKeys.size > 0; }
   /** 폰 화면이 실제로 보이는지(모바일 시트가 열려 있는지). 보이는 앱의 알림은 바로 꺼진다. */
   setVisible(v: boolean): void {
@@ -163,6 +178,8 @@ export class Phone {
     this.home = false;
     this.view = null;
     this.panelOpen = false;
+    this.contactKey = null;
+    this.noteSel = null;
     this.unread.delete(APP_OF[tab]);
     this.refresh();
     if (focus) this.body.querySelector<HTMLElement>('button')?.focus();
@@ -260,6 +277,8 @@ export class Phone {
       this.feed.push({ id: this.nextId++, key, dir: 'in', from, text, at: this.s.clock });
       const seeing = this.visible && !this.home && this.view === key;
       if (!seeing) this.unreadKeys.add(key);
+      // 보고 있지 않은 대화방의 답장과 04:44 "나"의 문자는 알림 배너로 내려온다
+      if (!seeing || key === ME) this.showBanner(key, from, text);
       if (this.chipStage.has(key)) {
         this.chipStage.set(key, 'replied');
         this.later(() => { if (this.chipStage.get(key) === 'replied') { this.chipStage.delete(key); this.refresh(); } }, 1300);
@@ -273,6 +292,32 @@ export class Phone {
 
   /** 도착 진동 (phone_buzz) */
   buzz(): void { if (!this.opts.reduced) this.vibrate(); }
+
+  /** 알림 배너: 위에서 내려와 3초 뒤 사라진다. 누르면 그 대화방이 열린다. */
+  private showBanner(key: string, from: string, text: string): void {
+    this.bannerKey = key;
+    const top = el('span', 'banner__top');
+    top.append(el('span', 'banner__from', from || this.titleOf(key)), el('span', 'banner__now', t('phone.banner.now')));
+    this.banner.querySelector('.banner__body')?.replaceChildren(top, el('span', 'banner__text', text));
+    this.banner.hidden = false;
+    this.banner.classList.remove('is-in');
+    void this.banner.offsetWidth;
+    this.banner.classList.add('is-in');
+    window.clearTimeout(this.bannerTimer);
+    this.bannerTimer = window.setTimeout(() => this.hideBanner(), 3000);
+  }
+
+  private hideBanner(): void {
+    window.clearTimeout(this.bannerTimer);
+    this.banner.hidden = true;
+    this.bannerKey = null;
+  }
+
+  private bannerTap(): void {
+    const key = this.bannerKey;
+    this.hideBanner();
+    if (key !== null) this.openThread(key);
+  }
 
   /** 검은 아이콘이 열린다: 새벽에 「검은 수첩」으로 들어간다 */
   openApp(): void {
@@ -303,7 +348,7 @@ export class Phone {
     this.renderFoot();
     this.renderTip();
     this.homeBar.setAttribute('aria-label', t(this.home ? 'phone.leaveHome' : 'phone.goHome'));
-    const sig = `${this.home}|${this.tab}|${this.view}`;
+    const sig = `${this.home}|${this.tab}|${this.view}|${this.contactKey}|${this.noteSel}`;
     const n = this.feed.length + (this.awaiting.size ? 1 : 0);
     if (sig !== this.lastSig) this.body.scrollTop = 0; // 화면이 바뀌면 맨 위부터
     else if (this.view !== null && stick && n !== this.lastCount) {
@@ -432,20 +477,13 @@ export class Phone {
 
   private homeScreen(): void {
     const dawn = this.s.shift === 'dawn';
-    const W = 116;
-    const H = 240;
-    const wall = el('canvas', 'phone__wall');
-    wall.width = W;
-    wall.height = H;
+    // 배경화면: 그늘색 바탕에 옅은 퀼팅 마름모, 가운데 엠블럼(새벽에는 녹슨 회색)
+    const wall = el('div', 'phone__wall');
     wall.setAttribute('aria-hidden', 'true');
-    const g = wall.getContext('2d');
-    if (g) {
-      // 배경: 장면을 세로로 가운데 잘라 화면 비율에 맞춘다
-      const src = this.opts.wallSource;
-      const sw = Math.round(src.height * W / H);
-      g.imageSmoothingEnabled = false;
-      g.drawImage(src, Math.round((src.width - sw) / 2), 0, sw, src.height, 0, 0, W, H);
-    }
+    const emblem = el('img', 'wall__emblem');
+    emblem.src = 'art/brand/emblem.png';
+    emblem.alt = '';
+    wall.append(emblem);
     const clock = el('div', 'home-clock');
     clock.append(el('span', 'home-clock__time num', this.s.clock), el('span', 'home-clock__date', `${t('hud.day')} ${this.s.day}`));
     const unread = this.unreadKeys.size;
@@ -454,7 +492,8 @@ export class Phone {
       this.appIcon('messages', t('phone.apps.messages'), !dawn, () => this.openTab('messages'), { badge: unread }),
       this.appIcon('contacts', t('phone.apps.contacts'), !dawn, () => this.openTab('contacts')),
       this.appIcon('notes', t('phone.apps.notes'), true, () => this.openTab('notes')),
-      this.appIcon('black', t('phone.apps.black'), dawn, () => this.openTab('contacts')),
+      // 휴게 전에는 이름이 없다(흔들기만 된다). 새벽에 「검은 수첩」이 된다.
+      this.appIcon('black', dawn ? t('phone.apps.black') : '', dawn, () => this.openTab('contacts')),
     );
     // 독: 앞의 세 앱 (같은 앱의 되풀이라 보조 기술에서는 숨긴다)
     const dock = el('div', 'apps-dock');
@@ -474,7 +513,7 @@ export class Phone {
     const b = el('button', 'app');
     b.type = 'button';
     b.dataset.app = kind;
-    if (o.decorative) { b.tabIndex = -1; b.setAttribute('aria-hidden', 'true'); } else b.setAttribute('aria-label', label);
+    if (o.decorative) { b.tabIndex = -1; b.setAttribute('aria-hidden', 'true'); } else b.setAttribute('aria-label', label || t('phone.apps.blackHidden'));
     if (!active) b.setAttribute('aria-disabled', 'true');
     const tile = el('span', 'app__tile');
     tile.append(phoneGlyph(kind, 'pico pico--app'));
@@ -846,6 +885,7 @@ export class Phone {
   }
 
   private book(): void {
+    if (this.contactKey !== null) { this.contactDetail(this.contactKey); return; }
     const s = this.s;
     const p = s.phase;
     const dawn = s.shift === 'dawn';
@@ -857,7 +897,7 @@ export class Phone {
     for (const c of this.data.contacts.filter((x) => x.book === s.shift)) {
       const key = c.customerId ?? c.id;
       const row = el('div', 'contact');
-      const head = button('contact__head', '', () => this.openThread(key));
+      const head = button('contact__head', '', () => this.openContact(key));
       const chip = this.chipFor(c);
       head.append(avatar(c.name), el('span', 'contact__name', c.name));
       if (chip) head.append(el('span', `chip-state chip-state--${chip}`, t(`phone.chip.${chip}`)));
@@ -879,7 +919,7 @@ export class Phone {
     into.append(el('div', 'phone__h phone__h--sub', t('phone.careList')));
     for (const c of regs) {
       const row = el('div', 'contact');
-      const head = button('contact__head', '', () => this.openThread(c.id));
+      const head = button('contact__head', '', () => this.openContact(c.id));
       head.append(avatar(c.name), el('span', 'contact__name', c.name), el('span', 'chip-state chip-state--sent', t(`tier.${(s.cards[c.id] as ClientCard).tier}`)));
       row.append(head);
       if (c.care.memo && s.shift === 'dawn') row.append(el('div', 'contact__memo', c.care.memo));
@@ -962,38 +1002,91 @@ export class Phone {
 
   private cardSheet(card: ClientCard): HTMLElement {
     const c = this.data.customers.find((x) => x.id === card.customerId) as CustomerDef;
-    const box = el('div', 'card-sheet');
-    box.dataset.tier = card.tier;
+    const box = this.fieldSheet(card);
     const head = el('div', 'card-sheet__head');
     head.append(avatar(c.name, 'avatar--lg'), el('span', 'card-sheet__name', c.name), el('span', 'card-sheet__tier', t(`phone.cardBook.${card.book}`)));
-    box.append(head);
-    const dept = card.category ? t(`categories.${card.category}`) : undefined;
+    box.prepend(head);
+    return box;
+  }
+
+  /** 고객 카드의 필드 목록(회색 카드): 라벨은 작게, 값은 아래. 카드가 없으면 모두 "아직 몰라요". */
+  private fieldSheet(card: ClientCard | undefined): HTMLElement {
+    const box = el('div', 'card-sheet');
+    box.dataset.tier = card?.tier ?? 'new';
+    const hearts = card ? { new: 0, regular: 2, vip: 3, lifetime: 4, lost: 0 }[card.tier] : 0;
+    const relV = el('span', card ? 'kv__v rel' : 'kv__v kv__v--unknown');
+    if (card) relV.append(el('span', 'rel__hearts', '♥'.repeat(hearts) + '♡'.repeat(4 - hearts)), el('span', 'rel__tier', t(`tier.${card.tier}`)));
+    else relV.textContent = t('unknown');
+    const relRow = el('div', 'kv');
+    relRow.append(el('span', 'kv__k', t('phone.cardFields.relation')), relV);
+    box.append(relRow);
+    const dept = card?.category ? t(`categories.${card.category}`) : undefined;
     const rows: [string, string | undefined][] = [
-      ['category', dept && card.wants ? `${dept} · ${card.wants}` : card.wants ?? dept],
-      ['color', card.color ? t(`display.colors.${card.color}`) : undefined],
-      ['budget', card.budget !== undefined ? won(card.budget) : undefined],
-      ['drink', card.drink ? t(`drinks.${card.drink}`) : undefined],
-      ['occasion', card.occasion ? `${card.occasion.label} (${t('phone.dayN', { n: card.occasion.day })})` : undefined],
-      ['notes', card.notes.length ? card.notes.join(' · ') : undefined],
-      ['purchases', card.purchases.length ? card.purchases.map((x) => `${this.data.products.find((p) => p.id === x.productId)?.name ?? x.productId} (${t('phone.dayN', { n: x.day })})`).join(', ') : undefined],
+      ['category', dept && card?.wants ? `${dept} · ${card.wants}` : card?.wants ?? dept],
+      ['color', card?.color ? t(`display.colors.${card.color}`) : undefined],
+      ['budget', card?.budget !== undefined ? won(card.budget) : undefined],
+      ['occasion', card?.occasion ? `${card.occasion.label} (${t('phone.dayN', { n: card.occasion.day })})` : undefined],
+      ['drink', card?.drink ? t(`drinks.${card.drink}`) : undefined],
+      ['purchases', card && card.purchases.length ? card.purchases.map((x) => `${this.data.products.find((p) => p.id === x.productId)?.name ?? x.productId} (${t('phone.dayN', { n: x.day })})`).join(', ') : undefined],
+      ['notes', card && card.notes.length ? card.notes.join(' · ') : undefined],
+      ['lastContact', card && card.lastContactDay !== null ? t('phone.dayN', { n: card.lastContactDay }) : undefined],
     ];
     for (const [k, v] of rows) {
       const r = el('div', 'kv');
       r.append(el('span', 'kv__k', t(`phone.cardFields.${k}`)), el('span', v === undefined ? 'kv__v kv__v--unknown' : 'kv__v', v ?? t('unknown')));
       box.append(r);
     }
-    // 관계 단계: 하트 칸 + 라벨
-    const hearts = { new: 0, regular: 2, vip: 3, lifetime: 4, lost: 0 }[card.tier];
-    const rel = el('div', 'kv');
-    const heartBox = el('span', 'kv__v rel');
-    heartBox.append(el('span', 'rel__hearts', '♥'.repeat(hearts) + '♡'.repeat(4 - hearts)), el('span', 'rel__tier', t(`tier.${card.tier}`)));
-    heartBox.setAttribute('aria-label', `${t('phone.cardFields.relation')} ${t(`tier.${card.tier}`)}`);
-    rel.append(el('span', 'kv__k', t('phone.cardFields.relation')), heartBox);
-    box.append(rel);
-    const last = el('div', 'kv');
-    last.append(el('span', 'kv__k', t('phone.cardFields.lastContact')), el('span', card.lastContactDay === null ? 'kv__v kv__v--unknown' : 'kv__v', card.lastContactDay === null ? t('unknown') : t('phone.dayN', { n: card.lastContactDay })));
-    box.append(last);
     return box;
+  }
+
+  /** 연락처 상세 = 고객 카드: 큰 아바타, 이름, 버튼 4개(메시지·통화·단골·메모), 필드 목록 */
+  private contactDetail(key: string): void {
+    const s = this.s;
+    const contact = this.contactOf(key) ?? this.data.contacts.find((c) => (c.customerId ?? c.id) === key);
+    const def = this.data.customers.find((x) => x.id === key);
+    const card = s.cards[key] as ClientCard | undefined;
+    const name = contact?.name ?? def?.name ?? key;
+    const wrap = el('div', 'cdet');
+    const back = button('nav-back', '', () => { this.openTab('contacts'); });
+    back.append(phoneGlyph('back', 'pico pico--back'), el('span', '', t('phone.apps.contacts')));
+    wrap.append(back);
+    const head = el('div', 'cdet__head');
+    head.append(avatar(name, 'avatar--lg'), el('span', 'cdet__name', name), el('span', 'cdet__tier', t(`phone.cardBook.${contact?.book ?? s.shift}`)));
+    wrap.append(head);
+    const acts = el('div', 'cdet__acts');
+    const act = (id: 'message' | 'call' | 'tier' | 'memo', disabled = false): HTMLElement => {
+      const b = el('button', `cdet-act cdet-act--${id}`);
+      b.type = 'button';
+      b.append(el('span', 'cdet-act__label', t(`phone.act.${id}`)));
+      if (disabled) b.setAttribute('aria-disabled', 'true');
+      b.addEventListener('click', () => {
+        if (id === 'message') { this.openThread(key); return; }
+        // 통화는 늘 사유를 보여 준다. 단골·메모는 다시 누르면 접힌다.
+        this.cardAct = id === 'call' || this.cardAct !== id ? id : null;
+        this.refresh();
+      });
+      return b;
+    };
+    acts.append(act('message'), act('call', true), act('tier'), act('memo'));
+    wrap.append(acts);
+    if (this.cardAct !== null) {
+      const line = el('div', 'cdet__line');
+      if (this.cardAct === 'call') line.textContent = t('phone.callBlocked');
+      else if (this.cardAct === 'tier') line.textContent = card ? `${t('phone.cardFields.relation')} · ${t(`tier.${card.tier}`)}` : t('unknown');
+      else {
+        line.textContent = contact?.memo ?? def?.care.memo ?? t('unknown');
+        if (contact?.memoStruck) line.append(el('s', 'cdet__struck', contact.memoStruck));
+      }
+      wrap.append(line);
+    }
+    wrap.append(this.fieldSheet(card));
+    this.body.append(wrap);
+  }
+
+  private openContact(key: string): void {
+    this.contactKey = key;
+    this.cardAct = null;
+    this.refresh();
   }
 
   /** 오늘 방문 일정: 문자를 보낸 연락처의 결과 */
@@ -1014,26 +1107,57 @@ export class Phone {
 
   // ---------------------------------------------------------------- 메모 (수칙)
 
+  /** 메모 앱: 목록(새벽 수칙이 맨 위) → 수칙 본문 */
   private rules(): void {
     const wrap = el('div', 'rules');
+    if (this.noteSel !== null) { this.noteDoc(wrap, this.noteSel); this.body.append(wrap); return; }
     wrap.append(this.header(t('phone.apps.notes')));
-    wrap.append(el('div', 'phone__h', t('phone.rulesAfternoon')));
-    const ol = el('ol', 'rules__list');
-    for (const l of this.afternoonRules()) ol.append(el('li', '', l));
-    wrap.append(ol);
-    wrap.append(el('div', 'divider'));
-    wrap.append(el('div', 'phone__h', t('phone.rulesDawn')));
-    if (!this.dawnRules) wrap.append(el('div', 'empty', t('phone.rulesDawnLocked')));
+    const list = el('div', 'note-list');
+    if (this.dawnRules) list.append(this.noteRow('dawn'));
+    list.append(this.noteRow('afternoon'));
+    wrap.append(list);
+    if (!this.dawnRules) wrap.append(el('div', 'hint', t('phone.rulesDawnLocked')));
+    this.dawnNew = false;
+    this.body.append(wrap);
+  }
+
+  private openNote(kind: 'afternoon' | 'dawn'): void {
+    this.noteSel = kind;
+    this.refresh();
+  }
+
+  /** 목록의 한 줄: 굵은 제목 · 첫 줄 · 날짜 */
+  private noteRow(kind: 'afternoon' | 'dawn'): HTMLElement {
+    const dawn = kind === 'dawn';
+    const first = dawn ? this.dawnRuleList()[0]?.text ?? '' : this.afternoonRules()[0] ?? '';
+    const date = dawn ? `${t('phone.dayN', { n: this.s.day })} ${t('phone.cardBook.dawn')}` : `${t('phone.dayN', { n: 1 })} ${t('phone.cardBook.afternoon')}`;
+    const row = button(`note-row${dawn && this.dawnNew ? ' is-new' : ''}`, '', () => this.openNote(kind));
+    const top = el('span', 'note-row__top');
+    top.append(el('span', 'note-row__title', dawn ? t('phone.rulesDawn') : t('phone.rulesAfternoon')), el('span', 'note-row__date', date));
+    row.append(top, el('span', 'note-row__line', first));
+    return row;
+  }
+
+  /** 새벽 수칙: 지금 날짜까지 열린 조항 */
+  private dawnRuleList(): { id: number; text: string }[] {
+    return this.data.rules.filter((x) => x.day <= this.s.day);
+  }
+
+  /** 메모 본문: ‹ 메모 · 굵은 제목 · 조항. 6번은 찢겨 있다. */
+  private noteDoc(wrap: HTMLElement, kind: 'afternoon' | 'dawn'): void {
+    const back = button('nav-back', '', () => { this.noteSel = null; this.refresh(); });
+    back.append(phoneGlyph('back', 'pico pico--back'), el('span', '', t('phone.apps.notes')));
+    wrap.append(back, el('div', 'note-doc__title', kind === 'dawn' ? t('phone.rulesDawn') : t('phone.rulesAfternoon')));
+    const ol = el('ol', kind === 'dawn' ? 'rules__list rules__list--dawn' : 'rules__list');
+    if (kind === 'afternoon') for (const l of this.afternoonRules()) ol.append(el('li', '', l));
     else {
-      const dl = el('ol', 'rules__list rules__list--dawn');
-      for (const r of this.data.rules.filter((x) => x.day <= this.s.day)) {
+      for (const r of this.dawnRuleList()) {
         const li = el('li', r.id === 6 ? 'torn' : '', r.text);
         li.value = r.id;
-        dl.append(li);
+        ol.append(li);
       }
-      wrap.append(dl);
     }
-    this.body.append(wrap);
+    wrap.append(ol);
   }
 
   private afternoonRules(): string[] {

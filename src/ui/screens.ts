@@ -1,5 +1,6 @@
 import type { CustomerDef, DayResult, GameData } from '../core/types';
-import { button, el, t, tList, won } from './dom';
+import { button, el, t, won } from './dom';
+import { sfx } from './sfx';
 
 export interface Overlay {
   root: HTMLElement;
@@ -13,14 +14,35 @@ function mount(host: HTMLElement, root: HTMLElement): Overlay {
   return { root, key: () => false, close: () => root.remove() };
 }
 
-/** S00: 타이틀. 검은 화면, 로고, [Enter] 출근하기 · [C] 이어하기 */
+/**
+ * S00: 타이틀 (SCRIPT_DAY1). 검은 화면 0.4초 → 필리그리 프레임 → 로고 → "•••" 입력 중(1.2초, phone_buzz)
+ * → 「방문 일정을 말씀해 주세요.」 말풍선 → 메뉴. Space·Enter·클릭은 끝 상태로 건너뛴다.
+ * 움직임을 줄이면 처음부터 끝 상태다.
+ */
 export function titleScreen(host: HTMLElement, o: { canResume: boolean; corrupt: boolean; onStart: () => void; onResume: () => void }): Overlay {
   const root = el('div', 'screen screen--title');
-  const logo = el('h1', 'title__logo');
-  logo.setAttribute('aria-label', t('title.logo'));
-  for (const line of tList('title.logoLines')) logo.append(el('span', 'title__line', line));
-  logo.append(el('span', 'title__glint'));
-  const sub = el('div', 'title__sub', t('title.sub'));
+  const frame = el('div', 'title__frame');
+  const art = el('div', 'title__art');
+  const logo = el('img', 'title__logo');
+  logo.src = 'art/brand/logo-full.png';
+  logo.alt = '';
+  logo.width = 200;
+  logo.height = 205;
+  art.append(logo, el('span', 'title__glint'));
+  const h = el('h1', 'visually-hidden', t('title.message'));
+  const typing = el('div', 'title__typing');
+  const typingRow = el('div', 'bubble-row bubble-row--in');
+  const dots = el('div', 'bubble bubble--in bubble--typing');
+  dots.setAttribute('role', 'status');
+  dots.setAttribute('aria-label', t('phone.typing'));
+  for (let i = 0; i < 3; i++) dots.append(el('i'));
+  typingRow.append(dots);
+  typing.append(typingRow);
+  const msg = el('div', 'title__msg');
+  const from = el('div', 'title__from', t('title.from'));
+  const msgRow = el('div', 'bubble-row bubble-row--in');
+  msgRow.append(el('div', 'bubble bubble--in', t('title.message')));
+  msg.append(from, msgRow, el('div', 'title__time', t('title.time')));
   const menu = el('div', 'title__menu');
   const start = button('btn', '', o.onStart);
   start.append(el('span', 'btn__key', `[${t('title.keyEnter')}]`), document.createTextNode(` ${t('title.start')}`));
@@ -31,14 +53,48 @@ export function titleScreen(host: HTMLElement, o: { canResume: boolean; corrupt:
     menu.append(c);
   }
   if (o.corrupt) menu.append(el('div', 'title__warn', t('title.corrupt')));
-  root.append(logo, sub, menu);
-  const ov = mount(host, root);
-  start.focus();
-  ov.key = (e) => {
-    if (e.key === 'Enter' && document.activeElement === document.body) { o.onStart(); return true; }
-    if ((e.key === 'c' || e.key === 'C') && o.canResume) { o.onResume(); return true; }
-    return false;
+  frame.append(art, typing, msg, menu);
+  root.append(h, frame);
+  host.appendChild(root);
+
+  const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+  // 단계는 클래스를 더하기만 한다. is-msg가 붙으면 CSS가 입력 중 말풍선을 가린다.
+  const add = (c: string): void => { root.classList.add(c); };
+  const timers: number[] = [];
+  let done = false;
+  const finish = (): void => {
+    if (done) return;
+    done = true;
+    timers.forEach((id) => window.clearTimeout(id));
+    add('is-frame'); add('is-logo'); add('is-typing'); add('is-msg'); add('is-menu');
+    start.focus();
   };
+  // 시간표: 0.4 프레임 · 1.0 로고 · 1.6 입력 중(1.2초, phone_buzz) · 2.8 제목 · 3.0 메뉴
+  if (reduced) finish();
+  else {
+    timers.push(window.setTimeout(() => add('is-frame'), 400));
+    timers.push(window.setTimeout(() => add('is-logo'), 1000));
+    timers.push(window.setTimeout(() => { add('is-typing'); sfx.play('phone_buzz'); }, 1600));
+    timers.push(window.setTimeout(() => add('is-msg'), 2800));
+    timers.push(window.setTimeout(() => finish(), 3000));
+  }
+
+  const ov: Overlay = {
+    root,
+    key: (e) => {
+      if (!done) {
+        if (e.key === 'Enter' || e.key === ' ' || e.key === 'Escape') { finish(); return true; }
+        return true;
+      }
+      if (e.key === 'Enter' && document.activeElement === document.body) { o.onStart(); return true; }
+      if ((e.key === 'c' || e.key === 'C') && o.canResume) { o.onResume(); return true; }
+      return false;
+    },
+    close: () => { timers.forEach((id) => window.clearTimeout(id)); root.remove(); },
+  };
+  root.addEventListener('click', (e) => {
+    if (!done && !(e.target as HTMLElement).closest('button')) finish();
+  });
   return ov;
 }
 
