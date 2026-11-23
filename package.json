@@ -1,0 +1,31 @@
+{
+  "name": "closing-time",
+  "version": "1.0.0",
+  "description": "컬러풀 도트 호러 명품관 접객 웹게임",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "test": "vitest run"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yeijinchoi/chuu.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/yeijinchoi/chuu/issues"
+  },
+  "homepage": "https://github.com/yeijinchoi/chuu#readme",
+  "devDependencies": {
+    "typescript": "^5.9.3",
+    "vite": "^6.4.6",
+    "vitest": "^3.2.7"
+  },
+  "dependencies": {
+    "galmuri": "^2.40.3"
+  },
+  "private": true,
+  "type": "module"
+}
