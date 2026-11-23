@@ -82,7 +82,7 @@ export interface CustomerDef {
   greetPref: GreetStyle;
   category: Category | 'any'; color: Color | null; budget: number | null;
   mentionsPrice: boolean; occasionIsGift: boolean;
-  traits: { noReflection?: boolean; wantsAnything?: boolean; noEyeContact?: boolean; extraFingers?: boolean };
+  traits: { noShadow?: boolean; wantsAnything?: boolean; noEyeContact?: boolean; extraFingers?: boolean };
   specialPayment?: { label: string; amount: number }; // 새벽 장부
   sprite: SpriteParams;
   lines: {
@@ -198,7 +198,7 @@ UI는 `dispatch` 결과 이벤트를 **큐로 순서대로 재생**한다(대사
 - **교대 구분이 판정을 바꾼다.** 같은 행동이라도 `shift === 'afternoon'`이면 매너 실수, `'dawn'`이면 수칙 위반이다.
 - 수칙 판정(`rules.ts`)은 순수 함수로 둔다. 반환값은 `{ kind: 'manner' } | { kind: 'rule'; rule: RuleId } | null`:
   - `checkProbe(c, probe)`: `askBudget` && `!c.mentionsPrice` → 오후는 `manner`, 새벽은 규칙 2. `observe` && `traits.noEyeContact` → 규칙 5
-  - `checkClose(c, choice)`: `tryOn` && `traits.noReflection` → 규칙 1. `traits.wantsAnything` && choice ≠ `boxRed` → 규칙 4
+  - `checkClose(c, choice)`: `tryOn` && `traits.noShadow` → 규칙 1. `traits.wantsAnything` && choice ≠ `boxRed` → 규칙 4
   - 04:44 답장 → 규칙 3
 - 처리: `manner`면 호감 −10, `mannerSlips++`, 응대를 계속한다. 새벽 `rule`이면 `violation` + `horror` 이벤트, 평정심 −25, `outcome='horror'`로 즉시 응대를 끝낸다.
 - 평정심은 새벽에만 바뀐다. 오후 판매 성공으로 평정심이 오르지 않는다.
@@ -221,7 +221,7 @@ GDD §6, §7, §11, §12의 표를 **그대로** JSON으로 옮긴다. 대사 �
   "entranceNote": "매장 안 온도가 내려간다. 발소리가 없다.", "greetPref": "quiet",
   "category": "glove", "color": "white", "budget": 5000000,
   "mentionsPrice": false, "occasionIsGift": false,
-  "traits": { "noReflection": true },
+  "traits": { "noShadow": true },
   "specialPayment": { "label": "녹지 않는 서리 한 병", "amount": 4400000 },
   "sprite": { "hair": "long", "hairColor": "paper", "skin": "skin-a", "outfit": "paper", "accent": "steel" },
   "lines": { "opening": "문자 고마워요. 늘 고마워요.", "openingUninvited": "문자를… 안 주셨더라고요. 그래서 제가 왔어요.", "...": "..." }
@@ -243,9 +243,10 @@ GDD §6, §7, §11, §12의 표를 **그대로** JSON으로 옮긴다. 대사 �
 ## 6. 렌더러
 
 - `loop.ts`: 고정 타임스텝 1/60초. `update(dt)`에서 애니메이션 타이머를 돌리고, `render()`는 오프스크린 320×180 버퍼에 그린 뒤 화면 캔버스로 복사한다.
-- 정적인 배경은 처음 한 번만 오프스크린에 굽는다. 매 프레임 다시 그리는 건 샹들리에, 진열 글로우, 손님, 거울 반사, 효과뿐이다.
+- 정적인 배경은 처음 한 번만 오프스크린에 굽는다. 매 프레임 다시 그리는 건 샹들리에, 진열 글로우, 손님, 손님 그림자, 효과뿐이다.
 - **mood 팔레트**: 그리기 함수는 hex가 아니라 **팔레트 키**(`'rose'`)를 받는다. `palette.resolve(key, mood)`가 실제 색을 돌려준다. `breach`일 때는 밝기에 따라 키를 `ink` 또는 `wine`으로 바꾸고, 가장 밝은 키만 `paper`로 남긴다. 이렇게 하면 팔레트 스왑이 셰이더 없이 된다. 유니티에서는 팔레트 LUT 셰이더 하나로 옮기면 된다.
-- 거울 반사: 거울 영역에 손님을 50% 크기로 좌우 반전하고 `steel`을 20% 섞어 그린다. `noReflection`이면 반사를 그리지 않는다. 플레이어가 관찰하지 않아도 거울을 보면 알 수 있다 — **의도된 단서**다.
+- 거울: 배경 장식일 뿐 **아무것도 비추지 않는다**(반사 렌더링 없음). 유리 하이라이트 사선 2줄만 그린다.
+- 손님 그림자: 새벽에는 카운터 스탠드 방향 반대쪽(왼쪽) 카운터 상판에 손님 그림자를 `ink` 50% 디더로 그린다. 오후에는 바로 아래 짧은 그림자만 그린다. `noShadow`면 그리지 않는다. 플레이어가 관찰하지 않아도 화면을 보면 알 수 있다 — **의도된 단서**다.
 - **교대 전환**: 오후 진열은 가방·시계·주얼리, 새벽 진열은 GDD §12-2 아이템이다. 새벽에는 샹들리에를 끄고 카운터 스탠드 하나만 켠다(빛 반경 밖은 무채색 한 단계 어둡게). 새벽 기본 mood는 `uneasy`다.
 - 마시 씨가 있는 동안 바닥에 물웅덩이(steel 하이라이트 1도트)가 번진다.
 - 마네킹: `dread` 이상이면 왼쪽 마네킹 머리가 돌아가고, `collapse`면 머리가 단발(서윤)로 바뀐다.
@@ -286,7 +287,7 @@ interface StorageAdapter { load(): SaveV1 | null | 'corrupt'; save(s: SaveV1): b
 |---|---|---|
 | M0 | 스캐폴드: `index.html`, 글꼴, 토큰 CSS, stage 스케일링, 로딩 화면 | `npm run dev`로 640×360 무대가 정수배로 뜨고 Galmuri가 적용된다 |
 | M1 | `core/` 전부 + `data/` + 테스트 | `npm test` 전부 통과 (§9) |
-| M2 | 렌더러: 오후/새벽 배경, 손님 6명 도트, 거울 반사, 상품 아이콘 17종 | 디버그 키 `F1`로 손님 순환, `F2`로 교대 전환하며 스크린샷을 확인한다 |
+| M2 | 렌더러: 오후/새벽 배경, 손님 6명 도트, 손님 그림자, 상품 아이콘 17종 | 디버그 키 `F1`로 손님 순환, `F2`로 교대 전환하며 스크린샷을 확인한다 |
 | M3 | UI: 타이틀·이름 입력, HUD, 대화창, 선택지, 단계 표시, 하트, 수칙 쪽지, 상품 카드 | 문자 단계를 건너뛰고 손님 응대를 마우스와 키보드로 끝까지 할 수 있다 |
 | M4 | 업무폰: 오후 명부와 검은 수첩, 발송, 답장, 휴게 전환, 04:44 문자 이벤트 | GDD §3, §6, §9가 화면에서 그대로 동작한다 |
 | M5 | 공포 연출: mood 단계, 위반 이벤트, 배드엔딩 | 일부러 위반하는 루트로 확인. reduced-motion에서 흔들림이 없다 |
