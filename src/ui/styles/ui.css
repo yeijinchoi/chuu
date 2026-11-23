@@ -161,6 +161,8 @@ button:disabled, button[aria-disabled='true'] { cursor: default; }
 .title__from { font-size: 9px; line-height: 12px; color: var(--ash); }
 .title__msg .bubble { font-size: 11px; line-height: 15px; }
 .title__time { align-self: center; font-family: var(--font-small); font-size: 9px; line-height: 12px; color: var(--ash); }
+.screen-menu { display: flex; flex-direction: column; align-items: center; gap: 6px; width: 100%; }
+.screen-menu .btn { min-width: 200px; }
 .title__menu { display: none; flex-direction: column; align-items: center; gap: 6px; width: 100%; }
 .screen--title.is-menu .title__menu { display: flex; }
 .title__warn { color: var(--color-text-muted); }

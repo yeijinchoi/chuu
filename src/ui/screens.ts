@@ -196,7 +196,7 @@ export function resultsScreen(host: HTMLElement, o: { result: DayResult; data: G
   next.append(el('span', 'btn__key', `[${t('title.keyEnter')}]`), document.createTextNode(` ${t('results.nextDay', { n: o.day + 1 })}`));
   const restart = button('btn', '', o.onRestart);
   restart.append(el('span', 'btn__key', '[R]'), document.createTextNode(` ${t('results.restart')}`));
-  const menu = el('div', 'title__menu');
+  const menu = el('div', 'screen-menu');
   menu.append(next, restart);
   sheet.append(cols, foot, comment, teaser, thought, save, menu, stamp);
   root.append(sheet);
@@ -214,7 +214,7 @@ export function resultsScreen(host: HTMLElement, o: { result: DayResult; data: G
 export function endingScreen(host: HTMLElement, o: { onRestart: () => void; onLoad: (() => void) | null }): Overlay {
   const root = el('div', 'screen screen--ending');
   root.append(el('h2', 'ending__title', t('ending.title')), el('p', 'ending__text', t('ending.nextDay')));
-  const menu = el('div', 'title__menu');
+  const menu = el('div', 'screen-menu');
   const a = button('btn', '', o.onRestart);
   a.append(el('span', 'btn__key', `[${t('title.keyEnter')}]`), document.createTextNode(` ${t('ending.restart')}`));
   menu.append(a);
@@ -244,7 +244,7 @@ export function finalEndingScreen(host: HTMLElement, o: { ending: 'display' | 'r
     const have = o.trophies.includes(id);
     stamps.append(el('span', `trophy${have ? ' trophy--on' : ''}${id === o.ending ? ' trophy--now' : ''}`, have ? t(`ending.${id}.title`) : '？'));
   }
-  const menu = el('div', 'title__menu');
+  const menu = el('div', 'screen-menu');
   const a = button('btn', '', o.onRestart);
   a.append(el('span', 'btn__key', `[${t('title.keyEnter')}]`), document.createTextNode(` ${t('ending.again')}`));
   menu.append(a);
