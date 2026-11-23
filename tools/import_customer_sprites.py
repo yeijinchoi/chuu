@@ -31,12 +31,13 @@ def lab(c):
     g2=lambda t: t**(1/3) if t>0.008856 else 7.787*t+16/116
     return (116*g2(Y)-16, 500*(g2(X)-g2(Y)), 200*(g2(Y)-g2(Z)))
 L={k:lab(v) for k,v in cols.items()}
+SPRITE_EXCLUDE={'taupe'}  # 상품 색 '베이지'. 피부가 여기로 가면 올리브색으로 뜬다
 ACCENT={k for k in cols if k.split('-')[0] in ('rose','brass','steel','wine')}
 memo={}
 def nearest(c, chroma_min=14):
     if c in memo: return memo[c]
     lc=lab(c); chroma=math.hypot(lc[1],lc[2])
-    cand=[k for k in L if chroma>=chroma_min or k not in ACCENT]
+    cand=[k for k in L if k not in SPRITE_EXCLUDE and (chroma>=chroma_min or k not in ACCENT)]
     best=min(cand,key=lambda k:(lc[0]-L[k][0])**2*1.0+(lc[1]-L[k][1])**2+(lc[2]-L[k][2])**2)
     memo[c]=best; return best
 DARK={'paper':'bone','bone':'ash','ash':'mist','mist':'stone','stone':'dusk','dusk':'shadow','shadow':'ink','ink':'ink','skin-c':'skin-a','skin-a':'skin-b','skin-b':'stone','hair':'ink','rose':'rose-dark','rose-light':'rose','rose-dark':'wine-dark','taupe':'stone','brass':'brass-dark','brass-light':'brass','brass-dark':'shadow','steel':'steel-dark','steel-light':'steel','steel-dark':'dusk','wine':'wine-dark','wine-dark':'ink'}
@@ -172,12 +173,46 @@ def convert_limited(img, mask, x0, x1, allowed=None, max_keys=12):
     return out, allowed
 
 
+_REF_STATS = None
+
+
+def char_stats(img, alpha):
+    """시트에서 캐릭터 픽셀(알파 높음)의 채널별 평균·표준편차"""
+    ip, ap = img.load(), alpha.load()
+    vals = [ip[x, y] for y in range(img.height) for x in range(img.width) if ap[x, y] > 230]
+    out = []
+    for c in range(3):
+        v = [p[c] for p in vals]; m = sum(v) / len(v)
+        out.append((m, (sum((x - m) ** 2 for x in v) / len(v)) ** 0.5))
+    return out
+
+
+def match_to(img, src_stats, ref_stats):
+    """시트끼리 톤을 맞춘다(채널별 평균·표준편차를 1번 시트에 맞춤). 시트마다 피부가 한 톤씩 달라지는 것을 막는다."""
+    lut = []
+    for c in range(3):
+        (ms, ss), (mr, sr) = src_stats[c], ref_stats[c]
+        lut += [max(0, min(255, round((v - ms) / (ss or 1) * sr + mr))) for v in range(256)]
+    return img.point(lut)
+
+
 def process_sheet(key, ids, manifest):
     opened = Image.open(os.path.join(SHEETS, f'sheet-{key}-open.png')).convert('RGB')
     size = (round(opened.width * SCALE), round(opened.height * SCALE))
     small = opened.resize(size, Image.BOX)
+    global _REF_STATS
+    alpha_full = os.path.join(SHEETS, f'sheet-{key}-alpha.png')
+    if os.path.exists(alpha_full):
+        a_small = Image.open(alpha_full).convert('L').resize(size, Image.BOX)
+        st = char_stats(small, a_small)
+        if _REF_STATS is None:
+            _REF_STATS = st
+        else:
+            small = match_to(small, st, _REF_STATS)
     closed_path = os.path.join(SHEETS, f'sheet-{key}-closed.png')
     small_closed = Image.open(closed_path).convert('RGB').resize(size, Image.BOX) if os.path.exists(closed_path) else None
+    if small_closed is not None and key != 'a' and os.path.exists(alpha_full):
+        small_closed = match_to(small_closed, char_stats(small_closed, a_small), _REF_STATS)
     w, h = size
     alpha_path = os.path.join(SHEETS, f'sheet-{key}-alpha.png')
     if os.path.exists(alpha_path):

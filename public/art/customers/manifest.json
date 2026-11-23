@@ -32,33 +32,33 @@
   "blink": true
  },
  "cha": {
-  "x": 270,
-  "y": 106,
-  "w": 100,
-  "h": 160,
-  "breathSplit": 140,
+  "x": 273,
+  "y": 104,
+  "w": 95,
+  "h": 162,
+  "breathSplit": 142,
   "blink": true
  },
  "park": {
-  "x": 270,
-  "y": 111,
-  "w": 101,
-  "h": 155,
-  "breathSplit": 135,
+  "x": 273,
+  "y": 113,
+  "w": 94,
+  "h": 153,
+  "breathSplit": 133,
   "blink": true
  },
  "yoon": {
-  "x": 276,
-  "y": 100,
-  "w": 88,
-  "h": 166,
-  "breathSplit": 146,
+  "x": 275,
+  "y": 107,
+  "w": 90,
+  "h": 159,
+  "breathSplit": 139,
   "blink": true
  },
  "seojin": {
-  "x": 272,
+  "x": 273,
   "y": 111,
-  "w": 96,
+  "w": 94,
   "h": 155,
   "breathSplit": 135,
   "blink": true
