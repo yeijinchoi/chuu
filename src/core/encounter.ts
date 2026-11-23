@@ -1,0 +1,323 @@
+import { fillCardFromProbe, newCard, registerRegular, isRegistered } from './care';
+import { changeComposure, clamp, setClock, setPhase, str, type Ctx } from './ctx';
+import { checkChoice, checkRequire, type CheckResult } from './rules';
+import { deriveRng, shuffle, pickOne, type Rng } from './rng';
+import type {
+  CloseId, ClientCard, CustomerDef, EncounterState, GreetStyle, ProbeId, Product, RuleId,
+} from './types';
+
+/** 점수 상수 (GDD §5). 호감은 0~100으로 자른다. */
+export const SCORE = {
+  baseAffinity: 40,
+  textBonus: 15, // 선호 템플릿으로 문자를 받고 왔을 때
+  vipBonus: 25, // VIP 이상 단골의 시작 호감 보너스
+  vipBudgetMultiplier: 1.2,
+  uninvitedAffinity: 30, // 잊힌 단골의 시작 호감
+  uninvitedComposure: -10,
+  greetMatch: 15,
+  greetMismatch: -10,
+  probe: 3,
+  mannerSlip: -10,
+  deptMatch: 20,
+  colorMatch: 10,
+  withinBudget: 10,
+  overBudget: -15,
+  anything: 10,
+  tryOn: 10,
+  giftBox: 5,
+  sold: 60,
+  regularOffer: 85,
+  violationComposure: -25,
+  closingReplyComposure: -30,
+  maxProbes: 2,
+} as const;
+
+export const EMPTY_BOX = 'empty_box';
+const PROBE_FIELDS: ProbeId[] = ['askCategory', 'askOccasion', 'askBudget', 'observe'];
+
+/**
+ * 제안 카드: ① 부서·색 일치 ② 부서만 일치 ③ 다른 부서. 후보가 여럿이면 시드 RNG로 고르고 순서도 섞는다.
+ * 손님과 같은 교대의 상품만 쓴다. "아무거나" 손님은 무작위 3장. onlyProduct 손님은 +1장(총 4장).
+ */
+export function pickOffers(customer: CustomerDef, products: readonly Product[], rng: Rng): string[] {
+  const pool = products.filter((p) => p.shift === customer.shift && p.id !== EMPTY_BOX);
+  const chosen: Product[] = [];
+  const add = (p: Product | undefined): void => {
+    if (p && !chosen.includes(p)) chosen.push(p);
+  };
+  if (customer.traits.wantsAnything || customer.category === 'any') {
+    for (const p of shuffle(rng, pool).slice(0, 3)) add(p);
+  } else {
+    const sameCat = pool.filter((p) => p.category === customer.category);
+    const exact = sameCat.filter((p) => customer.color !== null && p.color === customer.color);
+    const partial = sameCat.filter((p) => !exact.includes(p));
+    const other = pool.filter((p) => p.category !== customer.category);
+    add(pickOne(rng, exact.length > 0 ? exact : partial));
+    add(pickOne(rng, partial.filter((p) => !chosen.includes(p))));
+    add(pickOne(rng, other));
+    for (const p of shuffle(rng, pool)) {
+      if (chosen.length >= 3) break;
+      add(p);
+    }
+  }
+  if (customer.onlyProduct) {
+    const only = products.find((p) => p.id === customer.onlyProduct);
+    if (only) chosen.push(only);
+  }
+  return shuffle(rng, chosen).map((p) => p.id);
+}
+
+export function effectiveBudget(customer: CustomerDef, card: ClientCard | undefined): number | null {
+  if (customer.budget === null) return null;
+  const vip = card !== undefined && (card.tier === 'vip' || card.tier === 'lifetime');
+  return vip ? Math.round(customer.budget * SCORE.vipBudgetMultiplier) : customer.budget;
+}
+
+/** 제안 단계 호감 변화 */
+export function proposeDelta(customer: CustomerDef, product: Product, card: ClientCard | undefined): number {
+  if (customer.traits.wantsAnything || customer.category === 'any') return SCORE.anything;
+  let d = 0;
+  if (product.category === customer.category) d += SCORE.deptMatch;
+  if (customer.color !== null && product.color === customer.color) d += SCORE.colorMatch;
+  const budget = effectiveBudget(customer, card);
+  d += budget === null || product.price <= budget ? SCORE.withinBudget : SCORE.overBudget;
+  return d;
+}
+
+export function closeDelta(customer: CustomerDef, choice: CloseId): number {
+  if (choice === 'tryOn') return SCORE.tryOn;
+  if (choice === 'boxGold' && customer.occasionIsGift) return SCORE.giftBox;
+  return 0;
+}
+
+// ---------------------------------------------------------------- 상태 머신
+
+function enc(ctx: Ctx): EncounterState | null {
+  const p = ctx.state.phase;
+  return p.kind === 'encounter' ? p.enc : null;
+}
+
+function addAffinity(ctx: Ctx, e: EncounterState, delta: number): void {
+  const before = e.affinity;
+  e.affinity = clamp(before + delta, 0, 100);
+  ctx.emit({ type: 'affinity', delta: e.affinity - before, value: e.affinity });
+}
+
+function say(ctx: Ctx, c: CustomerDef, text: string | undefined): void {
+  if (text) ctx.emit({ type: 'line', speaker: c.name, text });
+}
+function narrate(ctx: Ctx, text: string | undefined): void {
+  if (text) ctx.emit({ type: 'line', speaker: null, text });
+}
+
+export function ensureCard(ctx: Ctx, c: CustomerDef): ClientCard {
+  let card = ctx.state.cards[c.id];
+  if (!card) {
+    card = newCard(c.id, c.shift);
+    ctx.state.cards[c.id] = card;
+  }
+  return card;
+}
+
+/** 슬롯의 손님을 응대 시작 */
+export function startEncounter(ctx: Ctx, slotIndex: number): void {
+  const s = ctx.state;
+  const slot = s.slots[slotIndex];
+  const c = slot ? ctx.customers[slot.customerId] : undefined;
+  if (!slot || !c) return;
+  const card = ensureCard(ctx, c);
+  const vip = card.tier === 'vip' || card.tier === 'lifetime';
+  const textBonus = s.visitors[c.id]?.bonus ?? 0;
+  const start = slot.forgotten
+    ? SCORE.uninvitedAffinity
+    : SCORE.baseAffinity + Math.max(textBonus, vip ? SCORE.vipBonus : 0);
+  const e: EncounterState = {
+    customerId: c.id, shift: slot.shift, step: 'greet', affinity: clamp(start, 0, 100),
+    probesUsed: [], offered: [], chosenProductId: null, violated: [], mannerSlips: 0,
+    outcome: 'pending', uninvited: slot.uninvited, forgotten: slot.forgotten,
+  };
+  card.lastVisitDay = s.day;
+  card.lastContactDay = s.day;
+  setClock(ctx, slot.time);
+  setPhase(ctx, { kind: 'encounter', slotIndex, enc: e });
+  ctx.emit({ type: 'customerEnter', customerId: c.id });
+  ctx.emit({ type: 'affinity', delta: 0, value: e.affinity });
+  if (slot.shift === 'dawn') narrate(ctx, c.entranceNote);
+  say(ctx, c, slot.uninvited ? (c.lines.openingUninvited ?? c.lines.opening) : c.lines.opening);
+  if (vip) say(ctx, c, c.care.vipReveal);
+  if (slot.forgotten) {
+    narrate(ctx, str(ctx.data, 'text.uninvitedNote'));
+    changeComposure(ctx, SCORE.uninvitedComposure);
+  }
+}
+
+export function doGreet(ctx: Ctx, style: GreetStyle): boolean {
+  const e = enc(ctx);
+  if (!e || e.step !== 'greet') return false;
+  const c = ctx.customers[e.customerId] as CustomerDef;
+  const chk = checkChoice(c, 'greet', style, ctx.data.rules, e.shift);
+  if (chk?.kind === 'rule') return violate(ctx, e, chk.rule);
+  addAffinity(ctx, e, style === c.greetPref ? SCORE.greetMatch : SCORE.greetMismatch);
+  e.step = 'probe';
+  return true;
+}
+
+export function doProbe(ctx: Ctx, probe: ProbeId): boolean {
+  const e = enc(ctx);
+  if (!e || e.step !== 'probe' || !PROBE_FIELDS.includes(probe)) return false;
+  if (e.probesUsed.includes(probe) || e.probesUsed.length >= SCORE.maxProbes) return false;
+  const c = ctx.customers[e.customerId] as CustomerDef;
+  const card = ensureCard(ctx, c);
+  const chk: CheckResult = checkChoice(c, 'probe', probe, ctx.data.rules, e.shift);
+  e.probesUsed.push(probe);
+  const answer = c.lines[probe];
+
+  if (chk?.kind === 'rule') {
+    // 답변을 먼저 보여 주고 이어서 위반 이벤트
+    say(ctx, c, answer);
+    return violate(ctx, e, chk.rule);
+  }
+  if (chk?.kind === 'manner') {
+    const refusal = c.lines.violation['manner'];
+    say(ctx, c, refusal ?? answer);
+    if (!refusal) fillCard(ctx, card, c, probe, true);
+    e.mannerSlips++;
+    ctx.state.mannerSlips++;
+    ctx.emit({ type: 'mannerSlip', text: str(ctx.data, 'manner.note') });
+    addAffinity(ctx, e, SCORE.mannerSlip);
+  } else {
+    say(ctx, c, answer);
+    fillCard(ctx, card, c, probe, true);
+    if (probe !== 'observe') addAffinity(ctx, e, SCORE.probe);
+  }
+  if (e.probesUsed.length >= SCORE.maxProbes) {
+    const miss = checkRequire(c, 'probe', e.probesUsed, ctx.data.rules, e.shift);
+    if (miss !== null) return violate(ctx, e, miss);
+    e.step = 'propose';
+    const rng = deriveRng(ctx.state.seed, ctx.state.day, c.id, 'offers');
+    e.offered = pickOffers(c, ctx.data.products, rng);
+  }
+  return true;
+}
+
+function fillCard(ctx: Ctx, card: ClientCard, c: CustomerDef, probe: ProbeId, budgetKnown: boolean): void {
+  for (const field of fillCardFromProbe(card, c, probe, { budgetKnown })) {
+    ctx.emit({ type: 'cardUpdate', customerId: c.id, field });
+  }
+}
+
+export function doPropose(ctx: Ctx, productId: string): boolean {
+  const e = enc(ctx);
+  if (!e || e.step !== 'propose' || !e.offered.includes(productId)) return false;
+  const c = ctx.customers[e.customerId] as CustomerDef;
+  const product = ctx.products[productId] as Product;
+  e.chosenProductId = productId;
+  const miss = checkRequire(c, 'propose', [productId], ctx.data.rules, e.shift);
+  if (miss !== null) return violate(ctx, e, miss);
+  addAffinity(ctx, e, proposeDelta(c, product, ctx.state.cards[c.id]));
+  e.step = 'close';
+  return true;
+}
+
+export function doClose(ctx: Ctx, choice: CloseId): boolean {
+  const e = enc(ctx);
+  if (!e || e.step !== 'close') return false;
+  const c = ctx.customers[e.customerId] as CustomerDef;
+  const chk = checkChoice(c, 'close', choice, ctx.data.rules, e.shift);
+  if (chk?.kind === 'rule') return violate(ctx, e, chk.rule);
+  const miss = checkRequire(c, 'close', [choice], ctx.data.rules, e.shift);
+  if (miss !== null) return violate(ctx, e, miss);
+  addAffinity(ctx, e, closeDelta(c, choice));
+
+  if (e.affinity < SCORE.sold) {
+    e.outcome = 'walked';
+    say(ctx, c, c.lines.fail);
+    narrate(ctx, c.lines.failNote);
+    finish(ctx, e);
+    return true;
+  }
+  recordSale(ctx, e, c);
+  const card = ensureCard(ctx, c);
+  const offerOk = e.shift === 'dawn' ? true : e.affinity >= SCORE.regularOffer;
+  if (offerOk && !isRegistered(card) && card.tier !== 'lost') {
+    e.step = 'regularOffer';
+  } else {
+    finish(ctx, e);
+  }
+  return true;
+}
+
+function recordSale(ctx: Ctx, e: EncounterState, c: CustomerDef): void {
+  const s = ctx.state;
+  const product = ctx.products[e.chosenProductId as string] as Product;
+  e.outcome = 'sold';
+  s.salesCount++;
+  say(ctx, c, c.lines.success);
+  narrate(ctx, c.lines.successNote);
+  if (e.shift === 'afternoon') {
+    s.revenue += product.price;
+    s.totalRevenue += product.price;
+    ctx.emit({ type: 'sale', productId: product.id, amount: product.price, shift: 'afternoon' });
+  } else {
+    // 새벽 판매는 매출이 아니라 장부에 기록한다
+    const pay = c.specialPayment;
+    if (pay) {
+      s.dawnLedger.push({ customerId: c.id, label: pay.label, amount: pay.amount });
+      ctx.emit({ type: 'ledger', label: pay.label, amount: pay.amount });
+    }
+    ctx.emit({ type: 'sale', productId: product.id, amount: pay?.amount ?? 0, shift: 'dawn' });
+  }
+  const card = ensureCard(ctx, c);
+  card.purchases.push({ productId: product.id, day: s.day });
+  ctx.emit({ type: 'cardUpdate', customerId: c.id, field: 'purchases' });
+}
+
+export function doRegularOffer(ctx: Ctx, accept: boolean): boolean {
+  const e = enc(ctx);
+  if (!e || e.step !== 'regularOffer') return false;
+  const c = ctx.customers[e.customerId] as CustomerDef;
+  if (accept) {
+    const card = ensureCard(ctx, c);
+    registerRegular(card, ctx.state.day);
+    ctx.state.newRegulars.push(c.id);
+    ctx.emit({ type: 'regular', customerId: c.id, book: c.shift });
+    ctx.emit({ type: 'relationship', customerId: c.id, delta: card.score, score: card.score, tier: card.tier });
+  }
+  finish(ctx, e);
+  return true;
+}
+
+function finish(ctx: Ctx, e: EncounterState): void {
+  const c = ctx.customers[e.customerId] as CustomerDef;
+  e.step = 'done';
+  if (e.outcome === 'sold' || e.outcome === 'walked') say(ctx, c, c.lines.farewell);
+  ctx.emit({ type: 'customerLeave', customerId: e.customerId, outcome: e.outcome });
+}
+
+/** 새벽 수칙 위반: 공포 이벤트, 평정심 −25, 판매 실패, 손님은 사라진다 */
+function violate(ctx: Ctx, e: EncounterState, rule: RuleId): boolean {
+  const c = ctx.customers[e.customerId] as CustomerDef;
+  e.violated.push(rule);
+  ctx.state.violations++;
+  e.outcome = 'horror';
+  e.step = 'done';
+  const text = c.lines.violation[String(rule)];
+  if (text) say(ctx, c, text);
+  else narrate(ctx, str(ctx.data, 'violation.default'));
+  ctx.emit({ type: 'violation', rule, severe: true });
+  ctx.emit({ type: 'horror', customerId: c.id, kind: 'breach' });
+  ctx.emit({ type: 'sfx', id: 'violation' });
+  ctx.emit({ type: 'customerLeave', customerId: c.id, outcome: 'horror' });
+  changeComposure(ctx, SCORE.violationComposure);
+  return true;
+}
+
+/** 한 번의 가용 선택지 계산용: 응대 단계별 선택 */
+export function stageChoices(e: EncounterState): { greet: GreetStyle[]; probes: ProbeId[]; closes: CloseId[] } {
+  return {
+    greet: ['warm', 'quiet', 'direct'],
+    probes: e.probesUsed.length >= SCORE.maxProbes ? [] : PROBE_FIELDS.filter((p) => !e.probesUsed.includes(p)),
+    closes: ['tryOn', 'boxRed', 'boxGold', 'checkout'],
+  };
+}
+

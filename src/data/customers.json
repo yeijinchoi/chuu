@@ -1,0 +1,432 @@
+[
+  {
+    "id": "hanyeoreum", "name": "한여름", "shift": "afternoon",
+    "greetPref": "warm", "category": "bag", "color": "beige", "budget": 2500000,
+    "mentionsPrice": false, "occasionIsGift": true, "form": "humanoid",
+    "wants": "토트백", "cardNote": "긴장을 잘 함",
+    "rules": [], "traits": {},
+    "sprite": { "hair": "bob", "hairColor": "hair", "skin": "skin-a", "outfit": "shadow", "accent": "rose" },
+    "care": {
+      "likes": ["thanks", "occasion"], "dislikes": [],
+      "occasionDay": 2, "occasionLabel": "엄마 생신",
+      "vipReveal": "엄마가 그 가방 매일 들어요. 회사 동기도 데려올게요!",
+      "chat": { "reply": "어, 연락 주셨네요! 저 그 가방 매일 보고 있어요. 헤헤.", "options": ["엄마께서 좋아하셨다니 다행이에요.", "저희 매장은 언제든 열려 있어요."], "best": 0 }
+    },
+    "lines": {
+      "opening": "저… 여기 처음 와 봐서요. 구경해도 되죠? 헤헤.",
+      "askCategory": "가방이요! 엄마 거요.",
+      "askOccasion": "다음 주가 엄마 생신이에요. 첫 월급 받았거든요. 엄마는 튀는 색 싫어하세요.",
+      "askBudget": "음… 250만 원 정도까지는요.",
+      "observe": "손끝이 떨린다. 가격표를 자꾸 훔쳐본다. 긴장한 것 같다.",
+      "success": "엄마가 진짜 좋아하실 거예요. 감사합니다!",
+      "fail": "아… 조금 더 생각해 볼게요.",
+      "violation": {}
+    }
+  },
+  {
+    "id": "kang", "name": "강도윤", "shift": "afternoon",
+    "greetPref": "direct", "category": "apparel", "color": "black", "budget": 5000000,
+    "mentionsPrice": true, "occasionIsGift": false, "form": "humanoid",
+    "wants": "수트", "cardNote": "바쁜 사람. 시계를 자주 본다",
+    "rules": [], "traits": {},
+    "sprite": { "hair": "slick", "hairColor": "ink", "skin": "skin-a", "outfit": "shadow", "accent": "brass" },
+    "care": {
+      "likes": ["recommend"], "dislikes": ["checkin"],
+      "occasionDay": 2, "occasionLabel": "계약식",
+      "vipReveal": "저희 모임에 한번 오세요. 소개해 드릴 사람들이 있어요.",
+      "chat": { "reply": "네. 용건이 뭐죠?", "options": ["신상 입고 소식입니다.", "별일은 아니고 안부차 드렸어요."], "best": 0 }
+    },
+    "lines": {
+      "opening": "문자 보고 왔어요. 이번 신상 수트, 얼마부터예요?",
+      "askCategory": "수트요. 시간 없으니까 바로 보여 주세요.",
+      "askOccasion": "큰 계약 하나 땄거든요. 계약식에 입을 거예요. 깔끔한 블랙이요.",
+      "askBudget": "오백 안쪽이면 바로 결제할게요.",
+      "observe": "손목시계를 벌써 세 번째 확인했다. 바쁜 사람이다.",
+      "success": "좋네요. 다음 신상 나오면 또 연락 줘요.",
+      "fail": "됐어요, 다음에 볼게요.",
+      "violation": {}
+    }
+  },
+  {
+    "id": "jin", "name": "진영숙", "shift": "afternoon",
+    "greetPref": "quiet", "category": "jewelry", "color": "black", "budget": 8000000,
+    "mentionsPrice": false, "occasionIsGift": false, "form": "humanoid",
+    "wants": "진주", "cardNote": "진주 목걸이의 알 하나가 비어 있다",
+    "rules": [], "traits": {},
+    "sprite": { "hair": "bun", "hairColor": "bone", "skin": "skin-a", "outfit": "shadow", "accent": "paper" },
+    "care": {
+      "likes": ["thanks"], "dislikes": ["recommend"],
+      "occasionDay": 1, "occasionLabel": "남편 기일",
+      "vipReveal": "서윤이는 새벽에도 일했어요. 사람이 아닌 분들께 물건을 팔았죠. …내가 말했다고 하지 마요.",
+      "chat": { "reply": "문자 잘 받았어요. 짧아서 좋네요.", "options": ["편히 쉬세요.", "또 뵙겠습니다."], "best": 0 }
+    },
+    "lines": {
+      "opening": "서윤이는? …그래요. 새로 왔구나.",
+      "askCategory": "진주. 하나만.",
+      "askOccasion": "남편 기일이에요. 검은 걸로.",
+      "askBudget": "그런 건 묻는 거 아니에요.",
+      "observe": "진주 목걸이에서 알 하나가 빠져 있다. 그 자리만 비어 있다.",
+      "success": "서윤이보다 낫네. 다음에도 당신이 응대해요.",
+      "fail": "오늘은 그만 보죠.",
+      "farewell": "새벽까지 있을 거면… 아니에요. 잘 해요.",
+      "violation": { "manner": "그런 건 묻는 거 아니에요." }
+    }
+  },
+  {
+    "id": "marsh", "name": "마시 씨", "shift": "dawn", "motif": "심해의 혼혈 종족 (항구 마을의 물고기 눈 사람들)",
+    "entranceNote": "짠 바다 냄새가 난다. 소매에서 떨어진 물이 카운터에 고인다. 눈이 크고, 깜빡이지 않는다.",
+    "greetPref": "quiet", "category": "jewelry", "color": "white", "budget": 9000000,
+    "mentionsPrice": true, "occasionIsGift": true, "form": "humanoid", "speaksVia": "voice",
+    "wants": "진주", "cardNote": "눈을 오래 보면 안 된다",
+    "rules": [5], "traits": {},
+    "specialPayment": { "label": "비늘 무늬 금팔찌", "amount": 8800000 },
+    "sprite": { "hair": "wet", "hairColor": "stone", "skin": "skin-b", "outfit": "dusk", "accent": "steel" },
+    "care": {
+      "likes": ["dawn_thanks"], "dislikes": [],
+      "memo": "이름 부르지 말 것. 감사 인사만.",
+      "forbid": [
+        { "template": "dawn_occasion", "scoreDelta": -2, "note": "이름이 불렸다. 카운터 위의 물이 천천히 차오른다." },
+        { "template": "dawn_recommend", "scoreDelta": -2, "note": "이름이 불렸다. 카운터 위의 물이 천천히 차오른다." },
+        { "template": "dawn_checkin", "scoreDelta": -2, "note": "이름이 불렸다. 카운터 위의 물이 천천히 차오른다." }
+      ],
+      "neglectEvent": "tide_floods_floor",
+      "vipReveal": "그분은 물 아래에도 계십니다. 아주 오래전부터."
+    },
+    "lines": {
+      "opening": "…좋은 새벽입니다. 값은 금으로 치르겠습니다.",
+      "askCategory": "진주. 숨을 쉬는 것으로.",
+      "askOccasion": "신부에게. 물 아래는 어둡습니다. 하얗게 빛나는 것이 좋겠습니다.",
+      "askBudget": "금이라면 충분히 있습니다. 바다는 넓으니까요.",
+      "observe": "그의 눈은 깜빡이지 않는다. 눈꺼풀이 없다. 눈을 뗄 수가 없다—",
+      "success": "그분께 안부를. 다음 만조에 다시 오겠습니다.",
+      "successNote": "비늘 무늬 금팔찌를 받았다.",
+      "fail": "…다음 만조에.",
+      "failNote": "물웅덩이만 남는다.",
+      "violation": { "5": "\"보지 말라고 들었을 텐데요.\" 카운터 위의 물이 넘쳐 흐르기 시작한다." }
+    }
+  },
+  {
+    "id": "faceless", "name": "얼굴 없는 여자", "shift": "dawn", "motif": "천의 얼굴을 가진 사자 (얼굴 없는 신의 화신)",
+    "entranceNote": "문이 열린 소리가 나지 않았다. 긴 머리카락 아래에 얼굴이 없다.",
+    "greetPref": "quiet", "category": "any", "color": null, "budget": null,
+    "mentionsPrice": false, "occasionIsGift": false, "form": "humanoid", "speaksVia": "voice",
+    "wants": "아무거나", "cardNote": "손가락이 셀 때마다 바뀐다",
+    "rules": [4], "traits": { "wantsAnything": true, "extraFingers": true },
+    "specialPayment": { "label": "따뜻한 금화 한 줌", "amount": 3333333 },
+    "sprite": { "hair": "long", "hairColor": "ink", "skin": "skin-a", "outfit": "rose", "accent": "ash", "face": "none" },
+    "care": {
+      "likes": [], "dislikes": [],
+      "memo": "번호 없음. 퇴근할 때 문 앞에 빨간 상자를 두고 갈 것.",
+      "redBoxCare": true,
+      "neglectEvent": "red_box_on_counter",
+      "vipReveal": "얼굴을 하나 놓고 갈게요. 마음에 드는 걸로 쓰세요."
+    },
+    "lines": {
+      "opening": "……아무거나요. 아무거나 주세요.",
+      "askCategory": "아무거나요.",
+      "askOccasion": "아무거나요.",
+      "askBudget": "……가격? 가격을 왜 말해요?",
+      "observe": "코트 소매 끝으로 손가락이 보인다. 하나, 둘, 셋… 셀 때마다 숫자가 바뀐다.",
+      "success": "빨간 상자. 좋아요. 아주 좋아요. 그분이 좋아하시겠어요.",
+      "successNote": "따뜻한 금화 한 줌을 받았다.",
+      "fail": "눈을 깜빡이는 사이 사라져 있다.",
+      "violation": {
+        "2": "머리카락 사이로 얼굴이 있어야 할 자리가 보인다. 아무것도 없다.",
+        "4": "\"빨간 상자가 아니네요.\" 코트가 열린다. 안에는 손가락뿐이다."
+      }
+    }
+  },
+  {
+    "id": "baek", "name": "백설", "shift": "dawn", "motif": "바람 위를 걷는 존재 (북쪽 하늘의 얼음 바람)",
+    "entranceNote": "매장 안 온도가 내려간다. 카운터에 올린 손끝마다 하얗게 서리가 맺혀 있다.",
+    "greetPref": "quiet", "category": "apparel", "color": "white", "budget": 5000000,
+    "mentionsPrice": false, "occasionIsGift": false, "form": "humanoid", "speaksVia": "voice",
+    "wants": "장갑", "cardNote": "하얀 물건에만 눈길이 오래 머문다",
+    "rules": [1], "traits": { "frostHands": true },
+    "specialPayment": { "label": "녹지 않는 서리 한 병", "amount": 4400000 },
+    "sprite": { "hair": "long", "hairColor": "paper", "skin": "skin-a", "outfit": "paper", "accent": "steel" },
+    "care": {
+      "likes": ["dawn_thanks"], "dislikes": [],
+      "memo": "고맙다는 말에는 꼭 답할 것.",
+      "mustThank": true,
+      "neglectEvent": "uninvited_visit",
+      "vipReveal": "서윤이 마지막으로 응대한 손님이 저였어요."
+    },
+    "lines": {
+      "opening": "문자 고마워요. 늘 고마워요.",
+      "openingUninvited": "문자를… 안 주셨더라고요. 그래서 제가 왔어요.",
+      "askCategory": "장갑이요. 손이 너무 차서요.",
+      "askOccasion": "올겨울은 아주 길 것 같거든요. 하얀 걸로요.",
+      "askBudget": "백오십… 그 정도면 될까요?",
+      "observe": "진열장의 하얀 물건에만 눈길이 오래 머문다.",
+      "success": "고마워요. 정말 늘 고마워요.",
+      "successNote": "녹지 않는 서리 한 병을 받았다.",
+      "fail": "바람 소리가 나고, 사라져 있다.",
+      "violation": {
+        "1": "장갑을 끼는 순간 장갑이 얼어 부서진다. 그 안에 손은 없었다. \"입혀 보지 말라고 했잖아요.\" 카운터 유리 전체에 성에가 번진다.",
+        "2": "말끝에서 하얀 입김이 번진다. 카운터 위의 서리가 손끝에서 유리 전체로 퍼져 나간다."
+      }
+    }
+  },
+
+  {
+    "id": "oh", "name": "오미란", "shift": "afternoon", "draftLines": true,
+    "greetPref": "warm", "category": "bag", "color": "pink", "budget": 3000000,
+    "mentionsPrice": true, "occasionIsGift": false, "form": "humanoid",
+    "wants": "토트백", "cardNote": "말하는 동안 숨을 안 쉬는 것 같다",
+    "rules": [], "traits": {},
+    "sprite": { "hair": "perm", "hairColor": "hair", "skin": "skin-a", "outfit": "shadow", "accent": "rose" },
+    "care": {
+      "likes": ["thanks", "occasion", "recommend", "checkin"], "dislikes": [],
+      "occasionDay": 3, "occasionLabel": "딸 결혼식", "overcontactSafe": true,
+      "vipReveal": "역대 어드바이저들이 그만둔 날짜, 내가 적어 놨지 뭐야. 신기하게 전부 같은 요일이야~",
+      "chat": { "reply": "어머~ 자기 연락 주셨네! 나 지금 쇼핑 중이야~ 있잖아, 어제는 말이야…", "options": ["언제든 들러 주세요, 고객님.", "고객님 얘기 더 듣고 싶어요."], "best": 1 }
+    },
+    "lines": {
+      "opening": "어머 새로 왔네? 저번 그 아가씨는? 또 그만뒀어? 여긴 왜 다들 그렇게 금방 그만둬~",
+      "askCategory": "토트백! 핑크로~ 나 핑크 좋아하잖아.",
+      "askOccasion": "이건 내가 나한테 주는 선물이지~ 딸 결혼식 준비하느라 고생했잖아.",
+      "askBudget": "삼백까지는 괜찮아~ 자기도 참, 그런 것도 다 물어보네.",
+      "observe": "쇼핑백을 네 개나 들고 있다. 말하는 동안 한 번도 숨을 안 쉬는 것 같다.",
+      "success": "역시 핑크야! 다음 주에 또 올게~ 근데 자기는 오래 있어 줘?",
+      "fail": "에이~ 오늘은 마음이 안 가네. 다음 주에 다시 올게~",
+      "violation": {}
+    }
+  },
+  {
+    "id": "cha", "name": "차은호", "shift": "afternoon", "draftLines": true,
+    "greetPref": "direct", "category": "bag", "color": "black", "budget": 4500000,
+    "mentionsPrice": true, "occasionIsGift": false, "form": "humanoid",
+    "wants": "숄더백", "cardNote": "휴대폰 카메라가 진열장을 향해 있다",
+    "rules": [], "traits": {},
+    "sprite": { "hair": "short", "hairColor": "ink", "skin": "skin-a", "outfit": "dusk", "accent": "steel" },
+    "care": {
+      "likes": ["recommend"], "dislikes": ["thanks", "checkin"],
+      "vipReveal": "커뮤에 올라온 새벽 매장 사진이에요. 이거… 진짜 여기 맞죠?",
+      "chat": { "reply": "읽었어요. 한정이면 알려 주세요.", "options": ["한정 입고 때 먼저 알려 드릴게요.", "필요하시면 편하게 말씀하세요."], "best": 0 }
+    },
+    "lines": {
+      "opening": "이거 리셀가 얼마 붙는지 아세요? 한정 남은 거 있어요?",
+      "askCategory": "한정 숄더백이요. 블랙 있으면 그걸로.",
+      "askOccasion": "쓸 건 아니고요. 되팔 거예요. 보증서 있죠?",
+      "askBudget": "사백오십까진 가능해요. 리셀가 붙으면 바로 회수되니까.",
+      "observe": "휴대폰 카메라가 계속 진열장을 향해 있다.",
+      "success": "오 득템. …근데 여기 밤에도 열어요? 커뮤에 사진 올라온 거 있던데.",
+      "fail": "아, 이건 리셀가가 안 붙겠네요. 패스할게요.",
+      "violation": {}
+    }
+  },
+  {
+    "id": "park", "name": "박정호", "shift": "afternoon", "draftLines": true,
+    "greetPref": "warm", "category": "jewelry", "color": "white", "budget": 1800000,
+    "mentionsPrice": true, "occasionIsGift": true, "form": "humanoid",
+    "wants": "반지", "cardNote": "손목시계가 4시 44분에 멈춰 있다",
+    "rules": [], "traits": {},
+    "sprite": { "hair": "short", "hairColor": "ash", "skin": "skin-a", "outfit": "dusk", "accent": "brass" },
+    "care": {
+      "likes": ["occasion", "checkin"], "dislikes": [],
+      "occasionDay": 2, "occasionLabel": "결혼 40주년",
+      "vipReveal": "30년 전 야간 경비 일지 한 장이에요. 4시 44분 칸에, 문 앞에 누가 서 있다고 적혀 있죠.",
+      "chat": { "reply": "아이고, 문자까지 주시고 고마워요. 집사람이 좋아할 겁니다.", "options": ["사모님께 안부 전해 주세요.", "또 들러 주세요."], "best": 0 }
+    },
+    "lines": {
+      "opening": "이런 데는 처음이라… 반지 하나에 얼마나 하나요?",
+      "askCategory": "반지요. 집사람 거로 하나 하고 싶어요.",
+      "askOccasion": "결혼 40주년이에요. 그 사람이 진주를 좋아해서, 하얀 게 좋겠어요.",
+      "askBudget": "백팔십 정도까지 생각하고 있어요.",
+      "observe": "낡은 손목시계를 차고 있다. 시계가 새벽 4시 44분에 멈춰 있다.",
+      "success": "고마워요. …아가씨, 혹시 밤에도 일해요? 4시 44분엔 문자 보지 말아요. 옛날에도 그랬어.",
+      "fail": "아이고, 오늘은 못 정하겠네요. 좀 더 생각해 볼게요.",
+      "violation": {}
+    }
+  },
+  {
+    "id": "yoon", "name": "윤재희", "shift": "afternoon", "draftLines": true,
+    "greetPref": "quiet", "category": "apparel", "color": "pink", "budget": 1000000,
+    "mentionsPrice": false, "occasionIsGift": true, "form": "humanoid",
+    "wants": "스카프", "cardNote": "스케치북 귀퉁이에 서윤의 이름이 있다",
+    "rules": [], "traits": {},
+    "sprite": { "hair": "ponytail", "hairColor": "hair", "skin": "skin-a", "outfit": "stone", "accent": "rose" },
+    "care": {
+      "likes": ["recommend"], "dislikes": [],
+      "occasionDay": 3, "occasionLabel": "클라이언트 촬영일",
+      "vipReveal": "서윤 씨 스케치북, 다음 장도 보여 드릴게요. 그림이 좀… 이상해요.",
+      "chat": { "reply": "네, 보고 있어요. 지금 촬영 준비 중이라 짧게만요.", "options": ["필요하신 게 있으면 말씀해 주세요.", "촬영 잘 마치세요."], "best": 1 }
+    },
+    "lines": {
+      "opening": "클라이언트 거라서요. 사진 보여 드릴게요, 여기에 맞는 걸로.",
+      "askCategory": "스카프요. 포인트로 쓸 거라서요.",
+      "askOccasion": "촬영 선물이에요. 분홍빛이 도는 걸로 찾고 있어요.",
+      "askBudget": "음, 백만 원 안쪽으로 맞춰 주세요.",
+      "observe": "들고 온 스케치북 귀퉁이에 서윤의 이름이 적혀 있다.",
+      "success": "서윤 씨가 이거 맡겨 뒀었어요. 당신 거라고.",
+      "fail": "클라이언트한테 다시 물어보고 올게요.",
+      "violation": {}
+    }
+  },
+  {
+    "id": "seojin", "name": "한서진", "shift": "afternoon", "draftLines": true,
+    "greetPref": "quiet", "category": "apparel", "color": "white", "budget": 6000000,
+    "mentionsPrice": false, "occasionIsGift": false, "form": "humanoid",
+    "wants": "코트", "cardNote": "눈이 계속 단발머리 마네킹 쪽을 향한다",
+    "rules": [], "traits": {},
+    "sprite": { "hair": "long", "hairColor": "ink", "skin": "skin-a", "outfit": "shadow", "accent": "ash" },
+    "care": {
+      "likes": [], "dislikes": [],
+      "occasionDay": 3, "occasionLabel": "서윤 실종 7일째",
+      "vipReveal": "언니가 마지막으로 보낸 문자예요. 캡처해 뒀어요. …읽어 보세요.",
+      "chat": { "reply": "문자 감사해요. 혹시 언니 소식 들은 거 있어요?", "options": ["아직 아는 게 없어요.", "알게 되면 바로 말씀드릴게요."], "best": 1 }
+    },
+    "lines": {
+      "opening": "…코트 보러 왔어요. 하얀 거요. 언니가 입던 거랑 같은 걸로.",
+      "askCategory": "코트요. 언니가 입던 거랑 같은 걸로요.",
+      "askOccasion": "그냥… 언니 생각이 나서요. 하얀 색이었어요.",
+      "askBudget": "육백까지는 괜찮아요.",
+      "observe": "표정이 없다. 눈이 계속 단발머리 마네킹 쪽을 향한다. 언니의 머리 모양이다.",
+      "success": "언니 여기서 일했어요. 한서윤. 그만둔 거 아니죠?",
+      "fail": "…오늘은 아닌 것 같아요. 다시 올게요.",
+      "violation": {}
+    }
+  },
+
+  {
+    "id": "cylinder", "name": "원통을 든 손님", "shift": "dawn", "draftLines": true, "motif": "먼 행성에서 온 균류 날개 종족",
+    "entranceNote": "천장에서 날개 접는 소리가 난다. 버섯 냄새가 난다.",
+    "greetPref": "quiet", "category": "bag", "color": "black", "budget": 9000000,
+    "mentionsPrice": false, "occasionIsGift": false, "form": "creature", "speaksVia": "speaker",
+    "wants": "원통이 들어가는 가방", "cardNote": "원통 라벨에 사람 이름이 적혀 있다",
+    "rules": [8], "traits": {},
+    "specialPayment": { "label": "별 사이 지도 한 장", "amount": 9000000 },
+    "sprite": { "kind": "creature", "draw": "drawCylinderBearer" },
+    "care": {
+      "likes": [], "dislikes": [],
+      "memo": "안부 묻지 말 것. 원통이 대답한다.",
+      "forbid": [
+        { "template": "dawn_checkin", "composure": -15, "note": "원통 속 사람의 긴 답장이 온다. 끝나지 않는다. 읽는 동안 날개 소리가 가까워진다." }
+      ],
+      "neglectEvent": "second_cylinder",
+      "vipReveal": "원통 속 사람이 서윤을 안다고 합니다."
+    },
+    "lines": {
+      "opening": "안녕하세요. 저는… 저도 예전엔 여기서 쇼핑했어요. 이분이 가방을 찾으세요. 원통이 들어가는 걸로.",
+      "askCategory": "가방이요. 이분 원통이 들어가는 걸로, 커다랗게요.",
+      "askOccasion": "용도요? 저를 넣으려고요. 저는 원래—",
+      "askBudget": "별 사이를 건너는 값은 충분히 있어요. 이분이 그렇게 말해요.",
+      "observe": "원통 옆면에 작은 라벨이 붙어 있다. 사람 이름이다. 읽기 전에 손님이 원통을 돌린다.",
+      "success": "고마워요. 이분은 저를 아주 아껴요.",
+      "successNote": "별 사이 지도 한 장을 받았다.",
+      "fail": "이분이 오늘은 그만 가자고 해요. 죄송해요.",
+      "violation": { "8": "스피커가 비명으로 끊긴다. 날개가 매장 전체를 덮는다." }
+    }
+  },
+  {
+    "id": "colour", "name": "바깥에서 온 색", "shift": "dawn", "draftLines": true, "motif": "우주에서 떨어진 이름 없는 색",
+    "entranceNote": "매장 안에 처음 보는 색이 떠 있다. 이름을 붙일 수가 없다.",
+    "greetPref": "quiet", "category": "bag", "color": null, "budget": null,
+    "mentionsPrice": false, "occasionIsGift": false, "form": "creature", "speaksVia": "none",
+    "wants": "빈 상자", "cardNote": "오래 볼수록 눈이 익숙해진다",
+    "rules": [10], "onlyProduct": "empty_box", "traits": {},
+    "sprite": { "kind": "creature", "draw": "drawOutsideColour" },
+    "care": { "likes": [], "dislikes": [], "unreachable": true, "memo": "(메모 칸이 그 색으로 얼룩져 읽을 수 없다)" },
+    "lines": {
+      "opening": "(색 띠가 느리게 출렁인다.)",
+      "askCategory": "(색 띠가 가방 진열대 쪽으로 기운다.)",
+      "askOccasion": "(색 띠가 형태 없이 번진다. 용도를 알 수 없다.)",
+      "askBudget": "(색 띠가 잠시 멈췄다가, 다시 출렁인다.)",
+      "observe": "오래 볼수록 눈이 그 색에 익숙해진다. 익숙해지면 안 될 것 같다.",
+      "success": "빈 상자가 그 색으로 가득 찬 채 사라진다. 매장의 로즈 하나가 영원히 회색이 된다.",
+      "fail": "색이 흩어진다. 진열장의 색이 조금 옅어져 있다.",
+      "violation": { "10": "고른 상품이 그 색으로 물든다. 주인공의 손끝도 조금 물든다." }
+    }
+  },
+  {
+    "id": "actor", "name": "노란 옷의 배우", "shift": "dawn", "draftLines": true, "motif": "노란 옷의 왕, 그 희곡",
+    "entranceNote": "매장 조명이 무대 조명처럼 그를 따라간다. 어디선가 박수 소리가 한 번 난다.",
+    "greetPref": "quiet", "category": "apparel", "color": "beige", "budget": 7000000,
+    "mentionsPrice": false, "occasionIsGift": false, "form": "humanoid", "speaksVia": "voice",
+    "wants": "무대 망토", "cardNote": "칭찬과 환대를 초대장으로 받아들인다",
+    "rules": [7], "traits": {},
+    "specialPayment": { "label": "끝나지 않는 희곡의 한 장", "amount": 7000000 },
+    "sprite": { "hair": "none", "hairColor": "paper", "skin": "paper", "outfit": "brass", "accent": "paper", "mask": "porcelain" },
+    "care": {
+      "likes": [], "dislikes": [],
+      "memo": "칭찬하지 말 것. 축하도 칭찬이다.",
+      "forbid": [
+        { "template": "dawn_occasion", "composure": -15, "note": "\"초대장을 받았습니다.\" 어디선가 박수 소리가 길게 이어진다." },
+        { "template": "dawn_checkin", "composure": -15, "note": "\"초대장을 받았습니다.\" 어디선가 박수 소리가 길게 이어진다." }
+      ],
+      "neglectEvent": "mannequin_costume",
+      "vipReveal": "희곡에 당신의 배역이 생겼어요. 아직 대사는 없지만."
+    },
+    "lines": {
+      "opening": "막이 올랐군요. 관객은 당신 하나뿐이고.",
+      "askCategory": "다음 막에 입을 망토를 찾고 있습니다. 무대에 어울리는 것으로.",
+      "askOccasion": "다음 막은 아주 길 겁니다. 바랜 금빛이 좋겠군요.",
+      "askBudget": "배우에게 값이란 박수로 치르는 것이지요. …장부에는 칠백으로 적어 두시죠.",
+      "observe": "가면에 눈구멍이 없다. 그런데 시선이 느껴진다.",
+      "success": "훌륭한 조연이었어요. 다음 장에서 또.",
+      "successNote": "끝나지 않는 희곡의 한 장을 받았다. 읽지 않는 게 좋겠다.",
+      "fail": "막이 내렸군요. 아쉽지만, 다음 막에서.",
+      "violation": { "7": "\"초대해 주시다니.\" 가면이 반쯤 열린다. 매장의 모든 마네킹이 박수를 친다." }
+    }
+  },
+  {
+    "id": "hound", "name": "모퉁이의 개", "shift": "dawn", "draftLines": true, "motif": "시간의 모서리에서 오는 사냥개",
+    "entranceNote": "벽 모서리에서 연기가 난다. 시계 초침 소리가 거꾸로 들린다.",
+    "greetPref": "direct", "category": "jewelry", "color": "white", "budget": 5500000,
+    "mentionsPrice": false, "occasionIsGift": false, "form": "creature", "speaksVia": "phone",
+    "wants": "회중시계", "cardNote": "기대 있는 벽 모서리가 둥글게 녹아 있다",
+    "rules": [11], "traits": {},
+    "specialPayment": { "label": "휘어진 1분", "amount": 5500000 },
+    "sprite": { "kind": "creature", "draw": "drawCornerHound" },
+    "care": {
+      "likes": [], "dislikes": [],
+      "memo": "날짜를 쓰지 말 것.",
+      "forbid": [
+        { "template": "dawn_occasion", "composure": -10, "note": "답장이 온다. \"어제였다. 어제였을 것이다.\" 날짜는 언제나 어제로 온다." }
+      ],
+      "neglectEvent": "corners_melt",
+      "vipReveal": "어제의 1분을 하나 더 드리겠다. 어제였다."
+    },
+    "lines": {
+      "opening": "냄새를 맡았다. 시간을 산다. 시간을 샀다.",
+      "askCategory": "시계. 돌아가는 것. 돌아갔던 것.",
+      "askOccasion": "어제가 모자라다. 어제를 더 갖고 싶었다.",
+      "askBudget": "값을 치렀다. 치를 것이다. 치르고 있다.",
+      "observe": "녀석이 기대 있는 벽 모서리가 둥글게 녹아 있다.",
+      "success": "샀다. 샀었다. 사게 될 것이다.",
+      "successNote": "휘어진 1분을 받았다. 손바닥 위에서 계속 59초다.",
+      "fail": "가지 않았다. 가지 않는다. 가지 않을 것이다.",
+      "violation": { "11": "상자의 여덟 모서리에서 동시에 연기가 피어오른다. 사방에서 혀가 나온다." }
+    }
+  },
+  {
+    "id": "door", "name": "문 밖의 손님", "shift": "dawn", "draftLines": true, "motif": "바다 밑에서 잠든 거대한 것의 일부",
+    "entranceNote": "출입문이 안쪽으로 휘어진다. 아주 먼 곳에서 무언가 잠결에 뒤척인다.",
+    "greetPref": "quiet", "category": "jewelry", "color": "black", "budget": 12000000,
+    "mentionsPrice": false, "occasionIsGift": false, "form": "creature", "speaksVia": "tapping",
+    "wants": "초커", "cardNote": "촉수 끝의 흡반마다 작은 눈이 있다",
+    "rules": [9], "traits": {},
+    "specialPayment": { "label": "해저 도시의 돌 조각", "amount": 12000000 },
+    "sprite": { "kind": "creature", "draw": "drawDoorTentacle" },
+    "care": {
+      "likes": [], "dislikes": [],
+      "memo": "연락하지 말 것. 연락할수록 가까워진다.",
+      "noContact": true,
+      "forbid": [
+        { "template": "any", "composure": -10, "earlierSlots": 1, "note": "문이 안쪽으로 한 뼘 더 휘어진다. 다음 밤은 더 일찍 올 것이다." }
+      ]
+    },
+    "lines": {
+      "opening": "(똑. 똑똑.) …들. 어. 가. 도. 되. 나.",
+      "askCategory": "(똑.) 목. 에. 두. 르. 는. 것.",
+      "askOccasion": "(똑똑.) 오. 래. 기. 다. 렸. 다.",
+      "askBudget": "(똑.) 값. 은. 바. 다. 가. 안. 다.",
+      "observe": "촉수 끝의 흡반 하나하나에 작은 눈이 있다. 전부 주인공을 본다.",
+      "success": "(똑.) 꿈. 에. 서. 보. 자.",
+      "successNote": "해저 도시의 돌 조각이 문틈으로 밀려 들어온다. 젖어 있고 따뜻하다.",
+      "fail": "(똑. 똑. 똑.) 기. 다. 리. 겠. 다.",
+      "violation": { "9": "출입문 경첩이 하나 떨어진다. 유리에 거대한 눈동자가 가득 찬다." }
+    }
+  }
+]

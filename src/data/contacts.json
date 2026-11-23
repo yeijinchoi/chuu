@@ -1,0 +1,38 @@
+[
+  {
+    "id": "kang", "name": "강도윤", "book": "afternoon",
+    "memo": "신상 나오면 무조건 연락. 바쁨.",
+    "customerId": "kang", "prefers": "new_arrival", "dislikes": "greeting",
+    "replies": { "prefer": "오 신상? 세 시 반쯤 갈게요.", "neutral": "네 이따 들를게요.", "dislike": "아 네… 바빠서요." }
+  },
+  {
+    "id": "jin", "name": "진영숙 (진 마담)", "book": "afternoon",
+    "memo": "VVIP. 말 많은 거 싫어하심.",
+    "customerId": "jin", "prefers": "private", "dislikes": "new_arrival",
+    "replies": { "prefer": "다섯 시 반. 조용히 보고 싶네요.", "neutral": "시간 되면 들를게요.", "dislike": "단체 문자는 사양할게요." }
+  },
+  {
+    "id": "oh", "name": "오미란", "book": "afternoon",
+    "memo": "주말에만 오심.",
+    "customerId": null, "prefers": null, "dislikes": null,
+    "replies": { "any": "어머 이번 주는 어렵겠어요 ㅠ 주말에 꼭 갈게요!" }
+  },
+  {
+    "id": "marsh", "name": "마시 씨", "book": "dawn", "address": "항구 17번지, 물 아래",
+    "memo": "진주 좋아함. 눈 보지 말 것.",
+    "customerId": "marsh", "prefers": "dawn_offer", "dislikes": "dawn_name",
+    "replies": { "prefer": "진주. 진주. 두 시 이십이 분에 올라가겠습니다.", "neutral": "올라가겠습니다.", "dislike": "이름을 함부로 부르지 마십시오." }
+  },
+  {
+    "id": "baek", "name": "백설", "book": "dawn", "address": "북쪽, 바람 위",
+    "memo": "답장 빠름. 늘 고맙다고 함.", "memoStruck": "연락하지 말 것",
+    "customerId": "baek", "prefers": "dawn_name", "dislikes": null, "comesUninvited": true,
+    "replies": { "prefer": "문자 고마워요. 늘 고마워요. 세 시 삼십삼 분에 갈게요.", "neutral": "고마워요. 갈게요." }
+  },
+  {
+    "id": "zero", "name": "(빈칸)", "book": "dawn", "address": "(빈칸)",
+    "memo": "(메모 없음)",
+    "customerId": null, "prefers": null, "dislikes": null, "composureOnSend": -5,
+    "replies": { "any": "서윤이는 거기 없어요." }
+  }
+]

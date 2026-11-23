@@ -5,5 +5,81 @@
   },
   "stage": {
     "label": "클로징 타임 무대"
+  },
+  "unknown": "아직 몰라요",
+  "defaultPlayerName": "신입",
+  "briefing": {
+    "speaker": "마담 로즈",
+    "afternoon": {
+      "title": "메종 뤼미에르 접객 매너",
+      "lines": [
+        "1. 손님의 첫마디를 잘 들으세요. 인사는 손님에게 맞추는 겁니다.",
+        "2. 가격은 손님이 먼저 물을 때까지 꺼내지 않습니다. 품위의 문제예요.",
+        "3. 선물이라면 포장까지가 판매입니다.",
+        "— 로즈"
+      ]
+    },
+    "dawn": {
+      "title": "메종 뤼미에르 새벽 근무 수칙",
+      "intro": "새벽 교대가 있다는 걸 말 안 했던가요? 서윤이가 하던 일이에요. 어렵지 않아요. 아래만 지키면 됩니다.",
+      "outro": "— 로즈"
+    }
+  },
+  "choices": {
+    "greet": { "warm": "밝게 인사한다", "quiet": "정중히 목례한다", "direct": "바로 상품을 소개한다" },
+    "probe": {
+      "askCategory": "\"찾으시는 품목이 있으세요?\"",
+      "askOccasion": "\"어떤 자리에서 쓰실 건가요?\"",
+      "askBudget": "\"생각하신 예산이 있으세요?\"",
+      "observe": "가만히 관찰한다"
+    },
+    "close": { "tryOn": "시착을 권한다", "boxRed": "빨간 상자에 포장한다", "boxGold": "금색 상자에 포장한다", "checkout": "바로 결제를 안내한다" },
+    "regularOffer": { "accept": "단골 등록을 권한다", "decline": "그냥 보내 드린다" },
+    "probeUsed": "이미 물어봤어요",
+    "closingReply": { "reply": "답장하기", "ignore": "무시하기" },
+    "placeRedBox": "문 앞에 빨간 상자를 둔다"
+  },
+  "stage_labels": { "greet": "인사", "probe": "니즈 파악", "propose": "제안", "close": "클로징" },
+  "manner": {
+    "default": "가격은 손님이 먼저 물을 때까지 꺼내지 않습니다. 품위의 문제예요.",
+    "note": "점장 쪽지: 손님이 묻기 전에 가격을 꺼냈습니다."
+  },
+  "violation": {
+    "default": "…규칙을 어겼다. 매장의 공기가 뒤집힌다."
+  },
+  "composure": { "tabooDefault": "무언가 어긋났다. 등 뒤가 서늘하다." },
+  "text": {
+    "sendFailed": "보낼 수 없어요.",
+    "noReply": "답장이 오지 않는다.",
+    "uninvitedNote": "초대받지 않은 방문이다.",
+    "redBoxPlaced": "문 앞에 빨간 상자를 두고 나왔다."
+  },
+  "closingText": {
+    "from": "나",
+    "incoming": ["아직 매장이야?", "나 지금 문 앞이야.", "열어줘."],
+    "ignored": ["……", "……", "……", "내일 봐."],
+    "replied": ["고마워. 이제 내 자리 돌려줘."]
+  },
+  "badEnding": {
+    "line": "마감 시간입니다.",
+    "note": "진열장에 주인공 모습의 마네킹이 놓인다."
+  },
+  "tier": { "new": "신규", "regular": "단골", "vip": "VIP", "lifetime": "평생 고객", "lost": "이탈" },
+  "results": {
+    "gradeComment": {
+      "S": "서윤이 자리가 아깝지 않네요. 그분도 기뻐하실 거예요.",
+      "A": "내일도 이렇게만.",
+      "B": "첫날이니까요.",
+      "C": "수칙을 다시 읽어 보세요. 천천히."
+    },
+    "teaser": "2일차 — 오미란 고객이 주말에 옵니다. 검은 수첩의 다음 장이 넘어갑니다. 그리고 찢긴 수칙 6번."
+  },
+  "save": { "ok": "저장했어요", "fail": "저장하지 못했어요" },
+  "speaksVia": {
+    "voice": "",
+    "tapping": "유리를 두드림",
+    "phone": "업무폰 문자",
+    "speaker": "원통의 음성",
+    "none": "색 띠"
   }
 }

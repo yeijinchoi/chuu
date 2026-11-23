@@ -1,0 +1,13 @@
+[
+  { "id": 1, "day": 1, "text": "손에 서리가 맺힌 손님에게는 시착을 권하지 마세요.", "stage": "close", "forbid": ["tryOn"] },
+  { "id": 2, "day": 1, "text": "손님이 먼저 묻기 전에는 가격 이야기를 꺼내지 마세요.", "stage": "probe", "forbid": ["askBudget"], "universal": true, "unlessMentionsPrice": true },
+  { "id": 3, "day": 1, "text": "새벽 4시 44분에 오는 문자에는 답장하지 마세요.", "stage": "event" },
+  { "id": 4, "day": 1, "text": "\"아무거나\"라고 말하는 손님에게는 반드시 빨간 상자에 담아 드리세요.", "stage": "close", "require": "boxRed" },
+  { "id": 5, "day": 1, "text": "소금 냄새가 나는 손님의 눈을 오래 바라보지 마세요.", "stage": "probe", "forbid": ["observe"] },
+  { "id": 6, "day": 1, "text": "서윤이가 돌아오면 ━━━━", "stage": "event" },
+  { "id": 7, "day": 2, "text": "노란 옷을 입은 손님에게는 밝게 인사하지 마세요. 환대는 초대가 됩니다.", "stage": "greet", "forbid": ["warm"] },
+  { "id": 8, "day": 2, "text": "원통을 든 손님에게 용도를 묻지 마세요. 원통 속 사람이 대답하게 됩니다.", "stage": "probe", "forbid": ["askOccasion"] },
+  { "id": 9, "day": 3, "text": "문 밖의 손님에게는 가격을 먼저 물어 주세요. 오래 기다리게 하면 들어오려 합니다.", "stage": "probe", "require": "askBudget", "exempts": [2] },
+  { "id": 10, "day": 3, "text": "이름 붙일 수 없는 색이 들어오면 빈 상자만 파세요.", "stage": "propose", "require": "empty_box" },
+  { "id": 11, "day": 2, "text": "모퉁이에서 나온 손님에게는 포장을 하지 마세요. 상자에는 모서리가 있습니다.", "stage": "close", "forbid": ["boxRed", "boxGold"] }
+]
