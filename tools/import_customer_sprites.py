@@ -73,6 +73,7 @@ SHEET_IDS = {
     'b': ['cha', 'park', 'yoon', 'seojin'],
     'c': ['marsh', 'faceless', 'baek', 'actor'],
 }
+GLASSES = {'cha', 'yoon'}  # 안경테를 지우지 않도록 테 안쪽 타원만 메운다
 NO_BLINK = {'marsh', 'faceless', 'actor'}  # 마시: 눈꺼풀이 없다. 얼굴 없는 여자·가면 배우: 눈이 안 보인다
 
 
@@ -273,14 +274,58 @@ def process_sheet(key, ids, manifest):
                     sc = abs(cy(A) - cy(B)) - 0.05 * (len(A) + len(B))
                     if score is None or sc < score: best, score = [A, B], sc
             eyes = best
+            # 기본 이미지 위에 감은 눈을 직접 그린다(눈 감은 시트의 픽셀은 쓰지 않는다 → 얼룩 없음).
+            # 눈 감은 시트는 "눈이 어디 있는지" 찾는 데만 쓴다.
+            # 1) 뜬 눈 픽셀(피부가 아닌 픽셀)은 그 얼굴의 피부색으로 메우고
+            # 2) 눈 아래쪽 1/3 높이에 2px 두께의 아래로 볼록한 눈꺼풀 선(︶)을 그린다.
+            SKIN = {'skin-a', 'skin-b', 'skin-c'}
             for b in eyes:
-                ex0 = min(x for x, _ in b) - 1; ex1 = max(x for x, _ in b) + 2
-                ey0 = min(y for _, y in b) - 1; ey1 = max(y for _, y in b) + 2
+                ex0 = min(x for x, _ in b); ex1 = max(x for x, _ in b) + 1
+                ey0 = min(y for _, y in b); ey1 = max(y for _, y in b) + 1
+                skin_counts, dark = {}, None
+                for y in range(ey0 - 4, ey1 + 4):
+                    for x in range(ex0 - 4, ex1 + 4):
+                        k = keys.get((x, y))
+                        if k in SKIN: skin_counts[k] = skin_counts.get(k, 0) + 1
+                for (x, y) in b:
+                    k = keys.get((x, y))
+                    if k and k not in SKIN and (dark is None or L[k][0] < L[dark][0]): dark = k
+                if not skin_counts or dark is None: continue
+                skin = max(skin_counts, key=skin_counts.get)
+                # 눈동자(가장 어두운 픽셀들) 주변으로 범위를 좁힌다 → 안경테·눈썹은 남는다
+                minl = min(L[keys[p]][0] for p in b if p in keys)
+                core = [p for p in b if p in keys and L[keys[p]][0] <= minl + 22]
+                ex0 = max(ex0, min(x for x, _ in core) - 2); ex1 = min(ex1, max(x for x, _ in core) + 3)
+                ey0 = max(ey0, min(y for _, y in core) - 2); ey1 = min(ey1, max(y for _, y in core) + 3)
+                # 선 색: 피부보다 확실히 어두운 색(없으면 ink)
+                if L[dark][0] > L[skin][0] - 35: dark = 'ink'
+                patch = {}
+                # 눈 모양 타원 안만 메운다(네모로 메우면 앞머리가 지워진다). 안경은 테 안쪽까지만.
+                shrink = 2.5 if cid in GLASSES else 0.5
+                gcx, gcy = (ex0 + ex1 - 1) / 2, (ey0 + ey1 - 1) / 2
+                grx, gry = max(1, (ex1 - ex0) / 2 - shrink), max(1, (ey1 - ey0) / 2 - shrink)
+                inside = lambda x, y, gcx=gcx, gcy=gcy, grx=grx, gry=gry: ((x - gcx) / grx) ** 2 + ((y - gcy) / gry) ** 2 <= 1
                 for y in range(ey0, ey1):
                     for x in range(ex0, ex1):
-                        if (x, y) in keys and (x, y) in ckeys:
-                            bp[x - bx0, y - by0] = cols[ckeys[(x, y)]] + (255,)
-                            blink_px += 1
+                        if (x, y) in keys and keys[(x, y)] not in SKIN and inside(x, y) and ((x, y) in b or cid not in GLASSES):
+                            patch[(x, y)] = skin
+                # 눈 안쪽(피부 아닌 픽셀)의 빈틈까지 메운다
+                for y in range(ey0, ey1):
+                    row = [x for x in range(ex0, ex1) if (x, y) in patch]
+                    if row:
+                        for x in range(min(row), max(row) + 1):
+                            if keys.get((x, y)) not in SKIN and inside(x, y): patch[(x, y)] = skin
+                ew = ex1 - ex0; cx = (ex0 + ex1 - 1) / 2
+                base_y = ey0 + round((ey1 - ey0) * 0.55)
+                for x in range(ex0, ex1):
+                    t = (x - cx) / max(1, ew / 2)
+                    yy = base_y + round(2 * (1 - t * t))
+                    for dy in (0, 1):
+                        if (x, yy + dy) in keys: patch[(x, yy + dy)] = dark
+                for (x, y), k in patch.items():
+                    if (x, y) in keys and k != keys[(x, y)]:
+                        bp[x - bx0, y - by0] = cols[k] + (255,)
+                        blink_px += 1
         sprite.save(os.path.join(OUT, f'{cid}.png'))
         entry = {'x': CUSTOMER_X - sw // 2, 'y': COUNTER_Y + 2 - sh, 'w': sw, 'h': sh,
                  'breathSplit': sh - HANDS_ROWS, 'blink': False}
