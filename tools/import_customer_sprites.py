@@ -61,10 +61,12 @@ def convert(rgb, mask, x0, x1, selout=True):
 
 SHEETS = os.path.join(ROOT, 'docs/concept/sheets')
 OUT = os.path.join(ROOT, 'public/art/customers')
-SCALE = 0.15          # 시트 1344px → 약 200px. 머리~허리가 장면에서 약 80px
-COUNTER_Y = 132
-CUSTOMER_X = 160
-HANDS_ROWS = 10       # 아래 10줄(카운터 위 손)은 숨쉴 때 움직이지 않는다
+# 손님은 장면(320×180)의 2배 촘촘한 화면 해상도(640×360)로 그린다. 장면 해상도로 줄이면 눈·코·입이 1~2도트가 되어 사라진다.
+DENSITY = 2
+SCALE = 0.15 * DENSITY  # 시트 1344px → 약 400px. 머리~허리가 화면에서 약 160px(장면 기준 80px)
+COUNTER_Y = 132 * DENSITY
+CUSTOMER_X = 160 * DENSITY
+HANDS_ROWS = 10 * DENSITY  # 카운터 위 손은 숨쉴 때 움직이지 않는다
 SHEET_IDS = {
     'a': ['hanyeoreum', 'kang', 'jin', 'oh'],
     'b': ['cha', 'park', 'yoon', 'seojin'],
@@ -101,7 +103,7 @@ def components(mask, w, h, x0, x1):
     return comps
 
 
-def fill_holes(keep, w, h):
+def fill_holes(keep, w, h, max_hole=120):
     outside = set()
     q = deque()
     for x in range(w):
@@ -115,7 +117,59 @@ def fill_holes(keep, w, h):
         for nx, ny in ((cx + 1, cy), (cx - 1, cy), (cx, cy + 1), (cx, cy - 1)):
             if 0 <= nx < w and 0 <= ny < h and (nx, ny) not in keep and (nx, ny) not in outside:
                 outside.add((nx, ny)); q.append((nx, ny))
-    return {(x, y) for y in range(h) for x in range(w) if (x, y) not in outside}
+    # 바깥과 이어지지 않은 빈칸 중 작은 것(옷 사이 틈 등)만 채운다. 큰 빈칸은 배경이 맞다.
+    holes = {(x, y) for y in range(h) for x in range(w) if (x, y) not in outside and (x, y) not in keep}
+    filled = set(keep)
+    seen = set()
+    for p in holes:
+        if p in seen: continue
+        q = deque([p]); seen.add(p); comp = [p]
+        while q:
+            cx, cy = q.popleft()
+            for n in ((cx + 1, cy), (cx - 1, cy), (cx, cy + 1), (cx, cy - 1)):
+                if n in holes and n not in seen: seen.add(n); q.append(n); comp.append(n)
+        if len(comp) <= max_hole: filled.update(comp)
+    return filled
+
+
+def despeckle(keys, passes=2):
+    """4방향 이웃 중 3개 이상이 같은 키인데 자기만 다르면 그 키로 바꾼다."""
+    for _ in range(passes):
+        nxt = dict(keys)
+        for (x, y), k in keys.items():
+            nb = [keys.get((x + dx, y + dy)) for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1))]
+            nb = [n for n in nb if n]
+            if nb:
+                top = max(set(nb), key=nb.count)
+                if top != k and nb.count(top) >= 3:
+                    nxt[(x, y)] = top
+        keys = nxt
+    return keys
+
+
+def convert_limited(img, mask, x0, x1, allowed=None, max_keys=12):
+    """팔레트 매핑 후, 캐릭터에서 많이 쓰인 키 max_keys개만 남겨 다시 매핑한다(드문 색 얼룩 제거).
+    눈 감은 프레임은 열린 프레임의 키 집합(allowed)을 그대로 써서 색이 어긋나지 않게 한다."""
+    w, h = img.size
+    ip = img.load()
+    raw = {(x, y): nearest(ip[x, y]) for y in range(h) for x in range(x0, x1) if mask[y][x]}
+    if allowed is None:
+        counts = {}
+        for k in raw.values(): counts[k] = counts.get(k, 0) + 1
+        allowed = sorted(counts, key=counts.get, reverse=True)[:max_keys]
+    keys = {}
+    for (x, y), k in raw.items():
+        if k in allowed:
+            keys[(x, y)] = k
+        else:
+            lc = lab(ip[x, y])
+            keys[(x, y)] = min(allowed, key=lambda a: sum((lc[i] - L[a][i]) ** 2 for i in range(3)))
+    keys = despeckle(keys)
+    out = {}
+    for (x, y), k in keys.items():
+        edge = any((x + dx, y + dy) not in keys for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)))
+        out[(x, y)] = DARK[k] if edge else k
+    return out, allowed
 
 
 def process_sheet(key, ids, manifest):
@@ -128,7 +182,9 @@ def process_sheet(key, ids, manifest):
     alpha_path = os.path.join(SHEETS, f'sheet-{key}-alpha.png')
     if os.path.exists(alpha_path):
         ap = Image.open(alpha_path).convert('L').resize(size, Image.BOX).load()
-        mask = [[ap[x, y] >= 128 for x in range(w)] for y in range(h)]
+        color_mask = mask_of(small, bg_color(small), tol=18)
+                # 알파가 확실하면 캐릭터. 애매한 가장자리(96~230)는 시트 배경색과 달라야 캐릭터로 본다
+        mask = [[ap[x, y] > 230 or (ap[x, y] >= 96 and color_mask[y][x]) for x in range(w)] for y in range(h)]
     else:
         mask = mask_of(small, bg_color(small))
     col = w / len(ids)
@@ -138,8 +194,8 @@ def process_sheet(key, ids, manifest):
         keep = {p for c in comps if len(c) >= 0.2 * len(comps[0]) for p in c}
         keep = fill_holes(keep, w, h)
         cmask = [[(x, y) in keep for x in range(w)] for y in range(h)]
-        keys = convert(small, cmask, x0, x1)
-        ckeys = convert(small_closed, cmask, x0, x1) if small_closed and cid not in NO_BLINK else None
+        keys, allowed = convert_limited(small, cmask, x0, x1)
+        ckeys = convert_limited(small_closed, cmask, x0, x1, allowed)[0] if small_closed and cid not in NO_BLINK else None
         xs = [x for x, _ in keys]; ys = [y for _, y in keys]
         bx0, by0, bx1, by1 = min(xs), min(ys), max(xs) + 1, max(ys) + 1
         sw, sh = bx1 - bx0, by1 - by0

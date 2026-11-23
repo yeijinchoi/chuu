@@ -3,8 +3,9 @@ import { prefersReducedMotion } from '../render/effects';
 
 export const STAGE_W = 640;
 export const STAGE_H = 360;
-export const CANVAS_W = 320;
-export const CANVAS_H = 180;
+/** 화면 캔버스는 무대와 같은 640×360. 장면(320×180)은 2배로 그리고, 손님 스프라이트는 이 해상도로 그린다. */
+export const CANVAS_W = 640;
+export const CANVAS_H = 360;
 
 /** 정수배 맞춤. 창이 무대보다 작으면 비율 유지 소수 배율. */
 export function computeScale(vw: number, vh: number): number {

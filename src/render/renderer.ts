@@ -147,14 +147,17 @@ export class Renderer {
     const b = this.bctx;
     b.drawImage(this.bakedCanvas('back', lut, sig), 0, 0);
     b.drawImage(this.midCv, 0, 0);
-    const sp = this.imageSprite();
-    if (sp && this.customer) this.drawImageSprite(b, sp, this.customer.id);
     if (this.customer?.sprite.draw === 'drawOutsideColour') drawOutsideColour(b, this.t, this.reduced);
-    b.drawImage(this.bakedCanvas('front', lut, sig), 0, 0);
-    b.drawImage(this.topCv, 0, 0);
     if (this.scan) scanlines(b, W, H);
+    // 화면 캔버스는 장면의 2배(640×360). 장면은 2배로 키워 깔고,
+    // 사람 모습 손님은 2배 촘촘한 도트로 그 위에 그린 뒤 카운터(앞 레이어)를 덮는다.
+    const k = target.canvas.width / W;
     target.imageSmoothingEnabled = false;
-    target.drawImage(this.buffer, 0, 0);
+    target.drawImage(this.buffer, 0, 0, W * k, H * k);
+    const sp = this.imageSprite();
+    if (sp && this.customer) this.drawImageSprite(target, sp, this.customer.id);
+    target.drawImage(this.bakedCanvas('front', lut, sig), 0, 0, W * k, H * k);
+    target.drawImage(this.topCv, 0, 0, W * k, H * k);
   }
 
   start(target: CanvasRenderingContext2D): void {
