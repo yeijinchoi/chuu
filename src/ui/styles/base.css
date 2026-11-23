@@ -89,21 +89,13 @@ canvas {
   position: absolute;
   left: 50%;
   top: 50%;
-  width: 640px;
-  height: 360px;
+  width: 960px;
+  height: 540px;
   flex: none;
   overflow: hidden;
   background: var(--color-bg);
   transform: translate(-50%, -50%);
   transform-origin: center center;
-}
-.stage__canvas {
-  position: absolute;
-  left: 0;
-  top: 0;
-  width: 640px;
-  height: 360px;
-  z-index: var(--z-scene);
 }
 
 /* 디버그 뷰 (F1~F4) */

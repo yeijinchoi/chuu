@@ -1,9 +1,12 @@
 import './ui/styles/fonts.css';
 import './ui/styles/tokens.css';
 import './ui/styles/base.css';
+import './ui/styles/ui.css';
 import strings from './data/strings.ko.json';
 import { createStage, mountScene } from './ui/stage';
 import { mountDebug } from './ui/debug';
+import { startApp } from './ui/app';
+import { prefersReducedMotion } from './render/effects';
 import { loadCustomerSprites } from './render/sprites';
 
 const FONT_TIMEOUT_MS = 4000;
@@ -70,7 +73,9 @@ async function boot(): Promise<void> {
   const renderer = mountScene(stage);
   loading.remove();
   app.appendChild(stage.root);
-  mountDebug(stage.root, renderer);
+  const debug = new URLSearchParams(location.search).get('debug') === '1';
+  if (debug) mountDebug(stage.root, renderer);
+  else startApp(stage, renderer, { debug: new URLSearchParams(location.search).get('test') === '1', reduced: prefersReducedMotion() });
   void loadCustomerSprites().then((sp) => renderer.setSprites(sp));
 
   if (!ok) {

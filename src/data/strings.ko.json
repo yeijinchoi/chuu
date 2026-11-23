@@ -4,7 +4,7 @@
     "fontFail": "도트 글꼴을 불러오지 못했어요"
   },
   "stage": {
-    "label": "클로징 타임 무대"
+    "label": "방문 일정을 말씀해 주세요 무대"
   },
   "unknown": "아직 몰라요",
   "defaultPlayerName": "신입",
@@ -217,7 +217,7 @@
     }
   },
   "title": {
-    "logo": "클로징 타임",
+    "logo": "방문 일정을 말씀해 주세요",
     "sub": "메종 뤼미에르",
     "start": "출근하기",
     "resume": "이어하기",
@@ -226,7 +226,11 @@
     "nameLabel": "명찰",
     "confirm": "확인",
     "keyEnter": "Enter",
-    "keyC": "C"
+    "keyC": "C",
+    "logoLines": [
+      "방문 일정을",
+      "말씀해 주세요"
+    ]
   },
   "frame": {
     "signboard": "MAISON LUMIÈRE"
@@ -256,7 +260,13 @@
       "black": "블랙",
       "white": "화이트"
     },
-    "colorNone": "색 없음"
+    "colorNone": "색 없음",
+    "title": "진열",
+    "proposeLabel": "제안",
+    "shift": {
+      "afternoon": "오후",
+      "dawn": "새벽"
+    }
   },
   "phone": {
     "tabs": {
@@ -311,7 +321,8 @@
     "rulesDawnLocked": "새벽 수칙은 휴게 시간 뒤에 열려요.",
     "ledger": "장부",
     "closingHint": "4시 44분의 문자",
-    "placeRedBox": "문 앞에 빨간 상자 두기"
+    "placeRedBox": "문 앞에 빨간 상자 두기",
+    "signboard": "업무폰"
   },
   "categories": {
     "bag": "가방",
