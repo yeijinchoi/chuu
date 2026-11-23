@@ -77,6 +77,10 @@ export class Renderer {
     // 카운터 위 손(아래쪽)은 고정, 그 위 상체만 숨쉰다
     b.drawImage(body, 0, sp.breathSplit, sp.w, sp.h - sp.breathSplit, sp.x, sp.y + sp.breathSplit, sp.w, sp.h - sp.breathSplit);
     b.drawImage(body, 0, 0, sp.w, sp.breathSplit, sp.x, sp.y + breath, sp.w, sp.breathSplit);
+    // 상체가 올라가면 손과의 사이에 생기는 빈 줄을, 상체 맨 아래 줄을 늘여 메운다
+    for (let gap = breath; gap < 0; gap++) {
+      b.drawImage(body, 0, sp.breathSplit - 1, sp.w, 1, sp.x, sp.y + sp.breathSplit + gap, sp.w, 1);
+    }
     if (blink && sp.blinkImg) {
       b.drawImage(spriteFor(id, sp, this.mood, true), 0, 0, sp.w, sp.breathSplit, sp.x, sp.y + breath, sp.w, sp.breathSplit);
     }
