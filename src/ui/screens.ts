@@ -19,7 +19,7 @@ function mount(host: HTMLElement, root: HTMLElement): Overlay {
  * → 「방문 일정을 말씀해 주세요.」 말풍선 → 메뉴. Space·Enter·클릭은 끝 상태로 건너뛴다.
  * 움직임을 줄이면 처음부터 끝 상태다.
  */
-export function titleScreen(host: HTMLElement, o: { canResume: boolean; corrupt: boolean; onStart: () => void; onResume: () => void }): Overlay {
+export function titleScreen(host: HTMLElement, o: { canResume: boolean; corrupt: boolean; trophies?: string[]; onStart: () => void; onResume: () => void }): Overlay {
   const root = el('div', 'screen screen--title');
   const frame = el('div', 'title__frame');
   const art = el('div', 'title__art');
@@ -53,6 +53,12 @@ export function titleScreen(host: HTMLElement, o: { canResume: boolean; corrupt:
     menu.append(c);
   }
   if (o.corrupt) menu.append(el('div', 'title__warn', t('title.corrupt')));
+  if (o.trophies && o.trophies.length > 0) {
+    const row = el('div', 'trophies trophies--title');
+    row.append(el('span', 'trophies__h', t('title.trophies')));
+    for (const id of ['display', 'resign', 'regulars']) row.append(el('span', `trophy${o.trophies.includes(id) ? ' trophy--on' : ''}`, o.trophies.includes(id) ? t(`ending.${id}.title`) : '？'));
+    menu.append(row);
+  }
   frame.append(art, typing, msg, menu);
   root.append(h, frame);
   host.appendChild(root);
@@ -148,7 +154,7 @@ export function noteScreen(host: HTMLElement, o: { lines: string[]; dawn: boolea
 }
 
 /** S14 정산서(결재 서류). 왼쪽 오후, 오른쪽 새벽, 아래 단골·평정심, 등급 도장 */
-export function resultsScreen(host: HTMLElement, o: { result: DayResult; data: GameData; saved: boolean | null; clock: string; onRestart: () => void }): Overlay {
+export function resultsScreen(host: HTMLElement, o: { result: DayResult; data: GameData; day: number; saved: boolean | null; clock: string; onNext: () => void; onRestart: () => void }): Overlay {
   const r = o.result;
   const root = el('div', 'screen screen--results');
   const sheet = el('div', 'panel ledger');
@@ -182,17 +188,25 @@ export function resultsScreen(host: HTMLElement, o: { result: DayResult; data: G
   stamp.setAttribute('role', 'img');
   stamp.setAttribute('aria-label', `${t('results.grade')} ${r.grade}`);
   const comment = el('p', 'ledger__comment', r.comment);
-  const teaser = el('p', 'ledger__teaser', t('results.teaser'));
+  const teaser = el('p', 'ledger__teaser', t(`results.teasers.${o.day}`));
   const thought = el('p', 'ledger__thought', `(${t('thoughts.results')})`);
   const save = el('div', `ledger__save${o.saved === false ? ' ledger__save--fail' : ''}`,
     o.saved === null ? '' : o.saved ? t('toast.saved', { clock: o.clock }) : t('toast.saveFail'));
+  const next = button('btn', '', o.onNext);
+  next.append(el('span', 'btn__key', `[${t('title.keyEnter')}]`), document.createTextNode(` ${t('results.nextDay', { n: o.day + 1 })}`));
   const restart = button('btn', '', o.onRestart);
-  restart.append(el('span', 'btn__key', `[${t('title.keyEnter')}]`), document.createTextNode(` ${t('results.restart')}`));
-  sheet.append(cols, foot, comment, teaser, thought, save, restart, stamp);
+  restart.append(el('span', 'btn__key', '[R]'), document.createTextNode(` ${t('results.restart')}`));
+  const menu = el('div', 'title__menu');
+  menu.append(next, restart);
+  sheet.append(cols, foot, comment, teaser, thought, save, menu, stamp);
   root.append(sheet);
   const ov = mount(host, root);
-  restart.focus();
-  ov.key = (e) => { if (e.key === 'Enter') { e.preventDefault(); o.onRestart(); return true; } return false; };
+  next.focus();
+  ov.key = (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); o.onNext(); return true; }
+    if (e.key === 'r' || e.key === 'R') { o.onRestart(); return true; }
+    return false;
+  };
   return ov;
 }
 
@@ -217,5 +231,26 @@ export function endingScreen(host: HTMLElement, o: { onRestart: () => void; onLo
     if ((e.key === 'c' || e.key === 'C') && o.onLoad) { o.onLoad(); return true; }
     return false;
   };
+  return ov;
+}
+
+/** 3일차 엔딩: 진열 · 퇴사 · 단골의 값. 도장(본 엔딩)과 처음부터 버튼 */
+export function finalEndingScreen(host: HTMLElement, o: { ending: 'display' | 'resign' | 'regulars'; trophies: string[]; onRestart: () => void }): Overlay {
+  const root = el('div', `screen screen--ending screen--final screen--final-${o.ending}`);
+  root.append(el('h2', 'ending__title', t(`ending.${o.ending}.title`)), el('p', 'ending__text', t(`ending.${o.ending}.final`)));
+  const stamps = el('div', 'trophies');
+  stamps.setAttribute('aria-label', t('ending.trophies'));
+  for (const id of ['display', 'resign', 'regulars']) {
+    const have = o.trophies.includes(id);
+    stamps.append(el('span', `trophy${have ? ' trophy--on' : ''}${id === o.ending ? ' trophy--now' : ''}`, have ? t(`ending.${id}.title`) : '？'));
+  }
+  const menu = el('div', 'title__menu');
+  const a = button('btn', '', o.onRestart);
+  a.append(el('span', 'btn__key', `[${t('title.keyEnter')}]`), document.createTextNode(` ${t('ending.again')}`));
+  menu.append(a);
+  root.append(stamps, menu);
+  const ov = mount(host, root);
+  a.focus();
+  ov.key = (e) => { if (e.key === 'Enter') { e.preventDefault(); o.onRestart(); return true; } return false; };
   return ov;
 }

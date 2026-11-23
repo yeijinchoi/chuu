@@ -59,6 +59,7 @@ const EXTRA: Record<string, Extra> = {
   faceless: { style: 'coat', hairLen: 98 },
   baek: { mood: 'flat', style: 'coat', hairLen: 92 },
   actor: { style: 'cloak', taller: 5 },
+  seoyun: { mood: 'flat', style: 'suit', hair: 'bob' },
 };
 
 // ───────────────────────── 머리카락
@@ -433,7 +434,7 @@ export function drawHuman(id: string, p: SpriteParams, anim: Anim): HumanOut {
   const style = e.hair ?? p.hair ?? 'short';
   const len = e.hairLen ?? 74;
   const accent = (p.accent ?? 'ash') as K;
-  const blink = !anim.reduced && Math.floor(anim.t * 10) % 40 === 0 && id !== 'marsh';
+  const blink = id === 'seoyun' || (!anim.reduced && Math.floor(anim.t * 10) % 40 === 0 && id !== 'marsh'); // 서윤은 눈을 감고 있다
   const isMarsh = id === 'marsh';
 
   const up = e.taller ?? 0; // 배우는 더 크다: 머리를 위로 올린다

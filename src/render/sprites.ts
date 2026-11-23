@@ -44,7 +44,7 @@ export async function loadCustomerSprites(): Promise<Map<string, CustomerSprite>
   return out;
 }
 
-const RGB: [PaletteKey, number, number, number][] = KEYS.map((k) => {
+const RGB: [PaletteKey, number, number, number][] = KEYS.filter((k) => !k.startsWith('ox')).map((k) => { // 환경 램프(ox*)는 사람에게 쓰지 않는다
   const n = parseInt(PALETTE[k].slice(1), 16);
   return [k, (n >> 16) & 255, (n >> 8) & 255, n & 255];
 });

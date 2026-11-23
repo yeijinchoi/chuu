@@ -1,8 +1,9 @@
 import { baseKind, isRegistered } from '../core/care';
 import type { Game } from '../core/game';
+import { ruleText } from '../core/rules';
 import { renderTemplate, type BlockReason } from '../core/texting';
 import type {
-  Action, CareTemplateId, ClientCard, ContactDef, CustomerDef, GameData, Product, Shift, TemplateDef,
+  Action, CareTemplateId, ClientCard, ContactDef, CustomerDef, GameData, Product, RuleDef, Shift, TemplateDef,
 } from '../core/types';
 import type { Mood } from '../render/palette';
 import { iconUrl } from './display';
@@ -111,6 +112,7 @@ export class Phone {
   /** 메모 앱에서 연 수칙 */
   private noteSel: string | null = null;
   private noteFolder: 'rules' | 'tips' | 'clues' | 'trash' | null = null;
+  private readonly clueMeta: Record<string, { day: number; at: string; shift: 'afternoon' | 'dawn'; fresh: boolean }> = {};
   private readonly tipNotes: { id: string; text: string; day: number; at: string }[] = [];
   /** 새벽 수칙이 막 열렸다: 메모 목록에서 한 번 맥박친다 */
   private dawnNew = false;
@@ -235,6 +237,35 @@ export class Phone {
     if (!this.closing || (n !== 1 && n !== 2)) return false;
     this.closingChoice(n === 1);
     return true;
+  }
+
+  /** 단서 메모를 얻었다: 「손님 메모」 폴더에 새 메모가 생기고 메모 앱에 점이 찍힌다. 알림에 쓸 제목과 첫 줄을 돌려준다. */
+  noteClue(id: string): { title: string; body: string } {
+    this.clueMeta[id] = { day: this.s.day, at: this.s.clock, shift: this.s.shift, fresh: true };
+    this.pulse('notes');
+    const c = this.clueText(id);
+    return { title: c.title, body: c.lines[0] ?? '' };
+  }
+
+  private clueText(id: string): { title: string; lines: string[] } {
+    const c = (this.data.strings as { clues?: Record<string, { title: string; lines: string[] }> }).clues?.[id];
+    return c ?? { title: id, lines: [] };
+  }
+
+  /** 새 메모 알림: 눌러서 「손님 메모」 폴더로 간다 */
+  noteBanner(title: string, body: string): void {
+    this.notifier.show({ app: 'notes', title, body, stay: 5000, onTap: () => { this.openTab('notes'); this.noteFolder = 'clues'; this.refresh(); } });
+  }
+
+  /** 새 날 아침: 어제의 전송 상태·대기 중인 답장을 비우고 홈 화면으로 돌아온다 */
+  newDay(): void {
+    this.chipStage.clear();
+    this.preDelivered.clear();
+    this.awaiting.clear();
+    this.deferred.length = 0;
+    this.view = null;
+    this.contactKey = null;
+    this.openHome();
   }
 
   /** 안 보이는 대화방에 놓이는 시스템 줄(속마음, 지문): 이름표 없는 말 */
@@ -1094,9 +1125,16 @@ export class Phone {
     const day = this.s.day;
     if (folder === 'rules') {
       const out: NoteItem[] = [];
-      if (this.dawnRules) out.push({ id: 'dawn', title: t('phone.rulesDawn'), lines: this.dawnRuleList().map((r) => ({ n: r.id, text: r.text, torn: r.id === 6 })), day, shift: 'dawn', at: '00:30', fresh: this.dawnNew });
+      if (this.dawnRules) out.push({ id: 'dawn', title: t('phone.rulesDawn'), lines: this.dawnRuleList().map((r) => ({ n: r.id, text: ruleText(r, day), torn: r.id === 6 })), day, shift: 'dawn', at: '00:30', fresh: this.dawnNew });
       out.push({ id: 'afternoon', title: t('phone.rulesAfternoon'), lines: this.afternoonRules().map((x, i) => ({ n: i + 1, text: x })), day: 1, shift: 'afternoon', at: '12:30' });
       return out;
+    }
+    if (folder === 'clues') {
+      return [...this.s.clues].reverse().map((id) => {
+        const meta = this.clueMeta[id] ?? { day: this.s.day, at: '', shift: this.s.shift, fresh: false };
+        const c = this.clueText(id);
+        return { id: `clue:${id}`, title: c.title, lines: c.lines.map((text) => ({ n: 0, text })), day: meta.day, shift: meta.shift, at: meta.at, fresh: meta.fresh };
+      });
     }
     if (folder === 'tips') {
       return this.tipNotes.map((n) => ({ id: n.id, title: n.text.length > 14 ? `${n.text.slice(0, 14)}…` : n.text, lines: [{ n: 0, text: n.text }], day: n.day, shift: n.day === day ? this.s.shift : 'afternoon', at: n.at }));
@@ -1157,6 +1195,7 @@ export class Phone {
     }
     wrap.append(list);
     if (folder === 'rules') this.dawnNew = false;
+    if (folder === 'clues') for (const m of Object.values(this.clueMeta)) m.fresh = false;
   }
 
   /** 메모 본문: 날짜 · 큰 제목 · 번호 목록. 6번은 찢겨 있다. 읽기 전용. */
@@ -1170,7 +1209,7 @@ export class Phone {
     if (!n) return;
     wrap.append(el('div', 'note-doc__date', t('phone.notes.edited', { day: t('phone.dayN', { n: n.day }), shift: t(`phone.cardBook.${n.shift}`), time: n.at })));
     wrap.append(el('div', 'note-doc__title', n.title));
-    const numbered = n.lines.length > 1 || (n.lines[0]?.n ?? 0) > 0;
+    const numbered = n.lines.some((l) => l.n > 0);
     const ol = el(numbered ? 'ol' : 'div', `rules__list${n.shift === 'dawn' ? ' rules__list--dawn' : ''}`);
     for (const l of n.lines) {
       const li = el(numbered ? 'li' : 'p', l.torn ? 'torn' : '', l.text);
@@ -1180,7 +1219,7 @@ export class Phone {
     wrap.append(ol);
   }
 
-  private dawnRuleList(): { id: number; text: string }[] {
+  private dawnRuleList(): RuleDef[] {
     return this.data.rules.filter((x) => x.day <= this.s.day);
   }
 

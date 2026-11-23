@@ -229,3 +229,12 @@ button:disabled, button[aria-disabled='true'] { cursor: default; }
 /* 튜토리얼 말풍선: 종이 쪽지. 탭하면 사라진다 */
   border: 4px solid transparent; border-image: var(--fr-tiny-focus) 4 / 4px / 0 stretch; image-rendering: pixelated; animation: tip-in var(--dur-base) var(--ease-pixel); }
 @keyframes tip-in { from { transform: translateY(-4px); } }
+
+/* 엔딩 도장 (본 엔딩) */
+.trophies { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 6px; }
+.trophies--title { margin-top: 4px; }
+.trophies__h { font-size: 10px; line-height: 14px; color: var(--color-text-muted); }
+.trophy { padding: 2px 8px; border: 2px solid var(--color-border); color: var(--mist); font-size: 11px; line-height: 14px; }
+.trophy--on { border-color: var(--color-trim); color: var(--brass-light); }
+.trophy--now { box-shadow: 0 0 0 2px var(--ink), 0 0 0 4px var(--color-trim); }
+.screen--final .ending__text { max-width: 360px; text-align: center; }

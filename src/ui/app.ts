@@ -14,7 +14,7 @@ import { Notifier } from './notify';
 import { Phone } from './phone';
 import { sfx } from './sfx';
 import type { SheetId } from './sheets';
-import { endingScreen, nameScreen, noteScreen, resultsScreen, titleScreen, type Overlay } from './screens';
+import { endingScreen, finalEndingScreen, nameScreen, noteScreen, resultsScreen, titleScreen, type Overlay } from './screens';
 import type { Stage } from './stage';
 
 const PROBES: ProbeId[] = ['askCategory', 'askOccasion', 'askBudget', 'observe'];
@@ -28,6 +28,22 @@ const TOAST_MS = 2000;
 const TIP_MS = 8000;
 /** 업무폰 안에서 일어나는 액션: 이 액션이 낳은 속마음·지문은 대화창 대신 폰 대화방에 놓인다 */
 const PHONE_ACTIONS: ReadonlySet<Action['type']> = new Set(['sendText', 'sendCare', 'chooseReply', 'placeRedBox', 'closingText']);
+
+const TROPHY_KEY = 'closing-time.trophies.v1';
+function loadTrophies(): string[] {
+  try {
+    const v = JSON.parse(localStorage.getItem(TROPHY_KEY) ?? '[]') as unknown;
+    return Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : [];
+  } catch { return []; }
+}
+function saveTrophy(id: string): string[] {
+  const all = loadTrophies();
+  if (!all.includes(id)) all.push(id);
+  try { localStorage.setItem(TROPHY_KEY, JSON.stringify(all)); } catch { /* 저장이 막혀도 게임은 계속된다 */ }
+  return all;
+}
+/** 3일차 04:44의 서윤: 눈을 감은 단발의 업무 유니폼 */
+const SEOYUN_SPRITE = { id: 'seoyun', form: 'humanoid', sprite: { hair: 'bob', hairColor: 'hair', skin: 'skin-a', outfit: 'shadow', accent: 'brass' } };
 
 function safeStorage(): JsonStorageAdapter {
   return new JsonStorageAdapter({
@@ -232,6 +248,15 @@ export function startApp(stage: Stage, renderer: Renderer, opts: { debug: boolea
           phone.deliver(e.from, e.text, closingMode ? 950 : 600 + 1500 + Math.random() * 1500, () => bridge.release());
           return 'wait';
         case 'clock': phone.refresh(); return 'continue';
+        case 'clue': {
+          const n = phone.noteClue(e.id);
+          sfx.play('phone_buzz');
+          const phoneVisible = !mobile() || sheets.open === 'phone';
+          if (phoneVisible) { serveNotif.hide(); phone.noteBanner(t('notify.newMemo'), `${n.title}: ${n.body}`); }
+          else serveNotif.show({ app: 'notes', title: t('notify.newMemo'), body: `${n.title}: ${n.body}`, stay: 5000 });
+          return 'continue';
+        }
+        case 'ending': saveTrophy(e.ending); return 'continue';
         case 'phase': onPhase(e.phase); return 'continue';
         case 'save': lastSave = e.ok; if (!e.ok) toast(t('toast.saveFail'), 5000); return 'continue';
         case 'sfx':
@@ -260,6 +285,9 @@ export function startApp(stage: Stage, renderer: Renderer, opts: { debug: boolea
 
   /** 단계가 바뀌었다(이벤트 순서대로 불린다): 04:44는 폰이 강제로 열리고 문 유리의 실루엣이 짙어진다 */
   function onPhase(kind: string): void {
+    const gs = game.getState();
+    if (kind === 'briefing' && gs.shift === 'afternoon' && gs.day > 1) phone.newDay();
+    if (kind === 'finale') { renderer.setCustomer(SEOYUN_SPRITE as never); hud.hidden = true; dialogue.hide(); }
     // 04:44 동안만 업무폰을 반쯤 올려 문 유리의 실루엣이 보이게 한다
     stage.phone.classList.toggle('is-half', kind === 'closingText');
     if (kind === 'closingText') {
@@ -330,7 +358,7 @@ export function startApp(stage: Stage, renderer: Renderer, opts: { debug: boolea
       closeOverlay();
       bridge.resume(saved);
     };
-    showOverlay(titleScreen(stage.stage, { canResume, corrupt: saved === 'corrupt', onStart: begin, onResume: resume }));
+    showOverlay(titleScreen(stage.stage, { canResume, corrupt: saved === 'corrupt', trophies: loadTrophies(), onStart: begin, onResume: resume }));
     if (canResume && new URLSearchParams(location.search).get('continue') === '1') resume();
   }
 
@@ -409,9 +437,21 @@ export function startApp(stage: Stage, renderer: Renderer, opts: { debug: boolea
         dialogue.hide();
         toasts.replaceChildren();
         showOverlay(resultsScreen(stage.stage, {
-          result: s.results as NonNullable<typeof s.results>, data, saved: lastSave, clock: s.clock,
+          result: s.results as NonNullable<typeof s.results>, data, day: s.day, saved: lastSave, clock: s.clock,
+          onNext: () => { closeOverlay(); bridge.dispatch({ type: 'nextDay' }); },
           onRestart: () => location.reload(),
         }));
+        break;
+      case 'finale': {
+        dialogue.hide();
+        const acts = game.availableActions().flatMap((a) => (a.type === 'finale' ? [a.choice] : []));
+        pickChoices(acts.map((choice) => ({ label: t(`choices.finale.${choice}`), pick: () => bridge.dispatch({ type: 'finale', choice }) })));
+        break;
+      }
+      case 'ending':
+        dialogue.hide();
+        veil.hidden = false;
+        showOverlay(finalEndingScreen(stage.stage, { ending: p.ending, trophies: loadTrophies(), onRestart: () => location.reload() }));
         break;
       case 'badEnding': {
         dialogue.hide();
@@ -457,6 +497,12 @@ export function startApp(stage: Stage, renderer: Renderer, opts: { debug: boolea
       case 'close':
         pickChoices(CLOSES.map((choice) => ({ label: t(`choices.close.${choice}`), pick: () => bridge.dispatch({ type: 'close', choice }) })));
         break;
+      case 'talk': {
+        const c = customers.find((x) => x.id === e.customerId);
+        const opts = c?.talk?.options ?? [];
+        pickChoices(opts.map((o, i) => ({ label: o.label, pick: () => bridge.dispatch({ type: 'talk', option: i as 0 | 1 }) })));
+        break;
+      }
       case 'regularOffer':
         pickChoices([
           { label: t('choices.regularOffer.accept'), pick: () => bridge.dispatch({ type: 'regularOffer', accept: true }) },
