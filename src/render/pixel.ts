@@ -188,6 +188,7 @@ const EDGE: Record<PaletteKey, PaletteKey> = {
   steel: 'steel-dark', 'steel-dark': 'dusk', 'steel-light': 'steel-dark',
   wine: 'wine-dark', 'wine-dark': 'ink',
   'skin-a': 'skin-b', 'skin-b': 'stone', 'skin-c': 'skin-b', taupe: 'mist', hair: 'ink',
+  oxd: 'ink', oxm: 'oxd', oxw: 'oxm', oxl: 'oxw',
 };
 export function edgeKey(k: PaletteKey): PaletteKey {
   return EDGE[k];
@@ -195,7 +196,7 @@ export function edgeKey(k: PaletteKey): PaletteKey {
 const DARKNESS: Record<string, number> = {
   ink: 0, shadow: 1, 'wine-dark': 1, dusk: 2, 'steel-dark': 3, 'brass-dark': 3, 'rose-dark': 3, hair: 1, wine: 2, stone: 3,
   mist: 4, taupe: 5, 'skin-b': 5, rose: 4, brass: 4, steel: 5, ash: 5, bone: 6, 'skin-a': 6, 'rose-light': 6, 'brass-light': 6,
-  'steel-light': 7, 'skin-c': 7, paper: 8,
+  'steel-light': 7, 'skin-c': 7, paper: 8, oxd: 1, oxm: 2, oxw: 3, oxl: 4,
 };
 
 /** 윤곽선: 이웃한 채움 중 가장 어두운 쪽의 한 단계 어두운 색. 외부 배경이 밝은 곳은 ink로 둔다 */

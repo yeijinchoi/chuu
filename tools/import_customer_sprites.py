@@ -22,7 +22,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # ---- 매장 팔레트(Dusk Mono 24)에 맞추기: Lab 거리, 포인트 색은 원본 채도가 충분할 때만, 고립 잡티 제거, 바깥 테두리 한 단계 어둡게(sel-out)
 pal=re.findall(r"'?([\w-]+)'?: '#([0-9a-f]{6})'", open(os.path.join(ROOT, 'src/render/palette.ts')).read())
-cols={k:tuple(int(h[i:i+2],16) for i in (0,2,4)) for k,h in pal}
+cols={k:tuple(int(h[i:i+2],16) for i in (0,2,4)) for k,h in pal if not k.startswith('ox')}  # 환경 램프(ox*)는 사람에게 쓰지 않는다
 def lab(c):
     def f(u):
         u/=255; return ((u+0.055)/1.055)**2.4 if u>0.04045 else u/12.92

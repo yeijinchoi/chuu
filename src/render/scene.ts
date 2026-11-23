@@ -33,52 +33,52 @@ export const SHELF_X = [120, 160, 200];
 // ───────────────────────── 벽, 천장, 바닥
 
 function drawWall(l: Layer): void {
-  rect(l, 'stone', 0, 0, W, 110);
+  rect(l, 'oxw', 0, 0, W, 110);
   // 퀼팅: 홈(shadow) + 바로 옆 하이라이트(stone)로 도톰한 마름모 박음질
   for (let y = 10; y < 110; y++)
     for (let x = 0; x < W; x++) {
       const a = (x + y) % 32 === 0, b = (((x - y) % 32) + 32) % 32 === 0;
       if (!a && !b) continue;
       if (y % 2 === 0) {
-        px(l, 'dusk', x, y);
-        if (l.get(x + 1, y) === KEY_INDEX.stone) px(l, 'mist', x + 1, y);
-      } else px(l, 'dusk', x, y);
+        px(l, 'oxm', x, y);
+        if (l.get(x + 1, y) === KEY_INDEX.oxw) px(l, 'oxl', x + 1, y);
+      } else px(l, 'oxm', x, y);
     }
   // 교차점의 단추
   for (let y = 16; y < 110; y += 16)
     for (let x = 0; x < W; x += 16) {
       if ((x / 16 + y / 16) % 2 !== 0) continue;
-      rect(l, 'mist', x - 1, y - 1, 3, 3);
+      rect(l, 'oxl', x - 1, y - 1, 3, 3);
       px(l, 'ash', x - 1, y - 1);
-      px(l, 'dusk', x + 1, y + 1);
-      px(l, 'stone', x, y);
+      px(l, 'oxm', x + 1, y + 1);
+      px(l, 'oxw', x, y);
     }
   // 천장 모서리로 갈수록 어두워짐 (체커 디더 → 단색)
   for (let y = 10; y < 110; y++)
     for (let x = 0; x < W; x++) {
       const d = Math.hypot((x - 160) * 0.75, (y - 50) * 1.15);
       const v = l.get(x, y);
-      if (v !== KEY_INDEX.stone) continue;
-      if (d > 205) l.set(x, y, KEY_INDEX.dusk);
-      else if (d > 175 && (x + y) & 1) l.set(x, y, KEY_INDEX.dusk);
+      if (v !== KEY_INDEX.oxw) continue;
+      if (d > 205) l.set(x, y, KEY_INDEX.oxm);
+      else if (d > 175 && (x + y) & 1) l.set(x, y, KEY_INDEX.oxm);
     }
   // 천장 몰딩
   rect(l, 'ink', 0, 0, W, 7);
-  hline(l, 'shadow', 0, 5, W);
-  hline(l, 'dusk', 0, 7, W);
-  hline(l, 'stone', 0, 8, W);
+  hline(l, 'oxd', 0, 5, W);
+  hline(l, 'oxm', 0, 7, W);
+  hline(l, 'oxw', 0, 8, W);
   hline(l, 'ink', 0, 9, W);
-  for (let x = 0; x < W; x += 4) px(l, 'dusk', x, 6);
+  for (let x = 0; x < W; x += 4) px(l, 'oxm', x, 6);
   // 왼쪽 옆벽(어두운 면)과 모서리
-  rect(l, 'shadow', 0, 10, 47, 100);
-  for (let y = 10; y < 110; y++) for (let x = 0; x < 47; x++) if (((x + y) % 32 === 0 || (((x - y) % 32) + 32) % 32 === 0) && y % 2 === 0) px(l, 'dusk', x, y);
+  rect(l, 'oxd', 0, 10, 47, 100);
+  for (let y = 10; y < 110; y++) for (let x = 0; x < 47; x++) if (((x + y) % 32 === 0 || (((x - y) % 32) + 32) % 32 === 0) && y % 2 === 0) px(l, 'oxm', x, y);
   dither(l, 'ink', null, 0, 10, 47, 3);
   vline(l, 'ink', 47, 9, 102);
-  vline(l, 'stone', 48, 10, 100);
-  vline(l, 'mist', 49, 10, 100);
+  vline(l, 'oxw', 48, 10, 100);
+  vline(l, 'oxl', 49, 10, 100);
   // 걸레받이
-  rect(l, 'shadow', 0, 107, W, 3);
-  hline(l, 'stone', 0, 107, W);
+  rect(l, 'oxd', 0, 107, W, 3);
+  hline(l, 'oxw', 0, 107, W);
   hline(l, 'ink', 0, 110, W);
 }
 
@@ -90,21 +90,21 @@ function drawFloor(l: Layer): void {
       for (let x = 0; x < W; x++) {
         const col = Math.floor((x - 160 + tw * 100) / tw);
         const dark = (col + ri) % 2 === 0;
-        let k: PaletteKey = dark ? 'mist' : 'ash';
+        let k: PaletteKey = dark ? 'oxl' : 'ash';
         // 타일 위쪽 모서리 하이라이트, 아래쪽 줄눈 그림자
         if (y === y0) k = dark ? 'ash' : 'bone';
-        else if (y === y1 - 1) k = dark ? 'stone' : 'mist';
+        else if (y === y1 - 1) k = dark ? 'oxw' : 'oxl';
         px(l, k, x, y);
       }
   });
   // 벽 아래 그림자 (접지)
-  dither(l, 'stone', null, 0, 111, W, 1);
+  dither(l, 'oxw', null, 0, 111, W, 1);
   // 원근에 따른 좌우 가장자리 어둡게
   for (let y = 111; y < COUNTER_Y; y++)
     for (let x = 0; x < W; x++) {
       const d = Math.abs(x - 160);
-      if (d > 150 && (x + y) & 1) px(l, 'stone', x, y);
-      else if (d > 120 && d <= 150 && (x + y) & 1 && l.get(x, y) === KEY_INDEX.mist) px(l, 'stone', x, y);
+      if (d > 150 && (x + y) & 1) px(l, 'oxw', x, y);
+      else if (d > 120 && d <= 150 && (x + y) & 1 && l.get(x, y) === KEY_INDEX.oxl) px(l, 'oxw', x, y);
     }
 }
 

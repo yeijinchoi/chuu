@@ -1,13 +1,13 @@
 /* 디자인 토큰 — DESIGN_SYSTEM §3, §5, §6. 컴포넌트는 의미 토큰(--color-*)만 쓴다. */
 :root {
   /* 원시 팔레트: Dusk Mono 24 (16 + 음영 램프 8) (src/render/palette.ts와 같은 값) */
-  --ink: #0e0a0a;
-  --shadow: #201415;
-  --dusk: #371f21;
-  --stone: #5b3636;
-  --mist: #845d5c;
-  --ash: #ab9894;
-  --bone: #d5c7c3;
+  --ink: #0c0a0a;
+  --shadow: #1c1a1a;
+  --dusk: #2f2c2c;
+  --stone: #4a4646;
+  --mist: #6e6a69;
+  --ash: #9c9693;
+  --bone: #cfc8c3;
   --paper: #ece4da;
   --rose: #b85c78;
   --brass: #a88c52;
@@ -25,14 +25,19 @@
   --steel-light: #a9c3d2;
   --wine-dark: #5e1422;
   --skin-c: #f0dccd;
+  /* 환경 램프(오크블러드): UI 면·테두리·패널. 장면 벽·바닥과 같은 값 */
+  --oxd: #201415;
+  --oxm: #371f21;
+  --oxw: #5b3636;
+  --oxl: #845d5c;
 
   /* 의미 토큰 */
   --color-bg: var(--ink);
-  --color-surface: var(--shadow);
-  --color-surface-raised: var(--dusk);
-  --color-border: var(--stone);
+  --color-surface: var(--oxd);
+  --color-surface-raised: var(--oxm);
+  --color-border: var(--oxw);
   --color-trim: var(--brass);
-  --color-trim-shadow: var(--stone);
+  --color-trim-shadow: var(--oxw);
   --color-text: var(--paper);
   --color-text-muted: var(--ash);
   --color-accent: var(--rose);
@@ -42,14 +47,14 @@
   --color-warning: var(--brass);
   --color-danger: var(--wine);
   --color-info: var(--steel);
-  --color-phone-body: var(--stone);
+  --color-phone-body: var(--oxw);
   --color-phone-screen: var(--paper);
   --color-phone-text: var(--ink);
   --color-bubble-out: var(--steel-dark);
   --color-bubble-out-text: var(--paper);
   --color-bubble-in: var(--bone);
   --color-paper: var(--paper);
-  --color-paper-ink: var(--dusk);
+  --color-paper-ink: var(--oxm);
 
   /* 글꼴 */
   --font-body: 'GameBody', 'Galmuri11', 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
@@ -101,28 +106,28 @@
 
 /* 교대 테마 (§3-3): 새벽 업무폰은 검은 수첩 */
 [data-shift='dawn'] {
-  --color-phone-body: var(--dusk);
-  --color-phone-screen: var(--shadow);
+  --color-phone-body: var(--oxm);
+  --color-phone-screen: var(--oxd);
   --color-phone-text: var(--paper);
-  --color-bubble-in: var(--stone);
+  --color-bubble-in: var(--oxw);
 }
 
 /* 분위기 테마 (§3-4): 팔레트 한 단계 = 무채색 8단계 중 한 칸. 최선의 CSS 변수 교체 */
 [data-mood='uneasy'] {
-  --color-trim: var(--mist);
-  --color-money: var(--mist);
-  --color-warning: var(--mist);
-  --color-surface-raised: var(--shadow);
-  --color-border: var(--dusk);
-  --color-trim-shadow: var(--dusk);
+  --color-trim: var(--oxl);
+  --color-money: var(--oxl);
+  --color-warning: var(--oxl);
+  --color-surface-raised: var(--oxd);
+  --color-border: var(--oxm);
+  --color-trim-shadow: var(--oxm);
   --color-text: var(--bone);
-  --color-text-muted: var(--mist);
+  --color-text-muted: var(--oxl);
 }
 
 [data-mood='dread'],
 [data-mood='collapse'] {
-  --color-trim: var(--stone);
-  --color-trim-shadow: var(--shadow);
+  --color-trim: var(--oxw);
+  --color-trim-shadow: var(--oxd);
   --color-money: var(--ash);
   --color-warning: var(--ash);
   --color-success: var(--ash);
@@ -130,10 +135,10 @@
   --color-accent: var(--wine);
   --color-bubble-out: var(--wine);
   --color-surface: var(--ink);
-  --color-surface-raised: var(--shadow);
-  --color-border: var(--shadow);
+  --color-surface-raised: var(--oxd);
+  --color-border: var(--oxd);
   --color-text: var(--ash);
-  --color-text-muted: var(--stone);
+  --color-text-muted: var(--oxw);
 }
 
 /* breach: ink/wine 2색 + paper 하이라이트 */

@@ -5,9 +5,9 @@ import { readFileSync } from 'node:fs';
 const tokensCss = readFileSync(new URL('../../src/ui/styles/tokens.css', import.meta.url), 'utf8');
 
 describe('palette', () => {
-  it('has 24 valid hex colors', () => {
+  it('has 28 valid hex colors (24 + 4 environment ramp)', () => {
     const entries = Object.entries(PALETTE);
-    expect(entries).toHaveLength(24);
+    expect(entries).toHaveLength(28);
     for (const [, hex] of entries) expect(hex).toMatch(/^#[0-9a-f]{6}$/);
   });
 

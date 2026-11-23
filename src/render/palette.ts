@@ -1,12 +1,12 @@
 // Dusk Mono 24 (16 + 음영 램프 8) — src/ui/styles/tokens.css 와 같은 값을 유지한다.
 export const PALETTE = {
-  ink: '#0e0a0a',
-  shadow: '#201415',
-  dusk: '#371f21',
-  stone: '#5b3636',
-  mist: '#845d5c',
-  ash: '#ab9894',
-  bone: '#d5c7c3',
+  ink: '#0c0a0a',
+  shadow: '#1c1a1a',
+  dusk: '#2f2c2c',
+  stone: '#4a4646',
+  mist: '#6e6a69',
+  ash: '#9c9693',
+  bone: '#cfc8c3',
   paper: '#ece4da',
   rose: '#b85c78',
   brass: '#a88c52',
@@ -25,6 +25,11 @@ export const PALETTE = {
   'steel-light': '#a9c3d2',
   'wine-dark': '#5e1422',
   'skin-c': '#f0dccd',
+  // 환경 램프(오크블러드): 벽·바닥·패널 같은 "공간"만 쓴다. 상품·사람·마네킹의 검정/회색은 위 무채색을 쓴다.
+  oxd: '#201415',
+  oxm: '#371f21',
+  oxw: '#5b3636',
+  oxl: '#845d5c',
 } as const;
 
 export type PaletteKey = keyof typeof PALETTE;
@@ -50,7 +55,12 @@ const TONE: Record<PaletteKey, number> = {
   rose: 4, brass: 4, steel: 5, wine: 2, 'skin-a': 6, 'skin-b': 5, taupe: 5, hair: 1,
   'rose-dark': 3, 'rose-light': 5, 'brass-dark': 3, 'brass-light': 5,
   'steel-dark': 3, 'steel-light': 6, 'wine-dark': 1, 'skin-c': 6,
+  oxd: 1, oxm: 2, oxw: 3, oxl: 4,
 };
+
+/** 환경 램프는 무채색 사다리의 같은 단계를 따라 움직인다 (분위기가 바뀌어도 같은 밝기로 어두워진다). */
+const OX_TWIN: Partial<Record<PaletteKey, PaletteKey>> = { oxd: 'shadow', oxm: 'dusk', oxw: 'stone', oxl: 'mist' };
+const OX_BACK: Partial<Record<PaletteKey, PaletteKey>> = { shadow: 'oxd', dusk: 'oxm', stone: 'oxw', mist: 'oxl' };
 
 /** 무채색이 아닌 키가 어두워질 때 따라가는 사슬 */
 const CHAIN: Partial<Record<PaletteKey, readonly PaletteKey[]>> = {
@@ -87,6 +97,11 @@ function isDrained(k: PaletteKey, drained?: ReadonlySet<PaletteKey>): boolean {
 
 /** mood별로 키를 바꾼다. 그리기 함수는 키만 알고, 실제 색은 여기서 정해진다. */
 export function resolveKey(key: PaletteKey, mood: Mood = 'calm', drained?: ReadonlySet<PaletteKey>): PaletteKey {
+  const twin = OX_TWIN[key];
+  if (twin) {
+    const r = resolveKey(twin, mood, drained);
+    return OX_BACK[r] ?? r;
+  }
   let k = key;
   if (isDrained(k, drained)) k = grayOf(k);
   const fam = FAMILY[k];
