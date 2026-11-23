@@ -321,19 +321,6 @@
 .cdet__struck { display: block; text-decoration: line-through; color: var(--mist); }
 
 /* 알림 배너: 화면 위(상태줄 아래)에서 내려와 3초 뒤 사라진다. 반투명 둥근 카드. */
-.banner { position: absolute; left: 6px; right: 6px; top: 30px; z-index: 5; display: flex; align-items: center; gap: 8px; padding: 7px 10px; border-radius: 16px; color: var(--color-phone-text); text-align: left; }
-.banner::before { content: ''; position: absolute; inset: 0; z-index: -1; border-radius: 16px; background: var(--c-field); opacity: 0.97; }
-.banner:focus-visible { outline: 2px solid var(--color-info); outline-offset: 1px; }
-.banner.is-in { animation: banner-drop 260ms steps(4, end) 1; }
-@keyframes banner-drop { from { transform: translateY(-160%); } to { transform: translateY(0); } }
-.banner__icon { flex: none; display: flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 7px; background: var(--steel-dark); --g-a: var(--paper); --g-c: var(--steel-dark); }
-.pico--banner { width: 16px; height: 16px; }
-.banner__body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
-.banner__top { display: flex; justify-content: space-between; align-items: baseline; gap: 6px; }
-.banner__from { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 700; font-size: 11px; line-height: 14px; }
-.banner__now { flex: none; font-family: var(--font-small); font-size: 9px; line-height: 12px; color: var(--c-sub); }
-.banner__text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 10px; line-height: 13px; color: var(--c-sub); }
-@media (prefers-reduced-motion: reduce) { .banner.is-in { animation: none; } }
 
 /* ---------- 상태별 ---------- */
 .phone--closing .phone__money { opacity: 0.5; }
@@ -376,8 +363,6 @@ html[data-layout='mobile'] .phone__h--sub { font-family: var(--font-body); font-
 html[data-layout='mobile'] .home-clock__time { font-size: 44px; line-height: 48px; }
 html[data-layout='mobile'] .apps { padding-top: 40px; }
 html[data-layout='mobile'] .wall__emblem { width: 288px; height: 414px; margin: -207px 0 0 -144px; }
-html[data-layout='mobile'] .banner { top: 40px; }
-html[data-layout='mobile'] .banner__from, html[data-layout='mobile'] .banner__text { font-family: var(--font-m-body); font-size: var(--text-m-sub); line-height: var(--lh-m-sub); }
 html[data-layout='mobile'] .cdet-act { height: var(--m-touch); font-family: var(--font-m-body); font-size: var(--text-m-body); line-height: var(--lh-m-body); }
 html[data-layout='mobile'] .cdet__name { font-family: var(--font-m-body); font-size: 22px; line-height: 28px; }
 html[data-layout='mobile'] .cdet__line, html[data-layout='mobile'] .note-row__title, html[data-layout='mobile'] .note-row__line { font-family: var(--font-m-body); font-size: var(--text-m-sub); line-height: var(--lh-m-sub); }
@@ -390,3 +375,51 @@ html[data-layout='mobile'] .app__label { font-family: var(--font-body); font-siz
 html[data-layout='mobile'] .apps-dock { margin-bottom: 40px; }
 html[data-layout='mobile'] .apps-dock .app__tile { width: 56px; height: 56px; }
 html[data-layout='mobile'] .apps-dock .pico--app { width: 35px; height: 35px; }
+
+/* ---- 알림 배너 (스마트폰 알림처럼): 앱 아이콘 · 앱 이름+시각 · 보낸 사람(굵게) · 내용 2줄 ---- */
+.notif { position: absolute; z-index: 30; left: 8px; right: 8px; top: 34px; display: flex; align-items: flex-start; gap: 9px; padding: 9px 11px; border-radius: 18px; text-align: left; color: var(--paper); background: color-mix(in srgb, var(--dusk) 98%, transparent); box-shadow: 0 0 0 1px var(--stone), 0 6px 0 -2px var(--ink); cursor: pointer; }
+.notif[hidden] { display: none; }
+.notif:focus-visible { outline: 2px solid var(--color-info); outline-offset: 1px; }
+.notif.is-in { animation: notif-in 320ms steps(6, end) 1 both; }
+.notif.is-out { animation: notif-out 220ms steps(4, end) 1 both; }
+.notif.is-shown { transform: none; }
+@keyframes notif-in { from { transform: translateY(-140%); opacity: 0.4; } to { transform: translateY(0); opacity: 1; } }
+@keyframes notif-out { from { transform: translateY(0); opacity: 1; } to { transform: translateY(-140%); opacity: 0.3; } }
+.notif__icon { flex: none; display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 8px; background: var(--steel-dark); --g-a: var(--paper); --g-b: var(--paper); --g-c: var(--steel-dark); }
+.notif[data-app='notes'] .notif__icon { background: var(--brass); --g-c: var(--brass); }
+.notif[data-app='tips'] .notif__icon { background: var(--brass-dark); --g-a: var(--brass-light); --g-c: var(--brass-dark); }
+.pico--notif { width: 20px; height: 20px; }
+.notif__body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.notif__head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-family: var(--font-small); font-size: 9px; line-height: 12px; color: var(--ash); text-transform: uppercase; letter-spacing: 0.04em; }
+.notif__title { font-weight: 700; font-size: 12px; line-height: 15px; color: var(--paper); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.notif__text { font-size: 11px; line-height: 15px; color: var(--bone); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+/* 장면 구석에 뜨는 알림 (폰이 가려져 있을 때 튜토리얼) */
+.notif--serve { left: auto; right: 10px; top: 10px; width: 236px; z-index: 22; }
+@media (prefers-reduced-motion: reduce) { .notif.is-in, .notif.is-out { animation: none; } }
+html[data-layout='mobile'] .notif--phone { top: 44px; }
+html[data-layout='mobile'] .notif--serve { left: 8px; right: 8px; top: 8px; width: auto; }
+html[data-layout='mobile'] .notif__title { font-family: var(--font-m-body); font-size: var(--text-m-body); line-height: var(--lh-m-body); }
+html[data-layout='mobile'] .notif__text { font-family: var(--font-m-body); font-size: var(--text-m-sub); line-height: var(--lh-m-sub); }
+
+/* ---- 메모 앱 (폴더 → 목록 → 본문) ---- */
+.notes { gap: 4px; }
+.notes__large { font-weight: 700; font-size: 20px; line-height: 26px; margin: 4px 0 2px; }
+.folder-list { display: flex; flex-direction: column; margin-top: 4px; border-radius: 10px; background: var(--c-field); overflow: hidden; }
+.folder-row { display: flex; align-items: center; gap: 8px; width: 100%; padding: 9px 10px; text-align: left; border-bottom: 1px solid color-mix(in srgb, var(--c-sub) 25%, transparent); font-size: 12px; line-height: 16px; }
+.folder-row:last-child { border-bottom: 0; }
+.folder-row:focus-visible { outline: 2px solid var(--color-info); outline-offset: -2px; }
+.folder-row--dim { color: var(--mist); }
+.folder-row__icon { flex: none; width: 14px; height: 11px; border: 2px solid var(--brass-dark); border-top-width: 3px; border-radius: 2px; }
+.folder-row__name { flex: 1; min-width: 0; }
+.folder-row__dot, .note-row__dot { flex: none; width: 7px; height: 7px; border-radius: 50%; background: var(--link); }
+.folder-row__n { flex: none; font-family: var(--font-mono); font-size: 10px; color: var(--mist); }
+.pico--chev { width: 6px; height: 9px; transform: scaleX(-1); --g-a: var(--mist); }
+.note-group { margin: 8px 0 2px; font-weight: 700; font-size: 11px; line-height: 14px; color: var(--c-sub); }
+.note-row__meta { display: flex; gap: 8px; align-items: baseline; min-width: 0; }
+.note-row__meta .note-row__line { flex: 1; min-width: 0; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.note-doc__date { margin: 4px 0 0; text-align: center; font-family: var(--font-small); font-size: 9px; line-height: 12px; color: var(--mist); }
+.note-doc__title { font-size: 18px; line-height: 24px; }
+.rules__list p { margin: 0; }
+html[data-layout='mobile'] .notes__large { font-family: var(--font-m-body); font-size: 22px; line-height: 28px; }
+html[data-layout='mobile'] .folder-row, html[data-layout='mobile'] .note-group { font-family: var(--font-m-body); font-size: var(--text-m-body); line-height: var(--lh-m-body); }
+html[data-layout='mobile'] .folder-row { padding: var(--space-3) var(--space-3); min-height: 48px; }

@@ -5,7 +5,7 @@
  */
 const NS = 'http://www.w3.org/2000/svg';
 
-export type PhoneGlyph = 'messages' | 'contacts' | 'notes' | 'black' | 'signal' | 'wifi' | 'search' | 'plus' | 'send' | 'back';
+export type PhoneGlyph = 'messages' | 'contacts' | 'notes' | 'black' | 'signal' | 'wifi' | 'search' | 'plus' | 'send' | 'back' | 'tips';
 
 /** 행 단위 격자: '.'은 빈칸, 그 밖의 글자는 색 class */
 const grid = (w: number, h: number, on: (x: number, y: number) => string | null): string[] =>
@@ -59,6 +59,20 @@ const BACK = ['....aa', '...aa.', '..aa..', '.aa...', 'aa....', '.aa...', '..aa.
 
 const SEND = ['....a....', '...aaa...', '..aaaaa..', '.aa.a.aa.', '....a....', '....a....', '....a....', '....a....', '....a....'];
 
+const TIPS = [
+  '...aaaaa...',
+  '..aaaaaaa..',
+  '.aaaaaaaaa.',
+  '.aaaaaaaaa.',
+  '.aaaaaaaaa.',
+  '..aaaaaaa..',
+  '...aaaaa...',
+  '...aaaaa...',
+  '....ccc....',
+  '...aaaaa...',
+  '....ccc....',
+];
+
 const GLYPHS: Record<PhoneGlyph, string[]> = {
   messages: [
     '..............',
@@ -100,6 +114,7 @@ const GLYPHS: Record<PhoneGlyph, string[]> = {
   plus: PLUS,
   send: SEND,
   back: BACK,
+  tips: TIPS,
 };
 
 /** 글리프 하나를 SVG로 만든다. viewBox는 격자 크기다. */

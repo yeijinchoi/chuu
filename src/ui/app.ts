@@ -10,6 +10,7 @@ import { ChoicePanel, Dialogue, type ChoiceItem } from './dialogue';
 import { DisplayPanel } from './display';
 import { el, t } from './dom';
 import { applyFrames } from './frames';
+import { Notifier } from './notify';
 import { Phone } from './phone';
 import { sfx } from './sfx';
 import type { SheetId } from './sheets';
@@ -55,10 +56,8 @@ export function startApp(stage: Stage, renderer: Renderer, opts: { debug: boolea
   toasts.setAttribute('role', 'status');
   const veil = el('div', 'veil');
   veil.hidden = true;
-  const serveTip = el('div', 'tip tip--serve');
-  serveTip.hidden = true;
-  serveTip.setAttribute('role', 'status');
-  stage.viewport.append(hud, veil, serveTip);
+  stage.viewport.append(hud, veil);
+  const serveNotif = new Notifier(stage.viewport, opts.reduced, 'notif--serve');
   // 대사창·선택지는 무대 바로 아래에 둔다: 데스크톱은 뷰포트 위에 겹치고, 모바일은 장면 아래로 흐른다(CSS)
   stage.stage.append(choices.root, dialogue.root, toasts);
 
@@ -75,7 +74,6 @@ export function startApp(stage: Stage, renderer: Renderer, opts: { debug: boolea
   const seen = new Set<string>();
   let breachTimer = 0;
   let toastTimer = 0;
-  let tipTimer = 0;
 
   // ------------------------------------------------------------ 분위기·교대
   const setMood = (m: Mood): void => {
@@ -98,21 +96,19 @@ export function startApp(stage: Stage, renderer: Renderer, opts: { debug: boolea
     toastTimer = window.setTimeout(() => n.remove(), ms);
   };
   /** 1일차 튜토리얼 말풍선: 문자 단계는 폰 위에, 응대 단계는 장면 위에. 한 번만 보이고 탭하면 사라진다. */
+  /** 1일차 튜토리얼: 팁 알림으로 보낸다. 폰이 보이면 폰 안에, 아니면 장면 구석에 같은 모양으로 */
   const once = (key: string, text: string, where: 'phone' | 'serve'): void => {
     if (game.getState().day !== 1 || seen.has(key)) return;
     seen.add(key);
-    window.clearTimeout(tipTimer);
-    if (where === 'phone') {
-      serveTip.hidden = true;
+    phone.rememberTip(text);
+    const phoneVisible = !mobile() || sheets.open === 'phone';
+    if (where === 'phone' && phoneVisible) {
+      serveNotif.hide();
       phone.showTip(text);
-      tipTimer = window.setTimeout(() => phone.hideTip(), TIP_MS * 2);
     } else {
-      serveTip.textContent = text;
-      serveTip.hidden = false;
-      tipTimer = window.setTimeout(() => { serveTip.hidden = true; }, TIP_MS);
+      serveNotif.show({ app: 'tips', title: t('notify.tipSender'), body: text, stay: TIP_MS });
     }
   };
-  serveTip.addEventListener('click', () => { serveTip.hidden = true; });
   const breach = (): void => {
     window.clearTimeout(breachTimer);
     setMood('breach');

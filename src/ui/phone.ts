@@ -7,6 +7,7 @@ import type {
 import type { Mood } from '../render/palette';
 import { iconUrl } from './display';
 import { button, el, t, won } from './dom';
+import { Notifier } from './notify';
 import { phoneGlyph, type PhoneGlyph } from './phoneIcons';
 import { sfx } from './sfx';
 import { batteryEl, fillMobileStatus, regularsOf } from './status';
@@ -108,13 +109,13 @@ export class Phone {
   /** 고객 카드의 버튼 중 펼쳐 둔 줄: 단골 등급 · 메모 · 통화(거절) */
   private cardAct: 'tier' | 'memo' | 'call' | null = null;
   /** 메모 앱에서 연 수칙 */
-  private noteSel: 'afternoon' | 'dawn' | null = null;
+  private noteSel: string | null = null;
+  private noteFolder: 'rules' | 'tips' | 'clues' | 'trash' | null = null;
+  private readonly tipNotes: { id: string; text: string; day: number; at: string }[] = [];
   /** 새벽 수칙이 막 열렸다: 메모 목록에서 한 번 맥박친다 */
   private dawnNew = false;
   /** 알림 배너: 보낸 대화방 키와 자동 숨김 타이머 */
-  private readonly banner = button('banner', '', () => this.bannerTap());
-  private bannerKey: string | null = null;
-  private bannerTimer = 0;
+  private notifier!: Notifier;
   private visible = true;
   private mood: Mood = 'calm';
   /** 앱별 알림 점(메시지 배지는 unreadKeys로 센다) */
@@ -122,7 +123,6 @@ export class Phone {
   /** 읽지 않은 대화방 */
   private unreadKeys = new Set<string>();
   private pulseNow = new Set<AppId>();
-  private tipText = '';
   private lastBadge = false;
   /** 입력줄을 눌러 템플릿 패널(키보드 자리)이 올라와 있다 */
   private panelOpen = false;
@@ -132,7 +132,6 @@ export class Phone {
   private readonly status = el('div', 'phone__status');
   private readonly money = el('div', 'phone__money');
   private readonly bar = el('div', 'phone__bar');
-  private readonly tip = el('div', 'tip tip--phone');
   private readonly body = el('div', 'phone__body');
   private readonly dock = el('div', 'phone__dock');
   private readonly foot = el('div', 'phone__foot');
@@ -141,16 +140,9 @@ export class Phone {
   constructor(root: HTMLElement, private readonly host: PhoneHost, private readonly opts: PhoneOpts) {
     this.root = root;
     root.append(this.screen);
-    this.screen.append(this.island, this.status, this.money, this.bar, this.tip, this.body, this.dock, this.foot, this.banner, this.homeBar);
+    this.screen.append(this.island, this.status, this.money, this.bar, this.body, this.dock, this.foot, this.homeBar);
+    this.notifier = new Notifier(this.screen, this.opts.reduced, 'notif--phone');
     this.island.setAttribute('aria-hidden', 'true');
-    this.banner.hidden = true;
-    this.banner.setAttribute('role', 'status');
-    const bIcon = el('span', 'banner__icon');
-    bIcon.append(phoneGlyph('messages', 'pico pico--banner'));
-    this.banner.append(bIcon, el('span', 'banner__body'));
-    this.tip.hidden = true;
-    this.tip.setAttribute('role', 'status');
-    this.tip.addEventListener('click', () => this.hideTip());
     this.refresh();
   }
 
@@ -180,6 +172,7 @@ export class Phone {
     this.panelOpen = false;
     this.contactKey = null;
     this.noteSel = null;
+    this.noteFolder = null;
     this.unread.delete(APP_OF[tab]);
     this.refresh();
     if (focus) this.body.querySelector<HTMLElement>('button')?.focus();
@@ -195,8 +188,16 @@ export class Phone {
     this.refresh();
   }
 
-  showTip(text: string): void { this.tipText = text; this.refresh(); }
-  hideTip(): void { this.tipText = ''; this.refresh(); }
+  /** 튜토리얼은 화면을 가리는 박스가 아니라 알림으로 보낸다 */
+  /** 받은 팁은 메모의 「접객 팁」 폴더에 남는다 */
+  rememberTip(text: string): void {
+    if (!this.tipNotes.some((n) => n.text === text)) this.tipNotes.unshift({ id: `tip${this.tipNotes.length}`, text, day: this.s.day, at: this.s.clock });
+  }
+  showTip(text: string): void {
+    this.rememberTip(text);
+    this.notifier.show({ app: 'tips', title: t('notify.tipSender'), body: text, stay: 5000 });
+  }
+  hideTip(): void { this.notifier.hide(); }
 
   /** 04:44: 폰이 강제로 열리고 "나"와의 대화방이 뜬다 */
   setClosing(on: boolean): void {
@@ -293,30 +294,9 @@ export class Phone {
   /** 도착 진동 (phone_buzz) */
   buzz(): void { if (!this.opts.reduced) this.vibrate(); }
 
-  /** 알림 배너: 위에서 내려와 3초 뒤 사라진다. 누르면 그 대화방이 열린다. */
+  /** 메시지 알림: 지금 보고 있는 대화가 아니면 위에서 내려온다. 누르면 그 대화방이 열린다. */
   private showBanner(key: string, from: string, text: string): void {
-    this.bannerKey = key;
-    const top = el('span', 'banner__top');
-    top.append(el('span', 'banner__from', from || this.titleOf(key)), el('span', 'banner__now', t('phone.banner.now')));
-    this.banner.querySelector('.banner__body')?.replaceChildren(top, el('span', 'banner__text', text));
-    this.banner.hidden = false;
-    this.banner.classList.remove('is-in');
-    void this.banner.offsetWidth;
-    this.banner.classList.add('is-in');
-    window.clearTimeout(this.bannerTimer);
-    this.bannerTimer = window.setTimeout(() => this.hideBanner(), 3000);
-  }
-
-  private hideBanner(): void {
-    window.clearTimeout(this.bannerTimer);
-    this.banner.hidden = true;
-    this.bannerKey = null;
-  }
-
-  private bannerTap(): void {
-    const key = this.bannerKey;
-    this.hideBanner();
-    if (key !== null) this.openThread(key);
+    this.notifier.show({ app: 'messages', title: from || this.titleOf(key), body: text, onTap: () => this.openThread(key) });
   }
 
   /** 검은 아이콘이 열린다: 새벽에 「검은 수첩」으로 들어간다 */
@@ -348,7 +328,7 @@ export class Phone {
     this.renderFoot();
     this.renderTip();
     this.homeBar.setAttribute('aria-label', t(this.home ? 'phone.leaveHome' : 'phone.goHome'));
-    const sig = `${this.home}|${this.tab}|${this.view}|${this.contactKey}|${this.noteSel}`;
+    const sig = `${this.home}|${this.tab}|${this.view}|${this.contactKey}|${this.noteFolder}|${this.noteSel}`;
     const n = this.feed.length + (this.awaiting.size ? 1 : 0);
     if (sig !== this.lastSig) this.body.scrollTop = 0; // 화면이 바뀌면 맨 위부터
     else if (this.view !== null && stick && n !== this.lastCount) {
@@ -396,8 +376,6 @@ export class Phone {
   }
 
   private renderTip(): void {
-    this.tip.hidden = this.tipText === '';
-    this.tip.textContent = this.tipText;
   }
 
   private renderBody(): void {
@@ -580,7 +558,6 @@ export class Phone {
   openThread(key: string, template: string | null = null): void {
     this.view = key;
     this.home = false;
-    this.tipText = '';
     this.panelOpen = false;
     this.compose = { mode: this.defaultMode(key), template, product: null };
     this.unreadKeys.delete(key);
@@ -1105,63 +1082,114 @@ export class Phone {
     return box;
   }
 
-  // ---------------------------------------------------------------- 메모 (수칙)
+  // ---------------------------------------------------------------- 메모 (폴더 → 목록 → 본문)
 
-  /** 메모 앱: 목록(새벽 수칙이 맨 위) → 수칙 본문 */
+  private noteList(folder: 'rules' | 'tips' | 'clues' | 'trash'): NoteItem[] {
+    const day = this.s.day;
+    if (folder === 'rules') {
+      const out: NoteItem[] = [];
+      if (this.dawnRules) out.push({ id: 'dawn', title: t('phone.rulesDawn'), lines: this.dawnRuleList().map((r) => ({ n: r.id, text: r.text, torn: r.id === 6 })), day, shift: 'dawn', at: '00:30', fresh: this.dawnNew });
+      out.push({ id: 'afternoon', title: t('phone.rulesAfternoon'), lines: this.afternoonRules().map((x, i) => ({ n: i + 1, text: x })), day: 1, shift: 'afternoon', at: '12:30' });
+      return out;
+    }
+    if (folder === 'tips') {
+      return this.tipNotes.map((n) => ({ id: n.id, title: n.text.length > 14 ? `${n.text.slice(0, 14)}…` : n.text, lines: [{ n: 0, text: n.text }], day: n.day, shift: n.day === day ? this.s.shift : 'afternoon', at: n.at }));
+    }
+    return [];
+  }
+
+  private folderCount(f: 'rules' | 'tips' | 'clues' | 'trash'): number { return this.noteList(f).length; }
+
+  /** 메모 앱: 폴더 목록 */
   private rules(): void {
-    const wrap = el('div', 'rules');
-    if (this.noteSel !== null) { this.noteDoc(wrap, this.noteSel); this.body.append(wrap); return; }
-    wrap.append(this.header(t('phone.apps.notes')));
-    const list = el('div', 'note-list');
-    if (this.dawnRules) list.append(this.noteRow('dawn'));
-    list.append(this.noteRow('afternoon'));
-    wrap.append(list);
+    const wrap = el('div', 'rules notes');
+    const sel = this.noteFolder;
+    if (sel !== null && this.noteSel !== null) { this.noteDoc(wrap, sel, this.noteSel); this.body.append(wrap); return; }
+    if (sel !== null) { this.noteListView(wrap, sel); this.body.append(wrap); return; }
+    wrap.append(el('div', 'notes__large', t('phone.notes.folders')));
+    const group = el('div', 'folder-list');
+    const defs: ['rules' | 'tips' | 'clues' | 'trash', string][] = [
+      ['rules', t('phone.notes.folderRules')], ['tips', t('phone.notes.folderTips')], ['clues', t('phone.notes.folderClues')], ['trash', t('phone.notes.folderTrash')],
+    ];
+    for (const [id, label] of defs) {
+      const row = button(`folder-row${id === 'trash' ? ' folder-row--dim' : ''}`, '', () => { this.noteFolder = id; this.noteSel = null; this.refresh(); });
+      const fresh = id === 'rules' && this.dawnNew;
+      row.append(el('span', 'folder-row__icon', ''), el('span', 'folder-row__name', label), fresh ? el('span', 'folder-row__dot', '') : el('span', ''), el('span', 'folder-row__n', String(this.folderCount(id))), phoneGlyph('back', 'pico pico--chev'));
+      group.append(row);
+    }
+    wrap.append(group);
     if (!this.dawnRules) wrap.append(el('div', 'hint', t('phone.rulesDawnLocked')));
-    this.dawnNew = false;
     this.body.append(wrap);
   }
 
-  private openNote(kind: 'afternoon' | 'dawn'): void {
-    this.noteSel = kind;
-    this.refresh();
+  /** 폴더 안 목록: 큰 제목, 검색 칸, 날짜 그룹 머리말, 행(굵은 제목 · 날짜 · 첫 줄) */
+  private noteListView(wrap: HTMLElement, folder: 'rules' | 'tips' | 'clues' | 'trash'): void {
+    const back = button('nav-back', '', () => { this.noteFolder = null; this.refresh(); });
+    back.append(phoneGlyph('back', 'pico pico--back'), el('span', '', t('phone.notes.folders')));
+    const titles = { rules: t('phone.notes.folderRules'), tips: t('phone.notes.folderTips'), clues: t('phone.notes.folderClues'), trash: t('phone.notes.folderTrash') };
+    const search = el('div', 'search');
+    search.append(phoneGlyph('search', 'pico pico--search'), el('span', '', t('phone.notes.search')));
+    wrap.append(back, el('div', 'notes__large', titles[folder]), search);
+    const items = this.noteList(folder);
+    if (items.length === 0) {
+      wrap.append(el('div', 'hint', folder === 'clues' ? t('phone.notes.emptyClues') : folder === 'tips' ? t('phone.notes.emptyTips') : t('phone.notes.emptyTrash')));
+      return;
+    }
+    const list = el('div', 'note-list');
+    let group = '';
+    for (const n of items) {
+      const g = n.day === this.s.day ? t('phone.notes.today') : n.day === this.s.day - 1 ? t('phone.notes.yesterday') : t('phone.notes.earlier');
+      if (g !== group) { group = g; list.append(el('div', 'note-group', g)); }
+      const row = button(`note-row${n.fresh ? ' is-new' : ''}`, '', () => { this.noteSel = n.id; this.refresh(); });
+      const top = el('span', 'note-row__top');
+      top.append(el('span', 'note-row__title', n.title), n.fresh ? el('span', 'note-row__dot', '') : el('span', ''));
+      const first = n.lines[0]?.text ?? '';
+      const meta = el('span', 'note-row__meta');
+      meta.append(el('span', 'note-row__date', `${t('phone.dayN', { n: n.day })} ${t(`phone.cardBook.${n.shift}`)}`), el('span', 'note-row__line', first));
+      row.append(top, meta);
+      list.append(row);
+    }
+    wrap.append(list);
+    if (folder === 'rules') this.dawnNew = false;
   }
 
-  /** 목록의 한 줄: 굵은 제목 · 첫 줄 · 날짜 */
-  private noteRow(kind: 'afternoon' | 'dawn'): HTMLElement {
-    const dawn = kind === 'dawn';
-    const first = dawn ? this.dawnRuleList()[0]?.text ?? '' : this.afternoonRules()[0] ?? '';
-    const date = dawn ? `${t('phone.dayN', { n: this.s.day })} ${t('phone.cardBook.dawn')}` : `${t('phone.dayN', { n: 1 })} ${t('phone.cardBook.afternoon')}`;
-    const row = button(`note-row${dawn && this.dawnNew ? ' is-new' : ''}`, '', () => this.openNote(kind));
-    const top = el('span', 'note-row__top');
-    top.append(el('span', 'note-row__title', dawn ? t('phone.rulesDawn') : t('phone.rulesAfternoon')), el('span', 'note-row__date', date));
-    row.append(top, el('span', 'note-row__line', first));
-    return row;
-  }
-
-  /** 새벽 수칙: 지금 날짜까지 열린 조항 */
-  private dawnRuleList(): { id: number; text: string }[] {
-    return this.data.rules.filter((x) => x.day <= this.s.day);
-  }
-
-  /** 메모 본문: ‹ 메모 · 굵은 제목 · 조항. 6번은 찢겨 있다. */
-  private noteDoc(wrap: HTMLElement, kind: 'afternoon' | 'dawn'): void {
+  /** 메모 본문: 날짜 · 큰 제목 · 번호 목록. 6번은 찢겨 있다. 읽기 전용. */
+  private noteDoc(wrap: HTMLElement, folder: 'rules' | 'tips' | 'clues' | 'trash', id: string): void {
+    const items = this.noteList(folder);
+    const n = items.find((x) => x.id === id);
     const back = button('nav-back', '', () => { this.noteSel = null; this.refresh(); });
-    back.append(phoneGlyph('back', 'pico pico--back'), el('span', '', t('phone.apps.notes')));
-    wrap.append(back, el('div', 'note-doc__title', kind === 'dawn' ? t('phone.rulesDawn') : t('phone.rulesAfternoon')));
-    const ol = el('ol', kind === 'dawn' ? 'rules__list rules__list--dawn' : 'rules__list');
-    if (kind === 'afternoon') for (const l of this.afternoonRules()) ol.append(el('li', '', l));
-    else {
-      for (const r of this.dawnRuleList()) {
-        const li = el('li', r.id === 6 ? 'torn' : '', r.text);
-        li.value = r.id;
-        ol.append(li);
-      }
+    const titles = { rules: t('phone.notes.folderRules'), tips: t('phone.notes.folderTips'), clues: t('phone.notes.folderClues'), trash: t('phone.notes.folderTrash') };
+    back.append(phoneGlyph('back', 'pico pico--back'), el('span', '', titles[folder]));
+    wrap.append(back);
+    if (!n) return;
+    wrap.append(el('div', 'note-doc__date', t('phone.notes.edited', { day: t('phone.dayN', { n: n.day }), shift: t(`phone.cardBook.${n.shift}`), time: n.at })));
+    wrap.append(el('div', 'note-doc__title', n.title));
+    const numbered = n.lines.length > 1 || (n.lines[0]?.n ?? 0) > 0;
+    const ol = el(numbered ? 'ol' : 'div', `rules__list${n.shift === 'dawn' ? ' rules__list--dawn' : ''}`);
+    for (const l of n.lines) {
+      const li = el(numbered ? 'li' : 'p', l.torn ? 'torn' : '', l.text);
+      if (numbered && l.n) (li as HTMLLIElement).value = l.n;
+      ol.append(li);
     }
     wrap.append(ol);
+  }
+
+  private dawnRuleList(): { id: number; text: string }[] {
+    return this.data.rules.filter((x) => x.day <= this.s.day);
   }
 
   private afternoonRules(): string[] {
     const lines = (this.data.strings as { briefing: { afternoon: { lines: string[] } } }).briefing.afternoon.lines;
     return lines.filter((x) => /^\d\./.test(x)).map((x) => x.replace(/^\d\.\s*/, ''));
   }
+}
+
+interface NoteItem {
+  id: string;
+  title: string;
+  lines: { n: number; text: string; torn?: boolean }[];
+  day: number;
+  shift: 'afternoon' | 'dawn';
+  at: string;
+  fresh?: boolean;
 }
