@@ -876,12 +876,14 @@ export class Phone {
       const row = el('div', 'contact');
       const head = button('contact__head', '', () => this.openContact(key));
       const chip = this.chipFor(c);
-      head.append(avatar(c.name), el('span', 'contact__name', c.name));
+      const text = el('span', 'contact__text');
+      text.append(el('span', 'contact__name', c.name));
+      if (c.address) text.append(el('span', 'contact__addr', c.address));
+      text.append(el('span', 'contact__memo', c.memo));
+      if (c.memoStruck) text.append(el('span', 'contact__memo contact__memo--struck', c.memoStruck));
+      head.append(avatar(c.name), text);
       if (chip) head.append(el('span', `chip-state chip-state--${chip}`, t(`phone.chip.${chip}`)));
       row.append(head);
-      if (c.address) row.append(el('div', 'contact__addr', c.address));
-      row.append(el('div', 'contact__memo', c.memo));
-      if (c.memoStruck) row.append(el('div', 'contact__memo contact__memo--struck', c.memoStruck));
       list.append(row);
     }
     this.body.append(list);
@@ -897,9 +899,11 @@ export class Phone {
     for (const c of regs) {
       const row = el('div', 'contact');
       const head = button('contact__head', '', () => this.openContact(c.id));
-      head.append(avatar(c.name), el('span', 'contact__name', c.name), el('span', 'chip-state chip-state--sent', t(`tier.${(s.cards[c.id] as ClientCard).tier}`)));
+      const text = el('span', 'contact__text');
+      text.append(el('span', 'contact__name', c.name));
+      if (c.care.memo && s.shift === 'dawn') text.append(el('span', 'contact__memo', c.care.memo));
+      head.append(avatar(c.name), text, el('span', 'chip-state chip-state--sent', t(`tier.${(s.cards[c.id] as ClientCard).tier}`)));
       row.append(head);
-      if (c.care.memo && s.shift === 'dawn') row.append(el('div', 'contact__memo', c.care.memo));
       into.append(row);
     }
   }
@@ -925,9 +929,11 @@ export class Phone {
       const sold = card.purchases.some((x) => x.day === s.day);
       const row = el('div', 'contact');
       const head = el('div', 'contact__head contact__head--static');
-      head.append(avatar(c.name), el('span', 'contact__name', c.name), el('span', `chip-state chip-state--${sold ? 'coming' : 'no'}`, t(sold ? 'phone.soldMark' : 'phone.failMark')));
+      const text = el('span', 'contact__text');
+      text.append(el('span', 'contact__name', c.name));
+      if (c.care.memo && s.shift === 'dawn') text.append(el('span', 'contact__memo', c.care.memo));
+      head.append(avatar(c.name), text, el('span', `chip-state chip-state--${sold ? 'coming' : 'no'}`, t(sold ? 'phone.soldMark' : 'phone.failMark')));
       row.append(head);
-      if (c.care.memo && s.shift === 'dawn') row.append(el('div', 'contact__memo', c.care.memo));
       const thanksId: CareTemplateId = s.shift === 'dawn' ? 'dawn_thanks' : 'thanks';
       if (card.lastThanksDay === s.day) row.append(el('div', 'hint', t('phone.thanksDone')));
       else if (card.purchases.length > 0 && !c.care.unreachable) {

@@ -426,6 +426,8 @@ html[data-layout='mobile'] .folder-row { padding: var(--space-3) var(--space-3);
 
 /* 연락처: 이름은 한 단계 작게, 이름과 메모 사이를 좁힌다 */
 .contact__name { font-size: 10px; line-height: 14px; }
-.contact__addr, .contact__memo { margin-top: -9px; }
+.contact__text { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: 1px; padding: 3px 0; }
+.contact__text .contact__name { flex: none; }
+.contact__text .contact__addr, .contact__text .contact__memo { padding-left: 0; display: block; }
+.contact__head { text-align: left; }
 html[data-layout='mobile'] .contact__name { font-size: 13px; line-height: 18px; }
-html[data-layout='mobile'] .contact__addr, html[data-layout='mobile'] .contact__memo { margin-top: -12px; }
