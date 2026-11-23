@@ -6,6 +6,7 @@
 1. `docs/GDD.md`: 규칙, 수치, 대사. **진실의 원천이다**
 2. `docs/DESIGN_SYSTEM.md`: 토큰, 레이아웃, 컴포넌트 상태
 3. `docs/TECH_SPEC.md`: 구조, 타입, 마일스톤 M0~M7
+4. `docs/CUSTOMERS.md`: 오후 8명·새벽 8명 명단, 전체 수칙 11개, 추가 상품
 
 ## 반드시 지킬 것
 - `src/core/`는 DOM, Canvas, window를 쓰지 않는다. 유니티 이식 경계다.

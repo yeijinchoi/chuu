@@ -66,7 +66,17 @@ export type GreetStyle = 'warm' | 'quiet' | 'direct';
 export type ProbeId = 'askCategory' | 'askOccasion' | 'askBudget' | 'observe';
 export type CloseId = 'tryOn' | 'boxRed' | 'boxGold' | 'checkout';
 export type TemplateId = 'new_arrival' | 'private' | 'greeting' | 'dawn_open' | 'dawn_offer' | 'dawn_name';
-export type RuleId = 1 | 2 | 3 | 4 | 5;     // 새벽 수칙. 6번(찢김)은 데이터에만 있고 판정 없음
+export type RuleId = number;               // 1~11. 6번(찢김)은 데이터에만 있고 판정 없음
+export type Stage = 'greet' | 'probe' | 'propose' | 'close';
+
+/** 수칙은 코드가 아니라 데이터(rules.json)로 정의한다 */
+export interface RuleDef {
+  id: RuleId; day: number; text: string;     // 받는 날, 쪽지에 보일 문장
+  stage: Stage | 'event';
+  forbid?: string[];     // 이 단계에서 고르면 위반: 'warm' | 'askBudget' | 'observe' | 'askOccasion' | 'tryOn' | 'boxRed' | 'boxGold' | 'checkout'
+  require?: string;      // 이 단계에서 반드시 골라야 함: 9번 = 'askBudget', 10번 = 'empty_box', 4번 = 'boxRed'
+  universal?: boolean;   // 2번: 모든 새벽 손님에게 적용(단, 9번이 걸린 손님은 예외)
+}
 export type Mood = 'calm' | 'uneasy' | 'dread' | 'collapse';
 
 export interface Product {
@@ -82,7 +92,11 @@ export interface CustomerDef {
   greetPref: GreetStyle;
   category: Category | 'any'; color: Color | null; budget: number | null;
   mentionsPrice: boolean; occasionIsGift: boolean;
-  traits: { floats?: boolean; wantsAnything?: boolean; noEyeContact?: boolean; extraFingers?: boolean };
+  form: 'humanoid' | 'creature';
+  speaksVia?: 'voice' | 'tapping' | 'phone' | 'speaker' | 'none'; // 크리처의 전달 방식 (대화창 이름표에 표시)
+  rules: RuleId[];                                   // 이 손님에게 걸린 수칙 (2번은 universal이라 생략)
+  onlyProduct?: string;                              // D8: 'empty_box'만 정답
+  traits: { frostHands?: boolean; wantsAnything?: boolean; extraFingers?: boolean };
   specialPayment?: { label: string; amount: number }; // 새벽 장부
   sprite: SpriteParams;
   lines: {
@@ -196,10 +210,13 @@ UI는 `dispatch` 결과 이벤트를 **큐로 순서대로 재생**한다(대사
 - 점수 상수는 `encounter.ts` 상단 `export const SCORE = {...}`에 모은다. 값은 GDD §5를 따른다.
 - 호감은 매번 `clamp(0, 100)`로 자른다. 평정심은 `0..100`.
 - **교대 구분이 판정을 바꾼다.** 같은 행동이라도 `shift === 'afternoon'`이면 매너 실수, `'dawn'`이면 수칙 위반이다.
-- 수칙 판정(`rules.ts`)은 순수 함수로 둔다. 반환값은 `{ kind: 'manner' } | { kind: 'rule'; rule: RuleId } | null`:
-  - `checkProbe(c, probe)`: `askBudget` && `!c.mentionsPrice` → 오후는 `manner`, 새벽은 규칙 2. `observe` && `traits.noEyeContact` → 규칙 5
-  - `checkClose(c, choice)`: `tryOn` && `traits.floats` → 규칙 1. `traits.wantsAnything` && choice ≠ `boxRed` → 규칙 4
-  - 04:44 답장 → 규칙 3
+- 수칙 판정(`rules.ts`)은 `RuleDef` 데이터를 읽는 **범용 함수 하나**로 둔다: `checkChoice(customer, stage, choice, ruleDefs, shift)` → `{ kind: 'manner' } | { kind: 'rule'; rule } | null`.
+  - 오후: `askBudget` && `!c.mentionsPrice` → `manner`. 오후에는 그 밖의 판정이 없다.
+  - 새벽: 손님의 `rules` + universal 수칙(2번)을 모은다. 9번이 걸린 손님에게는 2번을 적용하지 않는다. `forbid`에 든 선택이면 위반이다.
+  - `require`는 그 단계가 **끝날 때** 검사한다. 9번은 니즈 파악 두 칸을 다 썼는데 `askBudget`이 없으면 위반, 10번은 `empty_box`가 아닌 상품을 고르면 위반, 4번은 `boxRed`가 아닌 클로징이면 위반이다.
+  - 3번(04:44 답장)은 `stage: 'event'`라 `closingText` 처리에서 직접 검사한다.
+- `pickOffers`: `onlyProduct`가 있는 손님(D8)이면 일반 카드 3장 + `empty_box` 1장, 총 4장을 낸다.
+- 새 손님이나 수칙을 추가할 때는 코드를 고치지 않고 `customers.json`과 `rules.json`만 고친다. 이게 이 구조의 목적이다.
 - 처리: `manner`면 호감 −10, `mannerSlips++`, 응대를 계속한다. 새벽 `rule`이면 `violation` + `horror` 이벤트, 평정심 −25, `outcome='horror'`로 즉시 응대를 끝낸다.
 - 평정심은 새벽에만 바뀐다. 오후 판매 성공으로 평정심이 오르지 않는다.
 - 손님별 위반 대사는 `lines.violation[rule]`에서 가져온다. 없으면 `strings.ko.json`의 기본값을 쓴다.
@@ -218,10 +235,10 @@ GDD §6, §7, §11, §12의 표를 **그대로** JSON으로 옮긴다. 대사 �
 // customers.json (일부)
 [{
   "id": "baek", "name": "백설", "shift": "dawn", "motif": "바람 위를 걷는 존재",
-  "entranceNote": "매장 안 온도가 내려간다. 발소리가 없다.", "greetPref": "quiet",
+  "entranceNote": "매장 안 온도가 내려간다. 카운터에 올린 손끝마다 하얗게 서리가 맺혀 있다.", "greetPref": "quiet",
   "category": "glove", "color": "white", "budget": 5000000,
   "mentionsPrice": false, "occasionIsGift": false,
-  "traits": { "floats": true },
+  "traits": { "frostHands": true },
   "specialPayment": { "label": "녹지 않는 서리 한 병", "amount": 4400000 },
   "sprite": { "hair": "long", "hairColor": "paper", "skin": "skin-a", "outfit": "paper", "accent": "steel" },
   "lines": { "opening": "문자 고마워요. 늘 고마워요.", "openingUninvited": "문자를… 안 주셨더라고요. 그래서 제가 왔어요.", "...": "..." }
@@ -236,7 +253,7 @@ GDD §6, §7, §11, §12의 표를 **그대로** JSON으로 옮긴다. 대사 �
 | 진영숙 | bun | bone(은발) | shadow 상복 | paper 진주 목걸이(알 하나 빠짐) |
 | 마시 씨 | 젖어 붙은 짧은 머리 | stone | dusk 정장, 소매에서 물방울 | steel 큰 눈(깜빡이지 않음), 목 옆 아가미 선 1줄 |
 | 얼굴 없는 여자 | long, 얼굴을 가림 | ink | **rose 코트** (새벽 매장에서 유일하게 넓은 색 면적) | ash 손가락 |
-| 백설 | long | paper | paper | steel 눈, 발이 2px 떠 있음 |
+| 백설 | long | paper | paper | steel 눈, 카운터 위 손끝에 steel 서리 도트, 손 주변 카운터 유리에 성에 |
 
 > 팔레트는 16색 고정이다. 색을 추가하지 않는다. 포인트 색(rose/brass/steel/wine)은 손님 한 명당 1~2곳에만 쓴다.
 
@@ -246,9 +263,11 @@ GDD §6, §7, §11, §12의 표를 **그대로** JSON으로 옮긴다. 대사 �
 - 정적인 배경은 처음 한 번만 오프스크린에 굽는다. 매 프레임 다시 그리는 건 샹들리에, 진열 글로우, 손님, 효과뿐이다.
 - **mood 팔레트**: 그리기 함수는 hex가 아니라 **팔레트 키**(`'rose'`)를 받는다. `palette.resolve(key, mood)`가 실제 색을 돌려준다. `breach`일 때는 밝기에 따라 키를 `ink` 또는 `wine`으로 바꾸고, 가장 밝은 키만 `paper`로 남긴다. 이렇게 하면 팔레트 스왑이 셰이더 없이 된다. 유니티에서는 팔레트 LUT 셰이더 하나로 옮기면 된다.
 - 거울: 배경 장식일 뿐 **아무것도 비추지 않는다**(반사 렌더링 없음). 유리 하이라이트 사선 2줄만 그린다.
-- 새벽 손님의 이상한 특징(깜빡이지 않는 눈, 얼굴 없음, 떠 있는 발, 많은 손가락)은 **숨기지 않고 처음부터 그린다.** 정체를 가려내는 숨은 단서는 없다.
+- 크리처(D5~D8)는 손님별 전용 그리기 함수와 위치를 쓴다(`CUSTOMERS.md` §5).
+- 새벽 손님의 이상한 특징(깜빡이지 않는 눈, 얼굴 없음, 서리 맺힌 손, 많은 손가락)은 **숨기지 않고 처음부터 그린다.** 정체를 가려내는 숨은 단서는 없다.
 - **교대 전환**: 오후 진열은 가방·시계·주얼리, 새벽 진열은 GDD §12-2 아이템이다. 새벽에는 샹들리에를 끄고 카운터 스탠드 하나만 켠다(빛 반경 밖은 무채색 한 단계 어둡게). 새벽 기본 mood는 `uneasy`다.
-- 마시 씨가 있는 동안 바닥에 물웅덩이(steel 하이라이트 1도트)가 번진다.
+- **보이는 범위**: 사람형 손님은 카운터 뒤 상체와 카운터 위에 올린 손만 보인다. 특징은 반드시 이 범위(얼굴·머리·상체·손·카운터 상판)에 그린다.
+- 마시 씨가 있는 동안 카운터 상판에 물이 고인다(steel 하이라이트 1도트씩 번짐).
 - 마네킹: `dread` 이상이면 왼쪽 마네킹 머리가 돌아가고, `collapse`면 머리가 단발(서윤)로 바뀐다.
 - 출입문 실루엣: `closingText`(04:44) 단계에서만 그린다.
 - 효과(`effects.ts`): `flicker`(샹들리에 밝기, 최소 간격 350ms), `scanlines`(짝수 줄 `ink` 20%), `shake`(±2px, 300ms), `breach`(1.2초). `prefers-reduced-motion`이면 shake와 flicker를 끈다.
@@ -273,7 +292,7 @@ interface StorageAdapter { load(): SaveV1 | null | 'corrupt'; save(s: SaveV1): b
 ## 9. 테스트 (Vitest) — 통과 기준
 
 1. **전체 플레이 시나리오**: 코드로 1일차 정답 루트를 끝까지 진행한다. 오후 문자는 kang=new_arrival, jin=private, 새벽 문자는 marsh=dawn_offer, baek=dawn_name이다. 판매 6건, 매너 실수 0, 수칙 위반 0, 등급 S가 나와야 한다.
-2. 수칙 판정 단위 테스트: 규칙 1·2·4·5 × (위반 / 비위반) + 같은 `askBudget`이 오후에는 `manner`, 새벽에는 규칙 2인지 확인.
+2. 수칙 판정 단위 테스트: `rules.json`의 판정 가능한 수칙 10개(1~5, 7~11) 각각 × (위반 / 비위반). 같은 `askBudget`이 오후에는 `manner`, 새벽에는 규칙 2, 문 밖의 손님에게는 **필수**인지 확인.
 3. 문자 판정: 선호·중립·비선호·미발송·`baek` 예외·`zero` 평정심·교대별 발송 한도(2/2).
 4-1. 교대 분리: 오후 손님에게 새벽 상품이 제안되지 않는다. 오후에는 평정심이 바뀌지 않는다.
 4. `pickOffers`: 같은 시드면 같은 결과가 나오고, 매칭 상품이 항상 포함된다.
