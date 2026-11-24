@@ -11,9 +11,16 @@ export const CANVAS_W = 640;
 export const CANVAS_H = 360;
 
 /** 정수배 맞춤. 창이 무대보다 작으면 비율 유지 소수 배율. */
+/**
+ * 무대(960×540)를 창에 맞춰 키운다. 정수 배로만 키우면 1920 미만의 창(1280×800, 1440×900 노트북)에서
+ * 1배에 머물러 화면 가운데에 작게 뜨고 글자가 작다. 그래서 창에 꽉 차는 소수 배율을 쓴다(1/20 단위로 내림:
+ * 창 크기가 조금 바뀔 때마다 배율이 흔들리지 않게). 정수 배에 아주 가까우면 정수로 붙여 도트를 또렷하게 둔다.
+ */
 export function computeScale(vw: number, vh: number): number {
   const fit = Math.min(vw / STAGE_W, vh / STAGE_H);
-  return fit >= 1 ? Math.max(1, Math.floor(fit)) : fit;
+  const whole = Math.round(fit);
+  if (whole >= 1 && Math.abs(fit - whole) < 0.04) return whole;
+  return Math.max(0.1, Math.floor(fit * 20) / 20);
 }
 
 export interface Stage {

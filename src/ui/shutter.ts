@@ -19,7 +19,11 @@ export class Shutter {
       // 장면 셔터에만 매장 이름 명판을 단다 (진열 칸은 셔터 살만)
       if (i === 0) s.append(el('div', 'shutter__plate', t('frame.signboard')));
       s.append(el('div', 'shutter__bar'));
-      h.appendChild(s);
+      // 걷어 올린 셔터는 틀 위로 삐져나가면 안 된다: 틀 안쪽만 보이는 감싸개에 넣는다
+      // (진열 틀은 제목 명판이 위로 튀어나와 있어서 틀 자체를 overflow: hidden으로 자를 수 없다)
+      const clip = el('div', 'shutter-clip');
+      clip.append(s);
+      h.appendChild(clip);
       return s;
     });
   }

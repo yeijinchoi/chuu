@@ -258,7 +258,8 @@ button:disabled, button[aria-disabled='true'] { cursor: default; }
 
 /* ---------- 교대 셔터 (shutter.ts): 장면·진열 위로 내려오는 매장 셔터. 대화창(z-dialogue)보다 아래 ---------- */
 .shutter-host { position: relative; }
-.shutter { position: absolute; inset: 0; z-index: 5; pointer-events: none; transform: translateY(-101%);
+.shutter-clip { position: absolute; inset: 0; z-index: 5; overflow: hidden; pointer-events: none; }
+.shutter { position: absolute; inset: 0; pointer-events: none; transform: translateY(-101%);
   background-color: var(--dusk);
   /* 8px 셔터 살: 윗면 빛(stone) 2px · 몸 4px · 이음 그림자 2px */
   background-image: repeating-linear-gradient(to bottom, var(--stone) 0 2px, var(--dusk) 2px 6px, var(--shadow) 6px 8px);
@@ -308,3 +309,9 @@ html[data-layout='mobile'] .opening__compose .opening__send { min-width: 88px; }
 .dialogue__text, .bubble, .note p, .note__head, .choice__label, .toast, .card__desc { text-wrap: pretty; }
 .dialogue__rest { visibility: hidden; } /* 타이핑 중 아직 안 나온 글자: 자리만 차지한다 */
 .opening__text, .opening__scene { text-wrap: balance; } /* 가운데 정렬 지문은 줄 길이를 고르게 */
+
+/* ---------- 본문 크기 키우기: 대화창 11→14px(3줄까지, 가장 긴 대사 90자도 3줄), 이름표·선택지 한 단계씩 ---------- */
+.dialogue { top: 296px; height: 80px; } /* 아래 끝(376px)은 그대로, 위로 늘린다 */
+.dialogue__text { font-size: 14px; line-height: 20px; height: 60px; }
+.dialogue__plate { font-size: 12px; line-height: 14px; height: 20px; top: -21px; }
+.choice { height: 36px; font-size: 12px; line-height: 14px; }
