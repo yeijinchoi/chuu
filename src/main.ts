@@ -10,6 +10,10 @@ import { mountDebug } from './ui/debug';
 import { startApp } from './ui/app';
 import { prefersReducedMotion } from './render/effects';
 import { loadCustomerSprites } from './render/sprites';
+import { applyStoredEdits } from './editor/store';
+
+// 문구 편집기의 미리보기: ?edited=1 이면 이 브라우저에 저장된 수정 내용으로 게임 글을 덮어쓴다 (저장본은 건드리지 않는다)
+const EDITED = new URLSearchParams(location.search).get('edited') === '1' ? applyStoredEdits() : -1;
 
 const FONT_TIMEOUT_MS = 4000;
 const FACES = [
@@ -83,6 +87,12 @@ async function boot(): Promise<void> {
   if (debug) mountDebug(stage.root, renderer);
   else startApp(stage, renderer, { debug: new URLSearchParams(location.search).get('test') === '1', reduced: prefersReducedMotion() });
   void loadCustomerSprites().then((sp) => renderer.setSprites(sp));
+
+  if (EDITED >= 0) {
+    const badge = el('div', 'edit-badge', EDITED > 0 ? `수정본 미리보기 · ${EDITED}개 적용` : '수정본 미리보기 · 저장된 수정이 없어요');
+    badge.setAttribute('role', 'status');
+    app.appendChild(badge);
+  }
 
   if (!ok) {
     const notice = el('div', 'notice', strings.loading.fontFail);
