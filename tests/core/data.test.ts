@@ -45,7 +45,7 @@ describe('데이터 무결성', () => {
     expect(customer('marsh').lines.violation['5']).toBe('"보지 말라고 들었을 텐데요." 카운터 위의 물이 넘쳐 흐르기 시작한다.');
     expect(customer('faceless').lines.violation['4']).toBe('"빨간 상자가 아니네요." 코트가 열린다. 안에는 손가락뿐이다.');
     expect(customer('baek').lines.openingUninvited).toBe('문자를… 안 주셨더라고요. 그래서 제가 왔어요.');
-    expect(customer('hanyeoreum').lines.askOccasion).toBe('다음 주가 엄마 생신이에요. 첫 월급 받았거든요. 엄마는 튀는 색 싫어하세요.');
+    expect(customer('hanyeoreum').lines.askOccasion).toContain('엄마 생신'); // 편집기로 다듬은 문장이라 핵심 정보만 확인
   });
 
   it('1일차 일정과 문자 한도', () => {

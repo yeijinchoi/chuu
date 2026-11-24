@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { act, bestOffer, data, encOf, newGame, playAfternoon, rig, st } from './helpers';
+import { act, bestOffer, customer, data, encOf, newGame, playAfternoon, rig, st } from './helpers';
+
+// 대사는 편집기로 바뀔 수 있으니 원문을 적지 않고 데이터에서 읽는다
+const han = () => customer('hanyeoreum').reactions!;
 import type { GameEvent } from '../../src/core/types';
 
 const lines = (ev: GameEvent[]): string[] =>
@@ -19,7 +22,7 @@ describe('★ 반응 대사와 속마음', () => {
 
   it('인사: 맞음/틀림이 다른 반응을 낸다', () => {
     const a = rig('hanyeoreum', 'afternoon');
-    expect(lines(act(a, { type: 'greet', style: 'warm' }))).toContain('아, 다행이다… 너무 조용해서 들어와도 되나 했어요.');
+    expect(lines(act(a, { type: 'greet', style: 'warm' }))).toContain(han().greet!.match);
     const b = rig('hanyeoreum', 'afternoon');
     expect(lines(act(b, { type: 'greet', style: 'direct' }))).toContain('앗, 아직 뭘 볼지도 몰라서요…');
   });
@@ -44,7 +47,7 @@ describe('★ 반응 대사와 속마음', () => {
     act(g, { type: 'greet', style: 'warm' });
     act(g, { type: 'probe', probe: 'askCategory' });
     act(g, { type: 'probe', probe: 'askOccasion' });
-    expect(lines(act(g, { type: 'propose', productId: bestOffer(g) }))).toContain('이거요. 엄마가 딱 들 것 같아요.');
+    expect(lines(act(g, { type: 'propose', productId: bestOffer(g) }))).toContain(han().propose!.perfect);
     const ev = act(g, { type: 'close', choice: 'boxGold' });
     const t = lines(ev);
     expect(t).toContain('와, 포장까지… 엄마가 상자만 봐도 놀라시겠다.');
