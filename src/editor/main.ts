@@ -371,10 +371,12 @@ function resetAll(): void {
 const GH_KEY = 'closing-time.editor.gh.v1';
 interface GhSettings { repo: string; branch: string; token: string; remember: boolean }
 function loadGh(): GhSettings {
-  const d: GhSettings = { repo: 'yeijinchoi/chuu', branch: 'claude/trusting-faraday-4mk8i9', token: '', remember: false };
+  // 토큰은 코드에 넣지 않는다(공개 저장소·배포 파일에 그대로 노출되고 GitHub가 바로 폐기한다).
+  // 대신 한 번 넣으면 이 브라우저에 고정해 두고, 다음부터는 묻지 않는다.
+  const d: GhSettings = { repo: 'yeijinchoi/chuu', branch: 'claude/trusting-faraday-4mk8i9', token: '', remember: true };
   try {
     const v = JSON.parse(localStorage.getItem(GH_KEY) ?? 'null') as Partial<GhSettings> | null;
-    if (v) return { repo: v.repo ?? d.repo, branch: v.branch ?? d.branch, token: v.token ?? '', remember: !!v.token };
+    if (v) return { repo: v.repo ?? d.repo, branch: v.branch ?? d.branch, token: v.token ?? '', remember: v.remember ?? true };
   } catch { /* 설정을 못 읽어도 기본값으로 */ }
   return d;
 }
@@ -398,6 +400,15 @@ inToken.type = 'password';
 inToken.autocomplete = 'off';
 const inRemember = el('input');
 inRemember.type = 'checkbox';
+
+/** 입력하는 즉시 이 브라우저에 고정한다 (게시를 누르기 전에 창을 닫아도 남는다) */
+function saveGh(): void {
+  try {
+    const token = inToken.value.trim();
+    localStorage.setItem(GH_KEY, JSON.stringify({ repo: inRepo.value.trim(), branch: inBranch.value.trim(), token: inRemember.checked ? token : '', remember: inRemember.checked }));
+  } catch { /* 기억하지 못해도 게시는 된다 */ }
+}
+for (const i of [inRepo, inBranch, inToken, inRemember]) i.addEventListener('change', saveGh);
 
 function openPublish(): void {
   const n = Object.keys(state.patch).length;
@@ -423,9 +434,7 @@ async function doPublish(): Promise<void> {
   if (!/^[\w.-]+\/[\w.-]+$/.test(repo)) { showPub({ ok: false, kind: 'notfound', step: '확인', message: '저장소는 "소유자/이름" 형식이어야 해요.' }); return; }
   if (!branch) { showPub({ ok: false, kind: 'notfound', step: '확인', message: '브랜치를 입력해 주세요.' }); return; }
   if (!token) { showPub({ ok: false, kind: 'auth', step: '확인', message: '토큰을 입력해 주세요. 아래 안내대로 만들 수 있어요.' }); return; }
-  try {
-    localStorage.setItem(GH_KEY, JSON.stringify({ repo, branch, token: inRemember.checked ? token : '' }));
-  } catch { /* 기억하지 못해도 게시는 된다 */ }
+  saveGh();
   pubGo.disabled = true;
   pubGo.textContent = '올리는 중…';
   pubResult.textContent = 'GitHub에 올리는 중이에요. 창을 닫지 마세요.';
@@ -472,7 +481,7 @@ function showPub(r: PublishResult): void {
   ]) ol.append(el('li', '', t));
   how.append(ol);
   const rememberRow = el('label', 'ed-check');
-  rememberRow.append(inRemember, el('span', '', '이 브라우저에 토큰 기억하기 (내 컴퓨터에서만 체크하세요)'));
+  rememberRow.append(inRemember, el('span', '', '이 브라우저에 토큰 고정 (한 번 넣으면 다음부터 안 물어봐요. 내 컴퓨터에서만)'));
   const row = el('div', 'ed-dialog__row');
   row.append(pubGo, btn('닫기', 'ed-btn', () => publishDialog.close()));
   box.append(
