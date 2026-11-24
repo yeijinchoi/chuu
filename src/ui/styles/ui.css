@@ -303,3 +303,8 @@ html[data-layout='mobile'] .opening__scene, html[data-layout='mobile'] .opening_
 html[data-layout='mobile'] .opening__send { width: auto; flex: 0 0 88px; }
 html[data-layout='mobile'] .opening__input { flex: 1 1 auto; }
 html[data-layout='mobile'] .opening__compose .opening__send { min-width: 88px; } /* 모바일 공용 .btn(min-width 220px)보다 우선 */
+
+/* ---------- 줄바꿈: 마지막 줄에 단어 하나만 떨어지지 않게 (지원하지 않는 브라우저는 그냥 보통 줄바꿈) ---------- */
+.dialogue__text, .bubble, .note p, .note__head, .choice__label, .toast, .card__desc { text-wrap: pretty; }
+.dialogue__rest { visibility: hidden; } /* 타이핑 중 아직 안 나온 글자: 자리만 차지한다 */
+.opening__text, .opening__scene { text-wrap: balance; } /* 가운데 정렬 지문은 줄 길이를 고르게 */

@@ -46,9 +46,19 @@ export class Dialogue {
     const start = performance.now();
     this.timer = window.setInterval(() => {
       const n = Math.min(this.full.length, Math.floor(((performance.now() - start) / 1000) * CPS) + 1);
-      if (n !== this.shown) { this.shown = n; this.text.textContent = this.full.slice(0, n); }
+      if (n !== this.shown) { this.shown = n; this.reveal(n); }
       if (n >= this.full.length) this.finish();
     }, 16);
+  }
+
+  /**
+   * 타이핑: 아직 안 나온 글자도 투명하게 미리 깔아 둔다. 그래야 첫 글자부터 줄바꿈 위치가 고정되어
+   * 단어가 줄 끝에서 다음 줄로 튀지 않는다(줄바꿈은 완성된 문장 기준으로 한 번만 정해진다).
+   */
+  private reveal(n: number): void {
+    const rest = el('span', 'dialogue__rest', this.full.slice(n));
+    rest.setAttribute('aria-hidden', 'true');
+    this.text.replaceChildren(document.createTextNode(this.full.slice(0, n)), rest);
   }
 
   private stop(): void {
