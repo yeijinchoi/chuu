@@ -70,10 +70,11 @@ describe('괴현상 그림 (public/art/apparitions)', () => {
   it('그림으로 그리는 종류마다 그림 파일과 크기가 있다', async () => {
     const fs = await import('node:fs');
     const { APPARITION_ART } = await import('../../src/render/scene');
-    const manifest = JSON.parse(fs.readFileSync('public/art/apparitions/manifest.json', 'utf8')) as Record<string, { w: number; h: number }>;
+    const manifest = JSON.parse(fs.readFileSync('public/art/apparitions/manifest.json', 'utf8')) as Record<string, { w: number; h: number; lids?: boolean }>;
     for (const [kind, ref] of Object.entries(APPARITION_ART)) {
       expect(manifest[ref!.art], kind).toBeTruthy();
       expect(fs.existsSync(`public/art/apparitions/${ref!.art}.png`), kind).toBe(true);
+      if (manifest[ref!.art]?.lids) for (const n of [1, 2]) expect(fs.existsSync(`public/art/apparitions/${ref!.art}.lid${n}.png`), kind).toBe(true);
     }
   });
 });
@@ -97,7 +98,21 @@ describe('괴현상 움직임 (apparitionAnim)', () => {
     const s = (t: number) => apparitionAnim('mirrorFigure', t, 1.8, false).sx;
     expect(s(0.3)).toBeLessThan(s(0.9));
     expect(s(0.9)).toBeLessThan(s(1.5));
-    expect(apparitionAnim('giantEyes', 1.2, 2.0, false).sy).toBeLessThan(0.2);
+  });
+  it('눈은 눈꺼풀로 뜨고 깜빡이고 감긴다 (그림을 납작하게 누르지 않는다)', async () => {
+    const { apparitionAnim } = await import('../../src/render/scene');
+    for (const [kind, dur] of [['giantEyes', 2.0], ['eyesMany', 1.8], ['doorGapEyes', 1.1]] as const) {
+      const lids = Array.from({ length: Math.round(dur * 12) }, (_, n) => apparitionAnim(kind, (n + 0.5) / 12, dur, false));
+      expect(lids.every((a) => a.sy === a.sx), kind).toBe(true); // 세로로만 누르지 않는다
+      const seq = lids.map((a) => a.lid).join('');
+      expect(seq, kind).toMatch(/0+12?1?0+/); // 중간에 한 번 깜빡임: 뜸 → 반쯤 → 감김 → 반쯤 → 뜸
+      expect(seq, kind).toMatch(/0[12]*2$/); // 끝은 감긴 채
+      expect(seq, kind).toContain('2'); // 완전히 감기는 장이 있다
+    }
+    // 거대한 눈은 감긴 채 나타나 천천히 뜬다
+    expect(apparitionAnim('giantEyes', 0.04, 2.0, false).lid).toBe(2);
+    expect(apparitionAnim('giantEyes', 0.6, 2.0, false).lid).toBe(0);
+    expect(apparitionAnim('giantEyes', 1.2, 2.0, false).lid).toBeGreaterThan(0);
   });
   it('움직임 줄이기면 움직이지 않고 그대로 보인다', async () => {
     const { apparitionAnim } = await import('../../src/render/scene');

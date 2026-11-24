@@ -771,19 +771,38 @@ export const DOOR_GLASS = { x: 296, y: 42, w: 15, h: 44 };
  * 반투명 대신 체커 무늬로 스민다(dither 0~4: 0 = 안 보임, 4 = 다 보임). 팔레트 밖 중간색이 생기지 않게.
  * clip: 그림의 보이는 부분(0~1 비율, [왼, 위, 오른, 아래]). dx·dy는 화면 도트, sx·sy는 배율.
  */
-export interface ApparitionAnim { show: boolean; dx: number; dy: number; sx: number; sy: number; clip: [number, number, number, number]; dither: number; glass?: number }
+/** lid: 눈꺼풀 0 뜸 · 1 반쯤 감김 · 2 감김 (눈 종류만. 감은 그림에서 잘라 온 눈꺼풀 덧그림을 고른다) */
+export interface ApparitionAnim { show: boolean; dx: number; dy: number; sx: number; sy: number; clip: [number, number, number, number]; dither: number; glass?: number; lid: 0 | 1 | 2 }
+
+/**
+ * 눈꺼풀 (초당 12장 기준 장 번호 n, 전체 total장).
+ * 처음 open장 동안 감김(마지막 두 장은 반쯤) → 뜸. blinks의 각 시각(초)에 반쯤·감김·반쯤 세 장.
+ * 마지막 close장 동안 반쯤(처음 두 장) → 감김.
+ */
+function lidAt(n: number, total: number, open: number, close: number, blinks: readonly number[]): 0 | 1 | 2 {
+  const left = total - n;
+  if (n < open - 2 || left <= close - 2) return 2;
+  if (n < open || left <= close) return 1;
+  for (const b of blinks) {
+    const k = n - Math.round(b * 12);
+    if (k === 1) return 2;
+    if (k === 0 || k === 2) return 1;
+  }
+  return 0;
+}
 
 export function apparitionAnim(kind: ApparitionKind, tt: number, dur: number, reduced: boolean): ApparitionAnim {
-  const base: ApparitionAnim = { show: true, dx: 0, dy: 0, sx: 1, sy: 1, clip: [0, 0, 1, 1], dither: 4 };
+  const base: ApparitionAnim = { show: true, dx: 0, dy: 0, sx: 1, sy: 1, clip: [0, 0, 1, 1], dither: 4, lid: 0 };
   if (reduced) return base;
   const f = Math.floor(tt * 12) / 12; // 초당 12장
   const end = dur - f; // 남은 시간
   const ramp = (t: number, len: number): number => Math.min(1, Math.max(0, Math.floor((t / len) * 4) / 4)); // 4단계
+  const n = Math.floor(tt * 12), total = Math.round(dur * 12);
   switch (kind) {
     case 'doorGapEyes': {
-      // 유리가 먼저 어둡게 꺼지고(glass) 그 안에서 얼굴이 스며 나온다 → 눈이 한 번 움찔 → 스며 사라지고 유리가 돌아온다
-      const inn = ramp(f, 0.3), out = ramp(end, 0.25);
-      return { ...base, glass: Math.min(ramp(f, 0.15), ramp(end, 0.15)), dither: Math.round(4 * Math.min(inn, out)), dx: f > 0.55 && f < 0.65 ? 1 : 0 };
+      // 유리가 먼저 어둡게 꺼지고(glass) 그 안에서 뜬 눈의 얼굴이 스며 나온다 → 한 번 깜빡인다 → 눈을 감고 스며 사라진다
+      const inn = ramp(f, 0.3), out = ramp(end, 0.2);
+      return { ...base, glass: Math.min(ramp(f, 0.15), ramp(end, 0.12)), dither: Math.round(4 * Math.min(inn, out)), lid: lidAt(n, total, 0, 4, [0.4]) };
     }
     case 'hallHand': {
       // 바닥에서 천천히 올라온다 → 손가락이 경련하듯 떨린다 → 휙 꺼진다
@@ -808,16 +827,13 @@ export function apparitionAnim(kind: ApparitionKind, tt: number, dur: number, re
       return { ...base, sx: s, sy: s, dither: f < 0.15 ? 2 : 4 };
     }
     case 'giantEyes': {
-      // 천천히 떠진다 → 한 번 깜빡인다 → 감긴다
-      const open = Math.min(ramp(f, 0.4), ramp(end, 0.3));
-      const blink = f >= dur * 0.55 && f < dur * 0.55 + 0.17; // 두 장 동안 (초당 12장에서 빠지지 않게)
-      const sy = blink ? 0.12 : Math.max(0.12, open);
-      return { ...base, sy };
+      // 감긴 채 스며 나온다 → 눈꺼풀이 천천히 올라간다 → 한 번 깜빡인다 → 감기고 스며 사라진다
+      return { ...base, dither: Math.round(4 * Math.min(ramp(f, 0.25), ramp(end, 0.17))), lid: lidAt(n, total, 6, 5, [dur * 0.55]) };
     }
     case 'eyesMany': {
-      // 스며 나와 숨 쉬듯 부풀었다 줄었다 한다
+      // 감긴 채 스며 나와 한꺼번에 뜬다 → 숨 쉬듯 부풀었다 줄었다 하며 한 번 깜빡인다 → 감기고 스며 사라진다
       const breathe = Math.floor(f * 4) % 2 === 0 ? 1 : 0.94;
-      return { ...base, dither: Math.round(4 * Math.min(ramp(f, 0.4), ramp(end, 0.2))), sx: breathe, sy: breathe };
+      return { ...base, dither: Math.round(4 * Math.min(ramp(f, 0.4), ramp(end, 0.2))), sx: breathe, sy: breathe, lid: lidAt(n, total, 6, 5, [dur * 0.5]) };
     }
     case 'blood': {
       // 손자국에서 아래로 흘러내린다 (16단계)

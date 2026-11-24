@@ -167,10 +167,11 @@ export class Renderer {
     if (!sp || !ref) return;
     const tt = this.clock - app.start;
     const an = apparitionAnim(app.a.kind, tt, app.dur, this.reduced);
-    // 눈 종류는 끝나기 직전에 먼저 사라진다: 깜빡이고 없어진 것처럼
-    if (!this.reduced && tt / app.dur > 0.9 && (app.a.kind === 'eyesMany' || app.a.kind === 'doorGapEyes')) an.dither = 0;
     const key = `app:${ref.art}|${this.mood}`;
     const img = this.dithered(key, spriteFor(`app:${ref.art}`, sp, this.mood), sp.w, sp.h, an.dither);
+    // 눈꺼풀: 감은 그림에서 잘라 온 덧그림을 같은 자리·같은 디더로 겹친다
+    const lidArt = an.lid ? this.art.get(`${ref.art}.lid${an.lid}`) : undefined;
+    const lidImg = lidArt ? this.dithered(`${key}|lid${an.lid}`, spriteFor(`app:${ref.art}.lid${an.lid}`, lidArt, this.mood), sp.w, sp.h, an.dither) : null;
     const doorGlass = app.a.kind === 'doorGapEyes';
     if (doorGlass && an.glass) {
       // 오른쪽 문짝 유리가 어둡게 꺼진다 (반쯤일 땐 체커)
@@ -197,6 +198,7 @@ export class Renderer {
       }
       if (flip) { target.translate(dx * 2 + dw, 0); target.scale(-1, 1); }
       target.drawImage(img, srcX, srcY, srcW, srcH, dx, dy, dw, dh);
+      if (lidImg) target.drawImage(lidImg, srcX, srcY, srcW, srcH, dx, dy, dw, dh);
       target.restore();
     };
     if (app.a.kind === 'giantEyes') { place(app.a.x - 52); place(app.a.x + 52, true); }

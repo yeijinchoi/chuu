@@ -2,7 +2,9 @@
 
 입력: docs/concept/sheets/horror-<a|b>-open.png  (4칸 한 줄, 평평한 회색 배경)
       docs/concept/sheets/horror-<a|b>-alpha.png (배경 제거 결과의 알파)
+      docs/concept/sheets/horror-<a|b>-closed.png (같은 시트, 눈만 감음)
 출력: public/art/apparitions/<kind>.png, manifest.json (화면 좌표: 640×360 캔버스 기준)
+      눈 종류는 <kind>.lid1.png(반쯤 감김), <kind>.lid2.png(감김): 눈 부분만 있는 덧그림(투명 바탕)
 
 손님 스프라이트와 같은 처리(tools/import_customer_sprites.py의 팔레트 맞추기·색 수 제한·외곽 sel-out)를 쓴다.
 그래서 그림체·도트 밀도·색이 손님·장면과 같다. 크기는 장면 소품에 맞춘 목표 크기로 줄인다.
@@ -32,6 +34,67 @@ ITEMS = {
     ('b', 2): dict(kind='eyesMany', box=(54, 84), at=(462, 58), anchor='center'),        # 선반 끝과 문 사이 벽
     ('b', 3): dict(kind='blood', box=(40, 110), at=(196, 26), anchor='top', thr=50),  # 얇은 줄기를 살리려고 문턱값을 낮춘다             # 벽을 타고 흘러내리는 피
 }
+
+
+# 눈꺼풀: 눈 감은 시트에서 눈 부분만 잘라 덧그림으로 만든다.
+# 눈 상자(그림 크기에 대한 비율). None이면 열린 그림의 밝은 덩어리(흰자·홍채)를 눈으로 찾는다.
+# 감은 시트는 다시 그린 그림이라 머리카락 같은 다른 곳도 미세하게 다르다. 그래서 눈 상자 밖은 버린다.
+LIDS = {
+    'doorGapEyes': [(0.18, 0.30, 0.95, 0.56)],
+    'giantEye': [(0.0, 0.0, 1.0, 1.0)],
+    'eyesMany': None,
+}
+# 완전히 감길 때는 그림 전체를 감은 그림으로 (작은 눈 하나라도 남지 않게). 반쯤은 눈 상자마다.
+LID_FULL_WHOLE = {'eyesMany'}
+
+
+def eye_boxes(keys, w, h):
+    """밝은 픽셀(흰자·홍채) 덩어리마다 상자 하나. 어두운 살덩이 속 눈을 찾는다."""
+    light = {p for p, k in keys.items() if cust.L[k][0] > 30}
+    seen, boxes = set(), []
+    for p0 in light:
+        if p0 in seen: continue
+        stack, blob = [p0], []
+        seen.add(p0)
+        while stack:
+            x, y = stack.pop(); blob.append((x, y))
+            for dx in (-1, 0, 1):
+                for dy in (-1, 0, 1):
+                    n = (x + dx, y + dy)
+                    if n in light and n not in seen: seen.add(n); stack.append(n)
+        if len(blob) < 2: continue
+        xs = [x for x, _ in blob]; ys = [y for _, y in blob]
+        # 눈꺼풀이 흰자 위아래로 조금 더 덮는다
+        boxes.append(((min(xs) - 2) / w, (min(ys) - 3) / h, (max(xs) + 3) / w, (max(ys) + 3) / h))
+    return boxes
+
+
+def lid_frames(keys, ckeys, boxes, w, h):
+    """감김(2): 눈 상자 안에서 감은 그림과 다른 픽셀. 반쯤(1): 상자마다 위쪽 절반만 + 그 아래 끝에 눈꺼풀 선."""
+    full, half = {}, {}
+    for (fx0, fy0, fx1, fy1) in boxes:
+        x0, y0 = max(0, round(fx0 * w)), max(0, round(fy0 * h))
+        x1, y1 = min(w, round(fx1 * w)), min(h, round(fy1 * h))
+        changed = {(x, y): ckeys[(x, y)] for y in range(y0, y1) for x in range(x0, x1)
+                   if (x, y) in keys and (x, y) in ckeys and ckeys[(x, y)] != keys[(x, y)]}
+        if not changed: continue
+        full.update(changed)
+        ys = [y for _, y in changed]
+        cy0, cy1 = min(ys), max(ys)
+        mid = cy0 + (cy1 - cy0) * 0.5
+        # 눈꺼풀 선: 감은 그림의 이 상자 안에서 가장 어두운 색
+        line = min({k for k in changed.values()}, key=lambda k: cust.L[k][0])
+        for (x, y), k in changed.items():
+            if y < mid: half[(x, y)] = k
+        edge = int(mid)
+        # 선은 눈이 뚫린 폭(열린 그림의 밝은 픽셀)만큼만: 눈 밖 피부까지 줄이 그어지지 않게
+        lit = [x for x in range(x0, x1) for y in (edge - 1, edge, edge + 1)
+               if (x, y) in keys and cust.L[keys[(x, y)]][0] > 30]
+        lx0, lx1 = (min(lit), max(lit) + 1) if lit else (x0, x1)
+        for x in range(lx0, lx1):
+            if (x, edge) in changed or (x, edge) in half:
+                half[(x, edge)] = line
+    return full, half
 
 
 def element_boxes(img, alpha, n=4):
@@ -66,6 +129,8 @@ def main():
         img = Image.open(os.path.join(SHEETS, f'horror-{key}-open.png')).convert('RGB')
         alpha = Image.open(os.path.join(SHEETS, f'horror-{key}-alpha.png')).convert('L')
         boxes = element_boxes(img, alpha)
+        cpath = os.path.join(SHEETS, f'horror-{key}-closed.png')
+        closed = Image.open(cpath).convert('RGB') if os.path.exists(cpath) else None
         for i, bb in enumerate(boxes):
             item = ITEMS[(key, i)]
             pad = 6
@@ -96,16 +161,32 @@ def main():
             ap = sa.load()
             thr = item.get('thr', 140)
             mask = [[ap[x, y] > thr for x in range(w)] for y in range(h)]
-            keys, _ = cust.convert_limited(small, mask, 0, w, max_keys=10)
-            out = Image.new('RGBA', size, (0, 0, 0, 0))
-            op = out.load()
-            for (x, y), k in keys.items():
-                op[x, y] = cust.cols[k] + (255,)
-            out.save(os.path.join(OUT, f"{item['kind']}.png"))
+            keys, allowed = cust.convert_limited(small, mask, 0, w, max_keys=10)
+
+            def save(px, name):
+                out = Image.new('RGBA', size, (0, 0, 0, 0))
+                op = out.load()
+                for (x, y), k in px.items():
+                    op[x, y] = cust.cols[k] + (255,)
+                out.save(os.path.join(OUT, name))
+
+            save(keys, f"{item['kind']}.png")
             ax, ay = item['at']
             x = ax - w // 2
             y = ay - h // 2 if item['anchor'] == 'center' else (ay - h if item['anchor'] == 'bottom' else ay)
             manifest[item['kind']] = {'x': x, 'y': y, 'w': w, 'h': h}
+            if item['kind'] in LIDS and closed is not None:
+                # 같은 자리·같은 크기·같은 색 집합으로 감은 그림을 줄인다 (색이 어긋나지 않게)
+                csmall = closed.crop(bb).resize(size, Image.BOX)
+                ckeys, _ = cust.convert_limited(csmall, mask, 0, w, allowed)
+                boxes = LIDS[item['kind']] or eye_boxes(keys, w, h)
+                full, half = lid_frames(keys, ckeys, boxes, w, h)
+                if item['kind'] in LID_FULL_WHOLE:
+                    full = {p: k for p, k in ckeys.items() if keys.get(p) != k}
+                save(half, f"{item['kind']}.lid1.png")
+                save(full, f"{item['kind']}.lid2.png")
+                manifest[item['kind']]['lids'] = True
+                print('  lids', len(boxes), 'eyes', len(half), len(full), 'px')
             print(item['kind'], manifest[item['kind']])
     json.dump(manifest, open(os.path.join(OUT, 'manifest.json'), 'w'), indent=1)
 

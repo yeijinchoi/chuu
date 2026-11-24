@@ -48,7 +48,7 @@ export async function loadCustomerSprites(): Promise<Map<string, CustomerSprite>
 export async function loadApparitionArt(): Promise<Map<string, CustomerSprite>> {
   const out = new Map<string, CustomerSprite>();
   const base = 'art/apparitions/';
-  let manifest: Record<string, { x: number; y: number; w: number; h: number }>;
+  let manifest: Record<string, { x: number; y: number; w: number; h: number; lids?: boolean }>;
   try {
     const res = await fetch(base + 'manifest.json');
     if (!res.ok) return out;
@@ -60,7 +60,14 @@ export async function loadApparitionArt(): Promise<Map<string, CustomerSprite>> 
     try {
       const img = await loadImage(`${base}${kind}.png`);
       out.set(kind, { ...e, breathSplit: e.h, blink: false, img, blinkImg: null });
-    } catch { /* 코드 도트로 대체 */ }
+      // 눈꺼풀 덧그림: <kind>.lid1 (반쯤 감김), <kind>.lid2 (감김). 같은 크기, 열린 그림 위에 겹친다
+      if (e.lids) {
+        for (const n of [1, 2]) {
+          const lid = await loadImage(`${base}${kind}.lid${n}.png`);
+          out.set(`${kind}.lid${n}`, { ...e, breathSplit: e.h, blink: false, img: lid, blinkImg: null });
+        }
+      }
+    } catch { /* 코드 도트로 대체 (눈꺼풀이 없으면 뜬 눈 그대로) */ }
   }));
   return out;
 }
