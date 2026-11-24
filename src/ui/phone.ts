@@ -21,6 +21,8 @@ const ME = 'me'; // 04:44 문자의 발신자 "나"
 
 interface Msg {
   id: number;
+  /** 보낸/받은 날 (이어하기 전에 저장된 옛 기록에는 없을 수 있다) */
+  day?: number;
   key: string;
   dir: 'in' | 'out' | 'sys';
   from: string;
@@ -31,6 +33,23 @@ interface Msg {
 }
 
 type ChipStage = 'sending' | 'sent' | 'replied';
+
+/**
+ * 이어하기용 업무폰 기억: 대화방 기록 · 접객 팁 메모 · 단서 메모의 시각 · 새벽 수칙 열림.
+ * 코어 저장(단골·매출·단서)과 같은 때(하루 끝) 함께 저장하고, 이어하기에서 되살린다.
+ */
+export interface PhoneMemory {
+  feed: Msg[];
+  nextId: number;
+  tips: { id: string; text: string; day: number; at: string }[];
+  clues: Record<string, { day: number; at: string; shift: 'afternoon' | 'dawn' }>;
+  dawnRules: boolean;
+}
+const isStr = (v: unknown): v is string => typeof v === 'string';
+function isMsg(v: unknown): v is Msg {
+  const m = v as Partial<Msg> | null;
+  return !!m && typeof m.id === 'number' && (m.day === undefined || typeof m.day === 'number') && isStr(m.key) && (m.dir === 'in' || m.dir === 'out' || m.dir === 'sys') && isStr(m.from) && isStr(m.text) && isStr(m.at);
+}
 
 /** 입력줄과 템플릿 패널이 함께 쓰는 작성 상태 */
 interface Plan {
@@ -243,7 +262,7 @@ export class Phone {
         this.beginSend(ME, t('closingText.replyPreview'), {});
       } else {
         this.facedown = true;
-        this.feed.push({ id: this.nextId++, key: ME, dir: 'sys', from: '', text: t('closingText.facedown'), at: this.s.clock });
+        this.feed.push({ day: this.s.day, id: this.nextId++, key: ME, dir: 'sys', from: '', text: t('closingText.facedown'), at: this.s.clock });
         this.refresh();
       }
       this.host.dispatch({ type: 'closingText', reply });
@@ -280,6 +299,35 @@ export class Phone {
     this.notifier.show({ app: 'notes', title, body, stay: 5000, onTap: () => { this.openTab('notes'); this.noteFolder = 'clues'; this.refresh(); } });
   }
 
+  /** 이어하기용 기억 (보내는 중이던 말풍선은 보낸 것으로) */
+  snapshot(): PhoneMemory {
+    const clues: PhoneMemory['clues'] = {};
+    for (const [id, m] of Object.entries(this.clueMeta)) clues[id] = { day: m.day, at: m.at, shift: m.shift };
+    return {
+      feed: this.feed.map((m) => (m.status ? { ...m, status: 'sent' as const } : { ...m })),
+      nextId: this.nextId,
+      tips: this.tipNotes.map((n) => ({ ...n })),
+      clues,
+      dawnRules: this.dawnRules,
+    };
+  }
+
+  /** 저장해 둔 기억을 되살린다. 모양이 이상하면 아무것도 하지 않고 false */
+  restore(raw: unknown): boolean {
+    const m = raw as Partial<PhoneMemory> | null;
+    if (!m || !Array.isArray(m.feed) || !m.feed.every(isMsg) || typeof m.nextId !== 'number') return false;
+    this.feed = m.feed.map((x) => ({ ...x }));
+    this.nextId = Math.max(m.nextId, ...this.feed.map((x) => x.id + 1), 1);
+    this.tipNotes.length = 0;
+    if (Array.isArray(m.tips)) for (const n of m.tips) if (n && isStr(n.text) && isStr(n.id) && typeof n.day === 'number' && isStr(n.at)) this.tipNotes.push({ ...n });
+    if (m.clues && typeof m.clues === 'object') {
+      for (const [id, c] of Object.entries(m.clues)) if (c && typeof c.day === 'number' && isStr(c.at)) this.clueMeta[id] = { day: c.day, at: c.at, shift: c.shift === 'dawn' ? 'dawn' : 'afternoon', fresh: false };
+    }
+    this.dawnRules = m.dawnRules === true;
+    this.refresh();
+    return true;
+  }
+
   /** 새 날 아침: 어제의 전송 상태·대기 중인 답장을 비우고 홈 화면으로 돌아온다 */
   newDay(): void {
     this.chipStage.clear();
@@ -293,7 +341,7 @@ export class Phone {
 
   /** 안 보이는 대화방에 놓이는 시스템 줄(속마음, 지문): 이름표 없는 말 */
   addNote(text: string): void {
-    this.feed.push({ id: this.nextId++, key: this.view ?? this.lastKey ?? ME, dir: 'sys', from: '', text, at: this.s.clock });
+    this.feed.push({ day: this.s.day, id: this.nextId++, key: this.view ?? this.lastKey ?? ME, dir: 'sys', from: '', text, at: this.s.clock });
     this.refresh();
   }
 
@@ -301,7 +349,7 @@ export class Phone {
   deferNote(key: string, text: string): void { this.deferred.push({ key, text }); }
   flushNotes(): void {
     if (this.deferred.length === 0) return;
-    for (const d of this.deferred.splice(0)) this.feed.push({ id: this.nextId++, key: d.key, dir: 'sys', from: '', text: d.text, at: this.s.clock });
+    for (const d of this.deferred.splice(0)) this.feed.push({ day: this.s.day, id: this.nextId++, key: d.key, dir: 'sys', from: '', text: d.text, at: this.s.clock });
     this.refresh();
   }
 
@@ -329,7 +377,7 @@ export class Phone {
     this.refresh();
     this.later(() => {
       this.awaiting.delete(key);
-      this.feed.push({ id: this.nextId++, key, dir: 'in', from, text, at: this.s.clock });
+      this.feed.push({ day: this.s.day, id: this.nextId++, key, dir: 'in', from, text, at: this.s.clock });
       const seeing = this.visible && !this.home && this.view === key;
       if (!seeing) this.unreadKeys.add(key);
       // 보고 있지 않은 대화방의 답장과 04:44 "나"의 문자는 알림 배너로 내려온다
@@ -644,10 +692,17 @@ export class Phone {
     const contact = this.data.contacts.find((c) => (c.customerId ?? c.id) === key);
     const log = el('div', 'chat');
     if (key === ME && s.shift === 'dawn') log.dataset.me = '1';
-    const head = el('div', 'thread-date');
-    head.append(el('span', '', t('phone.threadKind')), el('span', '', t('phone.today', { time: kTime(s.clock) })));
-    log.append(head);
     const msgs = this.feed.filter((m) => m.key === key);
+    // 날짜 줄: 아이폰처럼 날이 바뀔 때마다 (오늘 / 어제 / N일차 + 그날 첫 문자의 시각)
+    const dateLabel = (day: number, at: string): string =>
+      day === s.day ? t('phone.today', { time: kTime(at) })
+        : day === s.day - 1 ? t('phone.yesterday', { time: kTime(at) })
+          : t('phone.dayAt', { n: day, time: kTime(at) });
+    const head = el('div', 'thread-date');
+    const first = msgs[0];
+    head.append(el('span', '', t('phone.threadKind')), el('span', '', first ? dateLabel(first.day ?? s.day, first.at) : t('phone.today', { time: kTime(s.clock) })));
+    log.append(head);
+    let shownDay = first?.day ?? s.day;
     // (빈칸): 답장이 보내기 전에 이미 와 있다 (S08)
     const pre = contact && contact.composureOnSend && contact.replies.any && !(contact.id in s.texting[s.shift].sent);
     if (pre) {
@@ -658,6 +713,13 @@ export class Phone {
     if (msgs.length === 0 && !pre && key !== ME) log.append(el('div', 'empty', t('phone.noChat')));
     const lastOut = msgs.reduce((acc, m, i) => (m.dir === 'out' ? i : acc), -1);
     msgs.forEach((m, i) => {
+      const d = m.day ?? s.day;
+      if (d !== shownDay) {
+        shownDay = d;
+        const div = el('div', 'thread-date');
+        div.append(el('span', '', dateLabel(d, m.at)));
+        log.append(div);
+      }
       if (m.dir === 'sys') { log.append(el('div', 'sys', m.text)); return; }
       const row = el('div', `bubble-row bubble-row--${m.dir}`);
       row.append(el('div', `bubble bubble--${m.dir}`, m.text));
@@ -700,7 +762,7 @@ export class Phone {
   private chooseReply(key: string, option: 0 | 1, label: string): void {
     if (this.locked) return;
     this.lastKey = key;
-    this.feed.push({ id: this.nextId++, key, dir: 'out', from: '', text: label, status: 'sent', at: this.s.clock });
+    this.feed.push({ day: this.s.day, id: this.nextId++, key, dir: 'out', from: '', text: label, status: 'sent', at: this.s.clock });
     sfx.play('msg_send');
     this.host.dispatch({ type: 'chooseReply', customerId: key, option });
   }
@@ -882,10 +944,10 @@ export class Phone {
   private beginSend(key: string, text: string, o: { pre?: string; from?: string }): void {
     this.lastKey = key;
     if (o.pre) {
-      this.feed.push({ id: this.nextId++, key, dir: 'in', from: o.from ?? '', text: o.pre, at: this.s.clock });
+      this.feed.push({ day: this.s.day, id: this.nextId++, key, dir: 'in', from: o.from ?? '', text: o.pre, at: this.s.clock });
       this.preDelivered.add(key);
     }
-    const m: Msg = { id: this.nextId++, key, dir: 'out', from: '', text, status: 'sending', at: this.s.clock };
+    const m: Msg = { day: this.s.day, id: this.nextId++, key, dir: 'out', from: '', text, status: 'sending', at: this.s.clock };
     this.feed.push(m);
     this.chipStage.set(key, 'sending');
     this.inflight++;

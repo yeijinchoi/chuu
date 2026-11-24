@@ -35,6 +35,17 @@ const TIP_MS = 8000;
 const PHONE_ACTIONS: ReadonlySet<Action['type']> = new Set(['sendText', 'sendCare', 'chooseReply', 'placeRedBox', 'closingText']);
 
 const TROPHY_KEY = 'closing-time.trophies.v1';
+/** 업무폰 기억(대화 기록·메모): 코어 저장과 같은 때 쓰고, 같은 날의 저장일 때만 이어하기에서 되살린다 */
+const PHONE_KEY = 'closing-time.phone.v1';
+function savePhone(day: number, memory: unknown): void {
+  try { localStorage.setItem(PHONE_KEY, JSON.stringify({ day, memory })); } catch { /* 기억 못 해도 게임은 계속된다 */ }
+}
+function loadPhone(day: number): unknown {
+  try {
+    const v = JSON.parse(localStorage.getItem(PHONE_KEY) ?? 'null') as { day?: unknown; memory?: unknown } | null;
+    return v && v.day === day ? v.memory : null;
+  } catch { return null; }
+}
 function loadTrophies(): string[] {
   try {
     const v = JSON.parse(localStorage.getItem(TROPHY_KEY) ?? '[]') as unknown;
@@ -303,7 +314,11 @@ export function startApp(stage: Stage, renderer: Renderer, opts: { debug: boolea
         }
         case 'ending': saveTrophy(e.ending); return 'continue';
         case 'phase': onPhase(e.phase); return 'continue';
-        case 'save': lastSave = e.ok; if (!e.ok) toast(t('toast.saveFail'), 5000); return 'continue';
+        case 'save':
+          lastSave = e.ok;
+          if (!e.ok) toast(t('toast.saveFail'), 5000);
+          else savePhone(game.getState().day, phone.snapshot()); // 이어하기에서 문자·메모가 그대로 남게
+          return 'continue';
         case 'sfx':
           sfx.play(e.id);
           if (e.id === 'lights_off') {
@@ -428,6 +443,8 @@ export function startApp(stage: Stage, renderer: Renderer, opts: { debug: boolea
     const resume = (): void => {
       if (saved === null || saved === 'corrupt') return;
       closeOverlay();
+      const memory = loadPhone(saved.day);
+      if (memory) phone.restore(memory); // 지난 문자·메모를 되살린다 (다른 날의 기억이면 쓰지 않는다)
       bridge.resume(saved);
     };
     showOverlay(titleScreen(stage.stage, { canResume, corrupt: saved === 'corrupt', trophies: loadTrophies(), onStart: begin, onResume: resume }));
