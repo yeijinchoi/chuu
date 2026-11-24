@@ -275,9 +275,9 @@ export function drawMannequin(l: Layer, cx: number, kind: MannequinKind, shift: 
   rect(l, 'ash', cx - 1, 62, 3, 3);
   hline(l, 'mist', cx - 1, 64, 3);
   if (kind === 'bob' || kind === 'uniform') {
-    // 메종 뤼미에르 어드바이저 유니폼. 드레스 마네킹과 같은 비율: 잘록한 허리 + A라인 치마
-    polygon(l, 'shadow', [[cx - 8, 66], [cx - 2, 64], [cx + 2, 64], [cx + 8, 66], [cx + 6, 78], [cx + 13, 106], [cx - 13, 106], [cx - 6, 78]]);
-    lit(l, 'shadow', 'dusk', 'ink', cx - 13, 64, 27, 42);
+    // 메종 뤼미에르 어드바이저 유니폼. 드레스 마네킹과 같은 키·어깨, 잘록한 허리 + H라인(일자) 치마
+    polygon(l, 'shadow', [[cx - 8, 66], [cx - 2, 64], [cx + 2, 64], [cx + 8, 66], [cx + 6, 78], [cx + 7, 84], [cx + 7, 104], [cx - 7, 104], [cx - 7, 84], [cx - 6, 78]]);
+    lit(l, 'shadow', 'dusk', 'ink', cx - 8, 64, 17, 41);
     // 짧은 재킷: 허리 아래로 살짝 퍼지는 밑단 + 흰 깃 + 왼가슴 명찰
     polygon(l, 'dusk', [[cx - 6, 78], [cx + 6, 78], [cx + 8, 84], [cx - 8, 84]]);
     hline(l, 'ink', cx - 8, 84, 17);
@@ -287,8 +287,9 @@ export function drawMannequin(l: Layer, cx: number, kind: MannequinKind, shift: 
     rect(l, 'brass', cx - 6, 70, 3, 2);
     px(l, 'brass-light', cx - 6, 70);
     hline(l, 'stone', cx - 6, 78, 13); // 허리선
-    for (const dx of [-7, -2, 3, 8]) line(l, 'ink', cx + dx * 0.5, 86, cx + dx * 1.2, 105); // 치마 주름
-    hline(l, 'ink', cx - 13, 106, 27);
+    vline(l, 'ink', cx, 98, 6); // 일자 치마 밑단 트임
+    vline(l, 'dusk', cx - 7, 86, 18); // 옆선
+    hline(l, 'ink', cx - 7, 104, 15);
     if (kind === 'bob') bobWig(l, cx);
   } else if (kind === 'dress') {
     // 검은 원피스: 3톤 + 주름
