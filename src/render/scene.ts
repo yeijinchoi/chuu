@@ -800,9 +800,9 @@ export function apparitionAnim(kind: ApparitionKind, tt: number, dur: number, re
   const n = Math.floor(tt * 12), total = Math.round(dur * 12);
   switch (kind) {
     case 'doorGapEyes': {
-      // 유리가 먼저 어둡게 꺼지고(glass) 그 안에서 뜬 눈의 얼굴이 스며 나온다 → 한 번 깜빡인다 → 눈을 감고 스며 사라진다
+      // 유리가 먼저 어둡게 꺼지고(glass) 그 안에서 뜬 눈의 얼굴이 스며 나온다 → 깜빡이지 않고 쳐다보다 스며 사라진다
       const inn = ramp(f, 0.3), out = ramp(end, 0.2);
-      return { ...base, glass: Math.min(ramp(f, 0.15), ramp(end, 0.12)), dither: Math.round(4 * Math.min(inn, out)), lid: lidAt(n, total, 0, 4, [0.4]) };
+      return { ...base, glass: Math.min(ramp(f, 0.15), ramp(end, 0.12)), dither: Math.round(4 * Math.min(inn, out)) };
     }
     case 'hallHand': {
       // 바닥에서 천천히 올라온다 → 손가락이 경련하듯 떨린다 → 휙 꺼진다
