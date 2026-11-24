@@ -104,6 +104,14 @@ export class Phone {
   private closingPreview: string | null = null;
   private facedown = false;
   private dawnRules = false;
+  /**
+   * 검은 수첩이 열려 있는가. 오후 영업이 끝나면(lights_off) 닫히고 폰은 홈으로 돌아간다.
+   * 쪽지를 읽고 진열장 덮개를 벗기면(cloth_pull) 검은 아이콘이 「검은 수첩」으로 열린다.
+   * 이어하기로 새벽 중간에 들어오면 이미 열려 있다.
+   */
+  private bookOpen = true;
+  /** 막 열린 검은 수첩: 눌러 보기 전까지 점이 남는다 */
+  private bookNew = false;
   private cardSel: string | null = null;
   /** 연락처 명부에서 연 고객 카드(키) */
   private contactKey: string | null = null;
@@ -156,8 +164,22 @@ export class Phone {
   // ---------------------------------------------------------------- 바깥에서 쓰는 것
 
   setMood(m: Mood): void { this.mood = m; this.refresh(); }
+  /** 오후 영업 끝: 홈 화면으로, 검은 아이콘은 다시 잠긴다 */
+  closeBook(): void { this.bookOpen = false; this.bookNew = false; this.openHome(); }
+  /** 진열장 덮개를 벗겼다: 검은 아이콘이 「검은 수첩」으로 열리고 맥박친다. 이미 열려 있으면 아무것도 안 한다 */
+  openBook(): void {
+    if (this.bookOpen) return;
+    this.bookOpen = true;
+    this.bookNew = true;
+    this.bookPulse = true;
+    this.refresh();
+  }
+  get isBookOpen(): boolean { return this.bookOpen; }
+  private bookPulse = false;
+  /** 새벽인데 검은 수첩이 아직 닫혀 있다: 메모만 열 수 있다 */
+  private get bookLocked(): boolean { return this.s.shift === 'dawn' && !this.bookOpen; }
   unlockDawnRules(): void { this.dawnRules = true; this.dawnNew = true; this.pulse('notes'); }
-  get hasUnread(): boolean { return this.unread.size > 0 || this.unreadKeys.size > 0; }
+  get hasUnread(): boolean { return this.unread.size > 0 || this.unreadKeys.size > 0 || this.bookNew; }
   /** 폰 화면이 실제로 보이는지(모바일 시트가 열려 있는지). 보이는 앱의 알림은 바로 꺼진다. */
   setVisible(v: boolean): void {
     this.visible = v;
@@ -168,6 +190,7 @@ export class Phone {
   get locked(): boolean { return this.inflight > 0 || this.host.busy(); }
 
   openTab(tab: PhoneTab, focus = false): void {
+    if (this.bookLocked && tab !== 'notes') { this.openHome(); return; } // 덮개를 벗기기 전에는 검은 수첩에 못 들어간다
     this.tab = tab;
     this.home = false;
     this.view = null;
@@ -332,6 +355,7 @@ export class Phone {
 
   /** 검은 아이콘이 열린다: 새벽에 「검은 수첩」으로 들어간다 */
   openApp(): void {
+    this.bookNew = false;
     this.openTab('contacts');
     if (this.opts.reduced) return;
     this.root.classList.remove('phone--opening');
@@ -371,6 +395,7 @@ export class Phone {
     this.lastSig = sig;
     this.lastCount = n;
     this.pulseNow.clear();
+    this.bookPulse = false;
     const badge = this.hasUnread;
     if (badge !== this.lastBadge) { this.lastBadge = badge; this.opts.onBadge(badge); }
   }
@@ -502,7 +527,7 @@ export class Phone {
       this.appIcon('contacts', t('phone.apps.contacts'), !dawn, () => this.openTab('contacts')),
       this.appIcon('notes', t('phone.apps.notes'), true, () => this.openTab('notes')),
       // 휴게 전에는 이름이 없다(흔들기만 된다). 새벽에 「검은 수첩」이 된다.
-      this.appIcon('black', dawn ? t('phone.apps.black') : '', dawn, () => this.openTab('contacts')),
+      this.appIcon('black', dawn && this.bookOpen ? t('phone.apps.black') : '', dawn && this.bookOpen, () => this.openApp(), { dot: this.bookNew, pulse: this.bookPulse }),
     );
     // 독: 앞의 세 앱 (같은 앱의 되풀이라 보조 기술에서는 숨긴다)
     const dock = el('div', 'apps-dock');
@@ -517,7 +542,7 @@ export class Phone {
   /** active가 아니면 눌러도 아이콘이 0.2초 흔들릴 뿐이다 (S01: 휴게 시간 전까지 검은 아이콘은 잠김) */
   private appIcon(
     kind: PhoneGlyph & ('messages' | 'contacts' | 'notes' | 'black'), label: string, active: boolean, open: () => void,
-    o: { badge?: number; decorative?: boolean } = {},
+    o: { badge?: number; decorative?: boolean; dot?: boolean; pulse?: boolean } = {},
   ): HTMLElement {
     const b = el('button', 'app');
     b.type = 'button';
@@ -528,8 +553,8 @@ export class Phone {
     tile.append(phoneGlyph(kind, 'pico pico--app'));
     const app: AppId | null = kind === 'black' ? null : kind;
     if (o.badge && o.badge > 0) tile.append(el('span', 'app__badge num', String(o.badge)));
-    else if (app && this.unread.has(app)) tile.append(el('span', 'app__dot'));
-    if (app && this.pulseNow.has(app)) tile.classList.add('is-pulse');
+    else if ((app && this.unread.has(app)) || o.dot) tile.append(el('span', 'app__dot'));
+    if ((app && this.pulseNow.has(app)) || o.pulse) tile.classList.add('is-pulse');
     b.append(tile, el('span', 'app__label', label));
     b.addEventListener('click', () => {
       if (active) { open(); return; }

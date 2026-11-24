@@ -309,9 +309,11 @@ export function startApp(stage: Stage, renderer: Renderer, opts: { debug: boolea
           if (e.id === 'lights_off') {
             // 오후 영업 끝: 셔터가 다 내려온 뒤, 셔터 뒤에서 매장을 새벽으로 바꾼다 (쪽지 지문은 셔터 앞 대화창에 나온다)
             sfx.play('shutter_down');
+            phone.closeBook(); // 폰은 홈 화면으로. 검은 아이콘은 덮개를 벗길 때까지 잠긴다
             shutter.move(true, () => { setShift('dawn'); bridge.release(); });
             return 'wait';
           }
+          if (e.id === 'cloth_pull') phone.openBook(); // 덮개를 벗겼다: 검은 수첩이 열린다 (이미 열려 있으면 그대로)
           if (e.id === 'cloth_pull' && shutter.isDown) {
             // 새벽 근무 시작: 셔터가 올라가 새벽 매장이 처음 보인 다음 "덮개 아래…" 지문이 이어진다
             sfx.play('shutter_up');
@@ -488,7 +490,8 @@ export function startApp(stage: Stage, renderer: Renderer, opts: { debug: boolea
       case 'texting':
         dialogue.hide();
         if (entering) {
-          if (p.shift === 'dawn') phone.openApp(); else phone.openHome(); // 오후: 홈 화면(S01)에서 연락처 앱을 연다
+          // 오후: 홈 화면(S01)에서 연락처 앱을 연다. 새벽: 홈 화면에서 막 열린 검은 수첩 아이콘을 누른다
+          phone.openHome();
           once('texting', t('tutorial.texting'), 'phone');
         }
         break;
