@@ -70,7 +70,8 @@
   font-display: swap;
 }
 
-/* 손글씨: 드림흐물체(제작 qhtjr1116). 서윤의 메모·검은 수첩에만 쓴다. 16px 그리드 픽셀체라 16px의 배수로 쓴다. */
+/* 손글씨: 드림흐물체(제작 qhtjr1116). 서윤의 메모·검은 수첩에만 쓴다. 16px 그리드 픽셀체라 16px의 배수로 쓴다.
+   한글 전체 포함 서브셋: 문구 편집기로 어떤 글자를 써도 다른 글꼴로 빠지지 않는다. */
 @font-face {
   font-family: 'GameHand';
   src: url('./../fonts/DreamHeumulKR-subset.woff2') format('woff2');

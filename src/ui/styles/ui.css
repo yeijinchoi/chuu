@@ -188,7 +188,9 @@ button:disabled, button[aria-disabled='true'] { cursor: default; }
 .note__rule { padding-left: 4px; }
 .note__sign { text-align: right; }
 .note .torn { color: var(--mist); border-right: 4px dotted var(--mist); }
-.note { font-family: var(--font-hand); width: 420px; max-height: 350px; overflow-y: auto; padding: 12px 20px; } /* 손글씨는 쪽지에만 쓴다. 16px 격자 */
+.note { font-family: var(--font-hand); width: 420px; max-height: 350px; overflow: hidden; padding: 12px 20px; } /* 손글씨는 쪽지에만 쓴다. 16px 격자. 스크롤 대신 장을 나눈다 */
+.note--cont { padding-top: 20px; } /* 둘째 장부터는 머리말이 없다 */
+.note__page { color: var(--bone); }
 .note--dawn { width: 460px; }
 .note__line, .note__rule, .note__title, .note__sign { font-size: 16px; line-height: 20px; font-weight: 400; margin-bottom: 2px; }
 .note__head, .note__title { font-weight: 400; }
@@ -253,3 +255,51 @@ button:disabled, button[aria-disabled='true'] { cursor: default; }
 
 /* 문구 편집기 미리보기 표시 */
 .edit-badge { position: fixed; left: 6px; bottom: 6px; z-index: 90; padding: 3px 8px; background: var(--brass-dark); border: 2px solid var(--brass); color: var(--paper); font-size: 9px; line-height: 12px; pointer-events: none; }
+
+/* ---------- 교대 셔터 (shutter.ts): 장면·진열 위로 내려오는 매장 셔터. 대화창(z-dialogue)보다 아래 ---------- */
+.shutter-host { position: relative; }
+.shutter { position: absolute; inset: 0; z-index: 5; pointer-events: none; transform: translateY(-101%);
+  background-color: var(--dusk);
+  /* 8px 셔터 살: 윗면 빛(stone) 2px · 몸 4px · 이음 그림자 2px */
+  background-image: repeating-linear-gradient(to bottom, var(--stone) 0 2px, var(--dusk) 2px 6px, var(--shadow) 6px 8px);
+  transition: transform 1100ms steps(11, end); }
+.shutter.is-down { transform: translateY(0); pointer-events: auto; }
+.shutter.is-instant { transition: none; }
+.shutter__bar { position: absolute; left: 0; right: 0; bottom: 0; height: 10px; background: var(--brass-dark); border-top: 2px solid var(--brass); }
+.shutter__bar::after { content: ''; position: absolute; left: 50%; top: 2px; width: 24px; height: 4px; margin-left: -12px; background: var(--ink); }
+.shutter__plate { position: absolute; left: 50%; top: 38%; transform: translateX(-50%); padding: 3px 10px; background: var(--shadow); border: 2px solid var(--brass-dark);
+  font-family: var(--font-small); font-size: 9px; line-height: 12px; letter-spacing: 0.12em; color: var(--brass); white-space: nowrap; }
+@media (prefers-reduced-motion: reduce) { .shutter { transition: none; } }
+.note__lead { margin-bottom: 6px; }
+
+/* ---------- 오프닝 (opening.ts): 검은 화면 위 자막 · 문자 대화 · 지문 ---------- */
+.screen--opening { background: var(--ink); cursor: pointer; }
+.opening { display: flex; flex-direction: column; align-items: center; gap: 12px; width: 380px; max-width: calc(100% - 32px); }
+.opening__scene { min-height: 12px; font-family: var(--font-small); font-size: 9px; line-height: 12px; letter-spacing: 0.08em; color: var(--ash); text-align: center; }
+.opening__phone { display: flex; flex-direction: column; width: 100%; background: var(--color-surface); border: 8px solid transparent; border-image: var(--fr-minor) 8 / 8px / 0 stretch; image-rendering: pixelated; cursor: default; }
+.opening__phone[hidden] { display: none; }
+.opening__from { padding: 4px 8px 6px; border-bottom: 1px solid var(--dusk); font-size: 11px; line-height: 13px; font-weight: 700; text-align: center; color: var(--paper); }
+.opening__chat { height: 200px; overflow-y: auto; padding: 8px 8px 4px; scrollbar-width: none; }
+.opening__chat::-webkit-scrollbar { display: none; }
+.opening__chat .bubble--in { color: var(--ink); }
+.opening__compose { display: flex; gap: 6px; padding: 6px 8px 4px; border-top: 1px solid var(--dusk); }
+.opening__compose[hidden] { display: none; }
+.opening__input { flex: 1; min-width: 0; height: 28px; padding: 0 8px; font: inherit; color: var(--color-text); background: var(--ink); border: 2px solid var(--stone); border-radius: 0; }
+.opening__input:focus { border-color: var(--color-trim); outline: none; }
+.opening__send { min-width: 72px; height: 28px; }
+.opening__text { min-height: 48px; width: 100%; line-height: 16px; color: var(--paper); text-align: center; white-space: pre-wrap; word-break: keep-all; }
+.opening__text--thought { color: var(--ash); }
+.opening__hint { font-family: var(--font-small); font-size: 9px; color: var(--stone); }
+.screen--opening.is-waiting .opening__hint { color: var(--ash); animation: blink 1200ms steps(1, end) infinite; }
+@media (prefers-reduced-motion: reduce) { .screen--opening.is-waiting .opening__hint { animation: none; } }
+html[data-layout='mobile'] .opening__text { font-family: var(--font-m-body); font-size: var(--text-m-body); line-height: var(--lh-m-body); }
+html[data-layout='mobile'] .opening__chat { height: 46vh; }
+html[data-layout='mobile'] .opening__chat .bubble { font-family: var(--font-m-body); font-size: var(--text-m-body); line-height: var(--lh-m-body); }
+.opening__send { flex: none; }
+html[data-layout='mobile'] .opening__send { min-width: 88px; height: var(--m-touch); }
+html[data-layout='mobile'] .opening__input { height: var(--m-touch); font-family: var(--font-m-body); font-size: var(--text-m-body); }
+html[data-layout='mobile'] .opening__from { font-size: var(--text-m-sub); line-height: var(--lh-m-sub); }
+html[data-layout='mobile'] .opening__scene, html[data-layout='mobile'] .opening__hint { font-size: var(--text-m-sub); line-height: var(--lh-m-sub); }
+html[data-layout='mobile'] .opening__send { width: auto; flex: 0 0 88px; }
+html[data-layout='mobile'] .opening__input { flex: 1 1 auto; }
+html[data-layout='mobile'] .opening__compose .opening__send { min-width: 88px; } /* 모바일 공용 .btn(min-width 220px)보다 우선 */

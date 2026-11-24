@@ -131,26 +131,99 @@ export function nameScreen(host: HTMLElement, onDone: (name: string) => void): O
   return ov;
 }
 
-/** RulesNote: 크림색 종이 쪽지(−2°). 새벽 쪽지는 한 단계 어두운 종이. */
+/**
+ * RulesNote: 크림색 종이 쪽지(−2°). 새벽 쪽지는 한 단계 어두운 종이.
+ * 종이는 스크롤하지 않는다: 줄을 채우다 넘치면 다음 장으로 넘긴다(장 수는 화면 크기에 맞춰 잰다).
+ */
 export function noteScreen(host: HTMLElement, o: { lines: string[]; dawn: boolean; action: string; onDone: () => void }): Overlay {
   const root = el('div', 'screen screen--note');
   const paper = el('div', `note${o.dawn ? ' note--dawn' : ''}`);
   const [head, ...rest] = o.lines;
-  const heading = el('div', 'note__head', head ?? '');
-  paper.append(heading);
-  for (const l of rest) {
+  // 받는 사람("신입 씨에게")처럼 짧은 첫 줄만 큰 머리말로. 긴 안내 문장은 본문 크기로 쓴다
+  const heading = el('div', (head ?? '').length <= 14 ? 'note__head' : 'note__line note__lead', head ?? '');
+  const rows = rest.map((l) => {
     const bold = /^메종 뤼미에르/.test(l);
-    const row = el('p', bold ? 'note__title' : /^\d\./.test(l) ? 'note__rule' : l.startsWith('—') ? 'note__sign' : 'note__line', l);
+    const row = el('p', bold ? 'note__title' : /^\d+\./.test(l) ? 'note__rule' : l.startsWith('—') ? 'note__sign' : 'note__line', l);
     if (/^6\./.test(l)) row.classList.add('torn');
-    paper.append(row);
-  }
-  const done = button('btn note__btn', '', o.onDone);
-  done.append(el('span', 'btn__key', `[${t('title.keyEnter')}]`), document.createTextNode(` ${o.action}`));
-  root.append(paper, el('div', 'note__hint', `[R] ${t('note.rereadHint')}`), done);
+    return row;
+  });
+  const btnLabel = el('span');
+  const done = button('btn note__btn', '', () => next());
+  done.append(el('span', 'btn__key', `[${t('title.keyEnter')}]`), btnLabel);
+  const pageNo = el('span', 'note__page');
+  const hint = el('div', 'note__hint');
+  hint.append(el('span', '', `[R] ${t('note.rereadHint')}`), pageNo);
+  root.append(paper, hint, done);
   const ov = mount(host, root);
-  done.focus();
+
+  let pages: HTMLElement[][] = [[heading, ...rows]];
+  let page = 0;
+  /** 넘치기 직전까지 한 장에 담는다. 첫 장만 머리말(받는 사람)이 있다. */
+  const overflows = (): boolean => paper.scrollHeight > paper.clientHeight + 1;
+  /** 줄 묶음: 수칙 제목은 그 아래 수칙·서명과 한 묶음, 나머지 줄은 한 줄씩 */
+  const blocks: HTMLElement[][] = [];
+  for (const r of rows) {
+    const joins = r.classList.contains('note__rule') || r.classList.contains('note__sign');
+    const last = blocks[blocks.length - 1];
+    if (joins && last && last[0]?.classList.contains('note__title')) last.push(r);
+    else blocks.push([r]);
+  }
+  /** 넘치기 직전까지 한 장에 담는다. 묶음이 안 들어가면 통째로 다음 장, 묶음이 한 장보다 길면 줄 단위로 나눈다. */
+  const paginate = (): void => {
+    const out: HTMLElement[][] = [];
+    let cur: HTMLElement[] = [heading];
+    const newPage = (): void => { out.push(cur); cur = []; paper.replaceChildren(); };
+    paper.replaceChildren(heading);
+    for (const block of blocks) {
+      paper.append(...block);
+      if (!overflows()) { cur.push(...block); continue; }
+      block.forEach((r) => r.remove());
+      const hasBody = cur.some((x) => x !== heading);
+      if (hasBody) {
+        newPage();
+        paper.append(...block);
+        if (!overflows()) { cur.push(...block); continue; }
+        block.forEach((r) => r.remove());
+      }
+      // 한 장에도 안 들어가는 묶음: 줄 단위로. 서명은 바로 앞 줄과 붙여서 혼자 넘어가지 않게 한다
+      const units: HTMLElement[][] = [];
+      for (const r of block) {
+        const prev = units[units.length - 1];
+        if (r.classList.contains('note__sign') && prev) prev.push(r);
+        else units.push([r]);
+      }
+      for (const u of units) {
+        paper.append(...u);
+        if (overflows() && cur.some((x) => x !== heading)) { u.forEach((r) => r.remove()); newPage(); paper.append(...u); }
+        cur.push(...u);
+      }
+    }
+    out.push(cur);
+    pages = out.filter((pg) => pg.length > 0);
+    page = Math.min(page, pages.length - 1);
+    show();
+  };
+  const show = (): void => {
+    paper.replaceChildren(...(pages[page] ?? []));
+    paper.classList.toggle('note--cont', page > 0);
+    const last = page === pages.length - 1;
+    btnLabel.textContent = ` ${last ? o.action : t('note.nextPage')}`;
+    pageNo.textContent = pages.length > 1 ? ` · ${page + 1} / ${pages.length}` : '';
+    done.focus();
+  };
+  const next = (): void => {
+    if (page < pages.length - 1) { page++; sfx.play('paper_turn'); show(); return; }
+    o.onDone();
+  };
+  const prev = (): void => { if (page > 0) { page--; show(); } };
+  paginate();
+  // 손글씨 글꼴이 늦게 오면 줄 높이가 바뀌므로 다시 잰다
+  const fonts = (document as Document & { fonts?: FontFaceSet }).fonts;
+  if (fonts && !fonts.check('16px GameHand')) void fonts.load('16px GameHand').then(() => { if (root.isConnected) paginate(); });
   ov.key = (e) => {
-    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); o.onDone(); return true; }
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); next(); return true; }
+    if (e.key === 'ArrowLeft' || e.key === 'Backspace') { e.preventDefault(); prev(); return true; }
+    if (e.key === 'ArrowRight') { e.preventDefault(); if (page < pages.length - 1) next(); return true; }
     return false;
   };
   return ov;

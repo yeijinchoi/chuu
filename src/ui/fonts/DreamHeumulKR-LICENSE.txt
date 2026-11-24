@@ -3,5 +3,6 @@ Source: https://noonnu.cc/font_page/1911 (designer's page: https://eocnd1116.git
 Terms as listed there: commercial use and embedding in software/games/web fonts are allowed;
 attribution is not required; selling the font files on their own is prohibited; modified versions
 must be redistributed under the SIL Open Font License 1.1.
-This file is a glyph subset (only the characters used by the game) of the original font, and as a modified
+This file is a glyph subset (all 11,172 Hangul syllables, jamo, Latin and common punctuation, so text edited in the
+game's text editor never falls back to another font) of the original font, and as a modified
 version it is provided under the SIL Open Font License 1.1 (https://openfontlicense.org).

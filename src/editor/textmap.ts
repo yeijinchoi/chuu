@@ -22,6 +22,7 @@ const SKIP_KEYS = new Set([
   'id', 'shift', 'category', 'color', 'greetPref', 'form', 'speaksVia', 'sprite', 'rules', 'traits', 'onlyProduct',
   'pref', 'flag', 'clue', 'book', 'customerId', 'prefers', 'dislikes', 'likes', 'template', 'stage', 'forbid', 'require',
   'exempts', 'motif', 'neglectEvent', 'draftLines', 'day', 'visit', 'best', 'time',
+  'accepts', 'condition', 'candidates', // 정답 상품·일정 조건은 글이 아니라 설정이다
 ]);
 /** SKIP 키이지만 그 안에 글이 들어 있는 예외: customers.care.forbid[].note */
 const KEEP_UNDER_SKIP = new Set(['note']);
@@ -55,7 +56,9 @@ export function collectLeaves(file: FileId, data: unknown): Leaf[] {
   const out: Leaf[] = [];
   const walk = (node: unknown, path: string[], skipped: boolean): void => {
     if (typeof node === 'string') {
-      if (!skipped && node !== '' && !(file !== 'strings' && /^[a-z][a-z0-9_]*$/.test(node))) out.push({ file, path, text: node });
+      // 영어 소문자 식별자는 설정값이다 (상품 id, 오프닝 진행 종류 kind: "in"/"out" …). 상품의 kind("토트백")는 글이다
+      const ident = /^[a-z][a-z0-9_]*$/.test(node) && (file !== 'strings' || path[path.length - 1] === 'kind');
+      if (!skipped && node !== '' && !ident) out.push({ file, path, text: node });
       return;
     }
     if (Array.isArray(node)) {

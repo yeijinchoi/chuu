@@ -6,7 +6,8 @@
 export type SfxId =
   | 'door_chime' | 'sign_flip' | 'lights_off' | 'cloth_pull' | 'phone_buzz' | 'glass_tap'
   | 'blackout' | 'violation' | 'register' | 'stamp'
-  | 'msg_send' | 'msg_recv' | 'icon_shake' | 'sheet_open' | 'sheet_close';
+  | 'msg_send' | 'msg_recv' | 'icon_shake' | 'sheet_open' | 'sheet_close'
+  | 'paper_turn' | 'shutter_down' | 'shutter_up';
 
 type Handler = (id: string) => void;
 const handlers = new Set<Handler>();

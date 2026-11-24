@@ -15,6 +15,8 @@ import { applyFrames } from './frames';
 import { Notifier } from './notify';
 import { Phone } from './phone';
 import { sfx } from './sfx';
+import { Shutter } from './shutter';
+import { isOpeningSteps, openingScreen } from './opening';
 import type { SheetId } from './sheets';
 import { endingScreen, finalEndingScreen, nameScreen, noteScreen, resultsScreen, titleScreen, type Overlay } from './screens';
 import type { Stage } from './stage';
@@ -82,6 +84,7 @@ export function startApp(stage: Stage, renderer: Renderer, opts: { debug: boolea
   const bgm = new Bgm();
   document.body.append(bgm.button);
   const display = new DisplayPanel(stage.display);
+  const shutter = new Shutter([stage.viewport, stage.frames.display]); // 교대 셔터: 장면·진열을 함께 가린다
   const mobile = (): boolean => stage.layout.mobile;
   let overlay: Overlay | null = null;
   const notes: string[] = [];
@@ -104,6 +107,7 @@ export function startApp(stage: Stage, renderer: Renderer, opts: { debug: boolea
     phone.setMood(m);
   };
   const setShift = (s: 'afternoon' | 'dawn'): void => {
+    if (s === 'afternoon') shutter.set(false); // 새 날 오후·이어하기는 셔터가 올라간 매장에서 시작한다
     renderer.setShift(s);
     html.dataset.shift = s;
     display.setShift(s);
@@ -265,7 +269,18 @@ export function startApp(stage: Stage, renderer: Renderer, opts: { debug: boolea
         case 'save': lastSave = e.ok; if (!e.ok) toast(t('toast.saveFail'), 5000); return 'continue';
         case 'sfx':
           sfx.play(e.id);
-          if (e.id === 'lights_off') setShift('dawn');
+          if (e.id === 'lights_off') {
+            // 오후 영업 끝: 셔터가 다 내려온 뒤, 셔터 뒤에서 매장을 새벽으로 바꾼다 (쪽지 지문은 셔터 앞 대화창에 나온다)
+            sfx.play('shutter_down');
+            shutter.move(true, () => { setShift('dawn'); bridge.release(); });
+            return 'wait';
+          }
+          if (e.id === 'cloth_pull' && shutter.isDown) {
+            // 새벽 근무 시작: 셔터가 올라가 새벽 매장이 처음 보인 다음 "덮개 아래…" 지문이 이어진다
+            sfx.play('shutter_up');
+            shutter.move(false, () => bridge.release());
+            return 'wait';
+          }
           if (e.id === 'phone_buzz') phone.buzz();
           return 'continue';
         default: return 'continue';
@@ -360,11 +375,15 @@ export function startApp(stage: Stage, renderer: Renderer, opts: { debug: boolea
     const canResume = saved !== null && saved !== 'corrupt';
     const begin = (): void => {
       let go = false;
-      showOverlay(nameScreen(stage.stage, (name) => {
+      const startAs = (name: string): void => {
         if (go) return; go = true;
         closeOverlay();
         bridge.dispatch({ type: 'start', playerName: name });
-      }));
+      };
+      // 오프닝(서윤의 문자 → 로즈의 연락 → 이름) 뒤 출근. 오프닝 글이 없으면 이름만 묻는다
+      const steps = (data.strings as Record<string, unknown> & { opening?: { steps?: unknown } }).opening?.steps;
+      if (isOpeningSteps(steps) && steps.length > 0) showOverlay(openingScreen(stage.stage, { steps, onDone: startAs }));
+      else showOverlay(nameScreen(stage.stage, startAs));
     };
     const resume = (): void => {
       if (saved === null || saved === 'corrupt') return;

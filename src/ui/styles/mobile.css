@@ -156,7 +156,7 @@ html[data-layout='mobile'] .btn:active { background: var(--color-surface-raised)
 html[data-layout='mobile'] .name { width: 100%; max-width: 360px; }
 html[data-layout='mobile'] .name__label { font-family: var(--font-m-body); font-size: var(--text-m-body); line-height: var(--lh-m-body); }
 html[data-layout='mobile'] .name__input { height: var(--m-touch); font-family: var(--font-m-body); font-size: var(--text-m-body); }
-html[data-layout='mobile'] .note { width: 100%; max-width: 340px; max-height: none; overflow: visible; font-family: var(--font-m-body); font-size: var(--text-m-body); line-height: var(--lh-m-body); }
+html[data-layout='mobile'] .note { width: 100%; max-width: 340px; max-height: calc(100% - 132px); overflow: hidden; font-family: var(--font-m-body); font-size: var(--text-m-body); line-height: var(--lh-m-body); }
 html[data-layout='mobile'] .note--dawn { width: 100%; max-width: 360px; }
 html[data-layout='mobile'] .note { font-family: var(--font-hand); font-size: 16px; line-height: 22px; }
 html[data-layout='mobile'] .note__line, html[data-layout='mobile'] .note__rule, html[data-layout='mobile'] .note__title, html[data-layout='mobile'] .note__sign { font-size: 16px; line-height: 22px; }

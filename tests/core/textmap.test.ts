@@ -87,3 +87,21 @@ describe('문구 편집기 로직', () => {
     expect(collectLeaves('rules', [])).toEqual([]);
   });
 });
+
+describe('오프닝·상품 설정값', () => {
+  it('오프닝 대사는 고칠 수 있고, 진행 종류(kind)는 글로 보이지 않는다', async () => {
+    const { collectLeaves } = await import('../../src/editor/textmap');
+    const strings = (await import('../../src/data/strings.ko.json')).default;
+    const leaves = collectLeaves('strings', strings).map((l) => l.path.join('/'));
+    expect(leaves).toContain('opening/steps/#1/text');
+    expect(leaves).toContain('opening/steps/#3/from');
+    expect(leaves.some((p) => p.startsWith('opening/steps/') && p.endsWith('/kind'))).toBe(false);
+  });
+
+  it('상품 종류("토트백")는 글이라 고칠 수 있다', async () => {
+    const { collectLeaves } = await import('../../src/editor/textmap');
+    const products = (await import('../../src/data/products.json')).default;
+    const leaves = collectLeaves('products', products);
+    expect(leaves.some((l) => l.path[l.path.length - 1] === 'kind' && l.text === '토트백')).toBe(true);
+  });
+});
