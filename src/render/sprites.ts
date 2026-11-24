@@ -44,6 +44,27 @@ export async function loadCustomerSprites(): Promise<Map<string, CustomerSprite>
   return out;
 }
 
+/** 새벽 괴현상 그림(public/art/apparitions, tools/import_apparitions.py). 못 불러오면 코드 도트로 대신한다 */
+export async function loadApparitionArt(): Promise<Map<string, CustomerSprite>> {
+  const out = new Map<string, CustomerSprite>();
+  const base = 'art/apparitions/';
+  let manifest: Record<string, { x: number; y: number; w: number; h: number }>;
+  try {
+    const res = await fetch(base + 'manifest.json');
+    if (!res.ok) return out;
+    manifest = (await res.json()) as typeof manifest;
+  } catch {
+    return out;
+  }
+  await Promise.all(Object.entries(manifest).map(async ([kind, e]) => {
+    try {
+      const img = await loadImage(`${base}${kind}.png`);
+      out.set(kind, { ...e, breathSplit: e.h, blink: false, img, blinkImg: null });
+    } catch { /* 코드 도트로 대체 */ }
+  }));
+  return out;
+}
+
 const RGB: [PaletteKey, number, number, number][] = KEYS.filter((k) => !k.startsWith('ox')).map((k) => { // 환경 램프(ox*)는 사람에게 쓰지 않는다
   const n = parseInt(PALETTE[k].slice(1), 16);
   return [k, (n >> 16) & 255, (n >> 8) & 255, n & 255];

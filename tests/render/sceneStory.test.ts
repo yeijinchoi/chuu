@@ -64,3 +64,15 @@ describe('괴현상의 단계 (레퍼런스: 평온할 땐 작고 짧게, 무너
     }
   });
 });
+
+describe('괴현상 그림 (public/art/apparitions)', () => {
+  it('그림으로 그리는 종류마다 그림 파일과 크기가 있다', async () => {
+    const fs = await import('node:fs');
+    const { APPARITION_ART } = await import('../../src/render/scene');
+    const manifest = JSON.parse(fs.readFileSync('public/art/apparitions/manifest.json', 'utf8')) as Record<string, { w: number; h: number }>;
+    for (const [kind, ref] of Object.entries(APPARITION_ART)) {
+      expect(manifest[ref!.art], kind).toBeTruthy();
+      expect(fs.existsSync(`public/art/apparitions/${ref!.art}.png`), kind).toBe(true);
+    }
+  });
+});

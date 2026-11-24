@@ -9,7 +9,7 @@ import { createStage, mountScene } from './ui/stage';
 import { mountDebug } from './ui/debug';
 import { startApp } from './ui/app';
 import { prefersReducedMotion } from './render/effects';
-import { loadCustomerSprites } from './render/sprites';
+import { loadApparitionArt, loadCustomerSprites } from './render/sprites';
 import { applyStoredEdits } from './editor/store';
 
 // 문구 편집기의 미리보기: ?edited=1 이면 이 브라우저에 저장된 수정 내용으로 게임 글을 덮어쓴다 (저장본은 건드리지 않는다)
@@ -87,6 +87,7 @@ async function boot(): Promise<void> {
   if (debug) mountDebug(stage.root, renderer);
   else startApp(stage, renderer, { debug: new URLSearchParams(location.search).get('test') === '1', reduced: prefersReducedMotion() });
   void loadCustomerSprites().then((sp) => renderer.setSprites(sp));
+  void loadApparitionArt().then((a) => renderer.setApparitionArt(a));
 
   if (EDITED >= 0) {
     const badge = el('div', 'edit-badge', EDITED > 0 ? `수정본 미리보기 · ${EDITED}개 적용` : '수정본 미리보기 · 저장된 수정이 없어요');

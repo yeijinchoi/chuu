@@ -1,7 +1,7 @@
-import { DRAIN_ORDER, buildLut, type Mood, type PaletteKey } from './palette';
+import { DRAIN_ORDER, PALETTE, buildLut, type Mood, type PaletteKey } from './palette';
 import { Layer, toImageData } from './pixel';
 import {
-  W, H, DEFAULT_LAYOUT, apparitionDuration, apparitionSpots, bakeScene, drawApparition, drawChandelier, drawMannequinHeadOverlay, drawSceneCue, drawSilhouette, mannequinSlots,
+  W, H, APPARITION_ART, APPARITION_SPOTS, DEFAULT_LAYOUT, apparitionDuration, apparitionSpots, bakeScene, drawApparition, drawChandelier, drawMannequinHeadOverlay, drawSceneCue, drawSilhouette, mannequinSlots,
   type Apparition, type SceneBake, type SceneCueView, type SceneLayout, type Shift,
 } from './scene';
 import { drawCustomer, drawOutsideColour, type SpriteDef } from './customerSprite';
@@ -100,6 +100,14 @@ export class Renderer {
     const [lo, hi] = this.mood === 'calm' ? [16, 28] : this.mood === 'uneasy' ? [10, 18] : this.mood === 'dread' ? [6, 12] : [4, 8];
     return lo + Math.random() * (hi - lo);
   }
+  /** 확인용(?test=1): 괴현상 하나를 바로 띄운다. 길이를 주지 않으면 계속 떠 있다 */
+  debugApparition(kind: string, seconds = 999): void {
+    const a = APPARITION_SPOTS.find((x) => x.kind === kind);
+    if (!a) return;
+    this.app = { a, start: this.clock, dur: seconds };
+    this.acc = 1;
+  }
+
   private tickApparition(): void {
     if (this.shift !== 'dawn') { this.app = null; this.nextApp = this.clock + this.appGap(); return; }
     if (this.app && this.clock > this.app.start + this.app.dur) {
@@ -121,6 +129,39 @@ export class Renderer {
   setMood(m: Mood): void { this.mood = m; }
   setCustomer(c: SpriteDef | null): void { this.customer = c; this.t = 0; this.acc = 1; this.nextBlink = 1.5; }
   setSprites(s: Map<string, CustomerSprite>): void { this.sprites = s; this.acc = 1; }
+  private art = new Map<string, CustomerSprite>();
+  /** 새벽 괴현상 그림 */
+  setApparitionArt(a: Map<string, CustomerSprite>): void { this.art = a; }
+  private artFor(kind: string): CustomerSprite | undefined {
+    const ref = APPARITION_ART[kind as keyof typeof APPARITION_ART];
+    return ref ? this.art.get(ref.art) : undefined;
+  }
+  /** 그림 괴현상: 장면 버퍼를 깐 뒤, 손님보다 먼저(뒤에) 그린다 */
+  private drawApparitionArt(target: CanvasRenderingContext2D, k: number): void {
+    const app = this.app;
+    if (!app) return;
+    const sp = this.artFor(app.a.kind);
+    const ref = APPARITION_ART[app.a.kind];
+    if (!sp || !ref) return;
+    const p = (this.clock - app.start) / app.dur;
+    // 눈 종류는 끝나기 직전에 먼저 사라진다: 깜빡이고 없어진 것처럼
+    if (!this.reduced && p > 0.85 && (app.a.kind === 'giantEyes' || app.a.kind === 'eyesMany' || app.a.kind === 'doorGapEyes')) return;
+    const img = spriteFor(`app:${ref.art}`, sp, this.mood);
+    const place = (sx: number, flip = false): void => {
+      const cx = sx * k, ay = app.a.y * k;
+      const x = Math.round(cx - sp.w / 2);
+      const y = Math.round(ref.anchor === 'center' ? ay - sp.h / 2 : ref.anchor === 'bottom' ? ay - sp.h : ay);
+      if (!flip) { target.drawImage(img, x, y); return; }
+      target.save(); target.translate(x + sp.w, y); target.scale(-1, 1); target.drawImage(img, 0, 0); target.restore();
+    };
+    if (app.a.kind === 'doorGapEyes') {
+      // 출입문 두 짝 사이가 벌어진 어둠: 문 높이 전체 (얼굴은 그 안에)
+      target.fillStyle = PALETTE.ink;
+      target.fillRect(app.a.x * k - sp.w / 2 - 2, 32 * k, sp.w + 4, 76 * k);
+    }
+    if (app.a.kind === 'giantEyes') { place(app.a.x - 52); place(app.a.x + 52, true); }
+    else place(app.a.x);
+  }
   /** 라이브2D 느낌의 대기 동작: 2.5~5.5초마다 0.12초 눈 감기, 3.2초 주기로 상체 1도트 숨쉬기 */
   private nextBlink = 1.5;
   private blinkUntil = -1;
@@ -199,7 +240,7 @@ export class Renderer {
     this.top.clear();
     drawChandelier(this.mid, this.shift, this.flicker.level);
     const left = mannequinSlots(this.layout.day)[0];
-    if (this.app) drawApparition(this.mid, this.app.a, (this.clock - this.app.start) / this.app.dur, this.reduced);
+    if (this.app && !this.artFor(this.app.a.kind)) drawApparition(this.mid, this.app.a, (this.clock - this.app.start) / this.app.dur, this.reduced);
     if (this.cue) drawSceneCue(this.mid, this.cue, this.layout, this.shift);
     else drawMannequinHeadOverlay(this.mid, this.mood, left?.cx ?? 66, this.finaleTurn);
     drawSilhouette(this.mid, this.sil.level, this.sil.palm);
@@ -232,6 +273,7 @@ export class Renderer {
     const k = target.canvas.width / W;
     target.imageSmoothingEnabled = false;
     target.drawImage(this.buffer, 0, 0, W * k, H * k);
+    this.drawApparitionArt(target, k);
     const sp = this.imageSprite();
     if (sp && this.customer) this.drawImageSprite(target, sp, this.customer.id);
     target.drawImage(this.bakedCanvas('front', lut, sig), 0, 0, W * k, H * k);

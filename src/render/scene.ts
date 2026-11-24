@@ -707,23 +707,23 @@ export interface Apparition { kind: ApparitionKind; x: number; y: number; tier: 
 export const APPARITION_SPOTS: readonly Apparition[] = [
   // 평온: 작고 짧은 것 — "방금 뭐였지?"
   { kind: 'eyes', x: 84, y: 24, tier: 0 }, // 샹들리에 왼쪽 벽 위 어둠
-  { kind: 'doorGapEyes', x: 295, y: 60, tier: 0 }, // 출입문 두 짝 사이가 벌어지고 그 틈에 두 눈
-  { kind: 'hallHand', x: 294, y: 118, tier: 0 }, // 출입문 앞 바닥에서 작게 올라온 손 하나
-  { kind: 'shelfFingers', x: 175, y: 52, tier: 0 }, // 맨 위 선반, 가방 사이로 걸친 손가락
+  { kind: 'doorGapEyes', x: 295, y: 66, tier: 0 }, // 출입문 두 짝 사이가 벌어지고 그 틈에 두 눈
+  { kind: 'hallHand', x: 294, y: 120, tier: 0 }, // 출입문 앞 바닥에서 작게 올라온 손 하나
+  { kind: 'shelfFingers', x: 178, y: 54, tier: 0 }, // 맨 위 선반, 가방 사이로 걸친 손가락
   { kind: 'mirrorVoid', x: 23, y: 72, tier: 0, mirror: true }, // 거울이 아무것도 비추지 않는다
   // 불안
   { kind: 'eyes', x: 252, y: 12, tier: 1 }, // 코트 마네킹 위 벽
   { kind: 'hand', x: 292, y: 62, tier: 1 }, // 문 유리에 바깥에서 짚은 손
   { kind: 'hand', x: 22, y: 78, tier: 1, mirror: true }, // 거울 안쪽에서 짚은 손
-  { kind: 'blood', x: 98, y: 14, tier: 1 }, // 벽을 타고 흘러내리는 핏자국
+  { kind: 'blood', x: 88, y: 12, tier: 1 }, // 벽을 타고 흘러내리는 핏자국
   { kind: 'blood', x: 228, y: 18, tier: 1 },
-  { kind: 'mirrorFace', x: 23, y: 52, tier: 1, mirror: true }, // 거울 속에서 이쪽을 보는 얼굴
+  { kind: 'mirrorFace', x: 23, y: 56, tier: 1, mirror: true }, // 거울 속에서 이쪽을 보는 얼굴
   { kind: 'noiseFigure', x: 93, y: 117, tier: 1 }, // 마네킹과 선반 사이, 지직거리는 사람 모양
   // 공포
-  { kind: 'eyesMany', x: 232, y: 14, tier: 2 }, // 선반 끝과 문 사이 위쪽 벽
-  { kind: 'mirrorFigure', x: 23, y: 118, tier: 2, mirror: true }, // 거울 안에 서 있는 긴 머리 실루엣
+  { kind: 'eyesMany', x: 231, y: 29, tier: 2 }, // 선반 끝과 문 사이 위쪽 벽
+  { kind: 'mirrorFigure', x: 23, y: 120, tier: 2, mirror: true }, // 거울 안에 서 있는 긴 머리 실루엣
   // 붕괴: 압도하는 크기
-  { kind: 'giantEyes', x: 160, y: 20, tier: 3 }, // 벽 위쪽 전체를 덮는 거대한 두 눈
+  { kind: 'giantEyes', x: 160, y: 23, tier: 3 }, // 벽 위쪽 전체를 덮는 거대한 두 눈
 ];
 
 /** 그날·그 분위기에 보이는 것만: 4일차부터는 거울 앞에 단발 마네킹이 서서 거울 속이 가려진다 */
@@ -731,6 +731,21 @@ export function apparitionSpots(day: number, moodTier: 0 | 1 | 2 | 3 = 3): reado
   const mirrorBlocked = mannequinSlots(day).some((m) => m.cx < 42);
   return APPARITION_SPOTS.filter((a) => a.tier <= moodTier && !(mirrorBlocked && a.mirror));
 }
+
+/**
+ * 그림(public/art/apparitions)으로 그리는 종류와 그림 기준점. 자리(x, y)는 장면 좌표, 그림은 2배 촘촘한 화면에 놓는다.
+ * 그림이 없으면 drawApparition의 코드 도트로 대신한다.
+ */
+export const APPARITION_ART: Partial<Record<ApparitionKind, { art: string; anchor: 'center' | 'bottom' | 'top' }>> = {
+  doorGapEyes: { art: 'doorGapEyes', anchor: 'center' },
+  hallHand: { art: 'hallHand', anchor: 'bottom' },
+  shelfFingers: { art: 'shelfFingers', anchor: 'bottom' },
+  mirrorFace: { art: 'mirrorFace', anchor: 'center' },
+  mirrorFigure: { art: 'mirrorFigure', anchor: 'bottom' },
+  giantEyes: { art: 'giantEye', anchor: 'center' },
+  eyesMany: { art: 'eyesMany', anchor: 'center' },
+  blood: { art: 'blood', anchor: 'top' },
+};
 
 /** 나타나 있는 시간(초): 작은 것일수록 짧게 */
 export function apparitionDuration(a: Apparition): number {
