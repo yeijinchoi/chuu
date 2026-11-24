@@ -696,18 +696,52 @@ export function drawSceneCue(l: Layer, cue: SceneCueView, layout: SceneLayout, s
  * 새벽에 가끔 배경에 나타났다 사라지는 것들 (1초 남짓). 눈 · 손자국 · 핏자국 · 거울 속 얼굴.
  * 자리는 벽의 어두운 구석·문 유리·거울 안. p = 0~1 진행도(나타나는 동안), reduced면 움직임 없이 그대로.
  */
-export type ApparitionKind = 'eyes' | 'eyesMany' | 'hand' | 'blood' | 'mirrorFace';
-export interface Apparition { kind: ApparitionKind; x: number; y: number }
+export type ApparitionKind =
+  | 'eyes' | 'eyesMany' | 'hand' | 'blood' | 'mirrorFace'
+  | 'doorGapEyes' | 'mirrorFigure' | 'mirrorVoid' | 'noiseFigure' | 'hallHand' | 'shelfFingers' | 'giantEyes';
+/**
+ * tier: 이 단계부터 나온다 (0 평온 · 1 불안 · 2 공포 · 3 붕괴). 평온할 때는 작고 짧은 것만,
+ * 평정심이 떨어질수록 크고 노골적인 것이 풀린다. (레퍼런스: docs/HORROR_REFERENCES.md)
+ */
+export interface Apparition { kind: ApparitionKind; x: number; y: number; tier: 0 | 1 | 2 | 3; mirror?: boolean }
 export const APPARITION_SPOTS: readonly Apparition[] = [
-  { kind: 'eyes', x: 84, y: 24 }, // 샹들리에 왼쪽 벽 위 어둠
-  { kind: 'eyes', x: 252, y: 12 }, // 코트 마네킹 위 벽
-  { kind: 'eyesMany', x: 232, y: 14 }, // 선반 끝과 문 사이 위쪽 벽 (마네킹 머리보다 위)
-  { kind: 'hand', x: 292, y: 62 }, // 문 유리에 바깥에서 짚은 손
-  { kind: 'hand', x: 22, y: 78 }, // 거울 안쪽에서 짚은 손
-  { kind: 'blood', x: 98, y: 14 }, // 벽을 타고 흘러내리는 핏자국
-  { kind: 'blood', x: 228, y: 18 },
-  { kind: 'mirrorFace', x: 23, y: 52 }, // 거울 속에 서 있는 얼굴
+  // 평온: 작고 짧은 것 — "방금 뭐였지?"
+  { kind: 'eyes', x: 84, y: 24, tier: 0 }, // 샹들리에 왼쪽 벽 위 어둠
+  { kind: 'doorGapEyes', x: 295, y: 60, tier: 0 }, // 출입문 두 짝 사이가 벌어지고 그 틈에 두 눈
+  { kind: 'hallHand', x: 294, y: 118, tier: 0 }, // 출입문 앞 바닥에서 작게 올라온 손 하나
+  { kind: 'shelfFingers', x: 175, y: 52, tier: 0 }, // 맨 위 선반, 가방 사이로 걸친 손가락
+  { kind: 'mirrorVoid', x: 23, y: 72, tier: 0, mirror: true }, // 거울이 아무것도 비추지 않는다
+  // 불안
+  { kind: 'eyes', x: 252, y: 12, tier: 1 }, // 코트 마네킹 위 벽
+  { kind: 'hand', x: 292, y: 62, tier: 1 }, // 문 유리에 바깥에서 짚은 손
+  { kind: 'hand', x: 22, y: 78, tier: 1, mirror: true }, // 거울 안쪽에서 짚은 손
+  { kind: 'blood', x: 98, y: 14, tier: 1 }, // 벽을 타고 흘러내리는 핏자국
+  { kind: 'blood', x: 228, y: 18, tier: 1 },
+  { kind: 'mirrorFace', x: 23, y: 52, tier: 1, mirror: true }, // 거울 속에서 이쪽을 보는 얼굴
+  { kind: 'noiseFigure', x: 93, y: 117, tier: 1 }, // 마네킹과 선반 사이, 지직거리는 사람 모양
+  // 공포
+  { kind: 'eyesMany', x: 232, y: 14, tier: 2 }, // 선반 끝과 문 사이 위쪽 벽
+  { kind: 'mirrorFigure', x: 23, y: 118, tier: 2, mirror: true }, // 거울 안에 서 있는 긴 머리 실루엣
+  // 붕괴: 압도하는 크기
+  { kind: 'giantEyes', x: 160, y: 20, tier: 3 }, // 벽 위쪽 전체를 덮는 거대한 두 눈
 ];
+
+/** 그날·그 분위기에 보이는 것만: 4일차부터는 거울 앞에 단발 마네킹이 서서 거울 속이 가려진다 */
+export function apparitionSpots(day: number, moodTier: 0 | 1 | 2 | 3 = 3): readonly Apparition[] {
+  const mirrorBlocked = mannequinSlots(day).some((m) => m.cx < 42);
+  return APPARITION_SPOTS.filter((a) => a.tier <= moodTier && !(mirrorBlocked && a.mirror));
+}
+
+/** 나타나 있는 시간(초): 작은 것일수록 짧게 */
+export function apparitionDuration(a: Apparition): number {
+  switch (a.kind) {
+    case 'blood': return 2.2;
+    case 'eyesMany': case 'giantEyes': return 1.6;
+    case 'mirrorFigure': case 'noiseFigure': return 1.1;
+    case 'mirrorVoid': case 'hallHand': case 'shelfFingers': case 'doorGapEyes': return 0.55;
+    default: return 0.8;
+  }
+}
 
 function eye(l: Layer, x: number, y: number, shut: boolean): void {
   if (shut) { hline(l, 'mist', x - 2, y, 5); return; }
@@ -715,12 +749,6 @@ function eye(l: Layer, x: number, y: number, shut: boolean): void {
   hline(l, 'bone', x - 1, y - 1, 3);
   hline(l, 'bone', x - 1, y + 1, 3);
   px(l, 'ink', x, y);
-}
-
-/** 그날 보이는 자리만: 4일차부터는 거울 앞에 단발 마네킹이 서서 거울 속이 가려진다 */
-export function apparitionSpots(day: number): readonly Apparition[] {
-  const mirrorBlocked = mannequinSlots(day).some((m) => m.cx < 42);
-  return APPARITION_SPOTS.filter((a) => !(mirrorBlocked && a.x < 42));
 }
 
 export function drawApparition(l: Layer, a: Apparition, p: number, reduced: boolean): void {
@@ -755,6 +783,71 @@ export function drawApparition(l: Layer, a: Apparition, p: number, reduced: bool
       vline(l, 'wine-dark', a.x + 1, a.y + 2, Math.max(0, len - 6));
       vline(l, 'wine', a.x - 2, a.y + 1, Math.round(len * 0.4));
       px(l, 'wine', a.x, a.y + len + 1); // 맺힌 방울
+      break;
+    }
+    case 'doorGapEyes': {
+      // 출입문 두 짝 사이가 한 뼘 벌어져 있다. 그 어둠 속에 눈 두 개 (레퍼런스: 문틈의 눈)
+      rect(l, 'ink', a.x - 2, 32, 5, 76);
+      vline(l, 'shadow', a.x - 3, 32, 76);
+      if (!shut) { px(l, 'paper', a.x - 1, a.y); px(l, 'paper', a.x + 1, a.y); px(l, 'bone', a.x - 1, a.y + 1); px(l, 'bone', a.x + 1, a.y + 1); }
+      break;
+    }
+    case 'hallHand': {
+      // 작게, 손바닥을 이쪽으로 든 하얀 손 하나 (레퍼런스: 복도 끝의 손)
+      rect(l, 'bone', a.x - 2, a.y, 5, 4);
+      for (const [dx, h] of [[-2, 3], [-1, 4], [0, 4], [1, 4]] as const) vline(l, 'bone', a.x + dx, a.y - h, h);
+      px(l, 'bone', a.x + 3, a.y + 1);
+      vline(l, 'ash', a.x, a.y + 4, 6); // 아래로 가늘게 이어지는 팔
+      break;
+    }
+    case 'shelfFingers':
+      // 맨 위 선반 너머로 걸친 손가락 넷: 선반 뒤에 무언가가 있다
+      for (const dx of [0, 3, 6, 9]) { rect(l, 'bone', a.x + dx, a.y - 3, 2, 3); px(l, 'paper', a.x + dx, a.y - 3); px(l, 'mist', a.x + dx + 1, a.y - 1); }
+      break;
+    case 'mirrorVoid':
+      // 거울이 아무것도 비추지 않는다: 유리 전체가 검은 면 (레퍼런스: 창 대신 뚫린 어둠)
+      ellipse(l, 'ink', a.x, 35, 14, 10);
+      rect(l, 'ink', 10, 35, 27, 85);
+      break;
+    case 'mirrorFigure': {
+      // 거울 안에 서 있는 긴 머리 실루엣 (레퍼런스: 금 간 거울 속 인물)
+      const fx = a.x, foot = a.y;
+      polygon(l, 'shadow', [[fx - 6, foot], [fx - 5, foot - 44], [fx - 7, foot - 58], [fx + 7, foot - 58], [fx + 5, foot - 44], [fx + 6, foot]]);
+      ellipse(l, 'ink', fx, foot - 64, 5, 7);
+      rect(l, 'ink', fx - 6, foot - 64, 12, 18); // 얼굴을 덮은 긴 머리
+      for (const dx of [-5, -2, 2, 5]) vline(l, 'ink', fx + dx, foot - 46, 8 + (dx & 3));
+      line(l, 'ash', fx - 13, foot - 80, fx + 12, foot - 30); // 거울에 간 금
+      break;
+    }
+    case 'noiseFigure': {
+      // 지직거리는 노이즈로 된 사람 모양 (레퍼런스: "YOU'RE FINALLY HERE."). 그릴 때마다 노이즈가 바뀐다
+      const fx = a.x, foot = a.y;
+      const inside = (x: number, y: number): boolean => {
+        const hy = foot - 52;
+        if ((x - fx) ** 2 / 16 + (y - hy) ** 2 / 25 <= 1) return true; // 머리
+        if (y >= foot - 46 && y <= foot) { const half = 5 + Math.round((y - (foot - 46)) * 0.12); return Math.abs(x - fx) <= half; } // 몸
+        return false;
+      };
+      let seed = reduced ? 7 : Math.floor(Math.random() * 1e6);
+      const rnd = (): number => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
+      for (let y = foot - 58; y <= foot; y++) for (let x = fx - 11; x <= fx + 11; x++) {
+        if (!inside(x, y)) continue;
+        const r = rnd();
+        px(l, r < 0.45 ? 'paper' : r < 0.7 ? 'ash' : r < 0.85 ? 'mist' : 'ink', x, y);
+      }
+      break;
+    }
+    case 'giantEyes': {
+      // 벽 위쪽 전체를 덮는 거대한 두 눈 (레퍼런스: 하늘을 덮은 분홍 눈). 붕괴 단계에서만
+      for (const ex of [a.x - 52, a.x + 52]) {
+        ellipse(l, shut ? 'shadow' : 'bone', ex, a.y, 26, shut ? 2 : 10);
+        if (shut) continue;
+        ellipse(l, 'rose-dark', ex, a.y, 9, 9);
+        ellipse(l, 'rose', ex, a.y, 7, 7);
+        ellipse(l, 'ink', ex, a.y, 3, 4);
+        px(l, 'paper', ex - 3, a.y - 3);
+        ellipseLine(l, 'ink', ex, a.y, 26, 10);
+      }
       break;
     }
     case 'mirrorFace':

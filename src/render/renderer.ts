@@ -1,7 +1,7 @@
 import { DRAIN_ORDER, buildLut, type Mood, type PaletteKey } from './palette';
 import { Layer, toImageData } from './pixel';
 import {
-  W, H, DEFAULT_LAYOUT, apparitionSpots, bakeScene, drawApparition, drawChandelier, drawMannequinHeadOverlay, drawSceneCue, drawSilhouette, mannequinSlots,
+  W, H, DEFAULT_LAYOUT, apparitionDuration, apparitionSpots, bakeScene, drawApparition, drawChandelier, drawMannequinHeadOverlay, drawSceneCue, drawSilhouette, mannequinSlots,
   type Apparition, type SceneBake, type SceneCueView, type SceneLayout, type Shift,
 } from './scene';
 import { drawCustomer, drawOutsideColour, type SpriteDef } from './customerSprite';
@@ -108,12 +108,13 @@ export class Renderer {
       this.acc = 1;
     }
     if (!this.app && this.clock >= this.nextApp) {
-      const spots = apparitionSpots(this.layout.day);
+      const tier = this.mood === 'calm' ? 0 : this.mood === 'uneasy' ? 1 : this.mood === 'dread' ? 2 : 3;
+      const spots = apparitionSpots(this.layout.day, tier);
       let i = Math.floor(Math.random() * spots.length);
       if (i === this.lastApp) i = (i + 1) % spots.length; // 같은 것이 연달아 나오지 않게
       this.lastApp = i;
       const a = spots[i] as Apparition;
-      this.app = { a, start: this.clock, dur: a.kind === 'blood' ? 2.2 : a.kind === 'eyesMany' ? 1.8 : 0.7 + Math.random() * 0.6 };
+      this.app = { a, start: this.clock, dur: apparitionDuration(a) };
       this.acc = 1;
     }
   }

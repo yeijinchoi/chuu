@@ -47,3 +47,20 @@ describe('이야기에 따라 바뀌는 배경', () => {
     expect(apparitionSpots(4).some((a) => a.kind === 'mirrorFace')).toBe(false);
   });
 });
+
+describe('괴현상의 단계 (레퍼런스: 평온할 땐 작고 짧게, 무너질수록 크게)', () => {
+  it('평온에서는 작은 것만, 거대한 눈은 붕괴 단계에서만', () => {
+    const calm = apparitionSpots(1, 0).map((a) => a.kind);
+    expect(calm).toEqual(expect.arrayContaining(['doorGapEyes', 'hallHand', 'shelfFingers']));
+    expect(calm).not.toContain('giantEyes');
+    expect(calm).not.toContain('blood');
+    expect(apparitionSpots(1, 3).map((a) => a.kind)).toContain('giantEyes');
+  });
+  it('새 괴현상은 모두 무언가를 그린다', () => {
+    for (const a of APPARITION_SPOTS) {
+      const l = new Layer(W, H);
+      drawApparition(l, a, 0.4, true);
+      expect(l.data.some((v) => v !== T), a.kind).toBe(true);
+    }
+  });
+});
