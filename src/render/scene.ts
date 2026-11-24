@@ -1,5 +1,5 @@
 import products from '../data/products.json';
-import { Layer, circle, dimLayer, dither, ellipse, ellipseLine, hline, line, lit, polygon, px, rect, remap, stamp, vline, T } from './pixel';
+import { Layer, circle, outline, dimLayer, dither, ellipse, ellipseLine, hline, line, lit, polygon, px, rect, remap, stamp, vline, T } from './pixel';
 import { KEYS, KEY_INDEX, type Mood, type PaletteKey } from './palette';
 import { drawMini } from './productIcon';
 
@@ -31,16 +31,30 @@ export interface SceneLayout { day: number; roseGray: boolean }
 export const DEFAULT_LAYOUT: SceneLayout = { day: 1, roseGray: false };
 export type MannequinKind = 'dress' | 'coat' | 'bob' | 'uniform';
 
-export function mannequinSlots(day: number): { cx: number; kind: MannequinKind }[] {
-  const out: { cx: number; kind: MannequinKind }[] = [];
-  if (day >= 4) out.push({ cx: 22, kind: 'bob' });
-  out.push({ cx: day >= 2 ? PEDESTAL_X[0] : DRESS_X, kind: 'dress' });
-  out.push({ cx: 258, kind: 'coat' });
+/** dy: 아래로 내려 선다(=더 앞에 선다). 거울 받침(y 124)보다 앞, 카운터(y 132)보다 뒤 */
+export interface MannequinSlot { cx: number; kind: MannequinKind; dy: number }
+export function mannequinSlots(day: number): MannequinSlot[] {
+  const out: MannequinSlot[] = [];
+  // 단발 마네킹은 거울 "앞"에 선다: 발판을 거울 받침보다 앞(아래)에 두어 거울 안에 있는 것처럼 보이지 않게
+  if (day >= 4) out.push({ cx: BOB_X, kind: 'bob', dy: BOB_DY });
+  out.push({ cx: day >= 2 ? PEDESTAL_X[0] : DRESS_X, kind: 'dress', dy: 0 });
+  out.push({ cx: 258, kind: 'coat', dy: 0 });
   return out;
 }
 /** 받침대 자리 (왼쪽·오른쪽). 2일차부터 왼쪽 받침대는 드레스 마네킹과 자리를 바꾼다 */
 const PEDESTAL_X = [90, 232] as const;
 const DRESS_X = 66;
+/** 단발 마네킹: 거울 오른쪽 틀에 걸쳐(틀이 몸 뒤로 지나가게) 거울 받침보다 앞에 선다 */
+const BOB_X = 34;
+const BOB_DY = 12;
+/** 그린 것을 dy만큼 아래로 옮겨 찍는다 (dy가 0이면 바로 그린다) */
+function shifted(l: Layer, dy: number, draw: (t: Layer) => void, edge = false): void {
+  if (!dy && !edge) { draw(l); return; }
+  const t = new Layer(W, H);
+  draw(t);
+  if (edge) outline(t, 'ink'); // 뒤(거울 유리)와 떨어져 보이게 외곽선
+  stamp(l, t, 0, dy);
+}
 function pedestalSlots(day: number): number[] { return [day >= 2 ? DRESS_X : PEDESTAL_X[0], PEDESTAL_X[1]]; }
 /** 잠깐 늘어나는 마네킹 자리: 진열대 끝(문 앞), 선반 앞 */
 export const EXTRA_MANNEQUIN_X = [292, 112];
@@ -249,9 +263,10 @@ function bobWig(l: Layer, cx: number, faceRight = false): void {
 
 /** 왼쪽 마네킹(드레스) 머리 위 얼굴 연출. 평소엔 얼굴이 없지만, dread부터 고개가 손님 쪽으로 돌고 눈이 생긴다.
  * collapse·breach에서는 여기에 단발 가발(서윤의 보브)이 더해진다. 그 외 mood는 아무것도 그리지 않는다. */
-export function drawMannequinHeadOverlay(l: Layer, mood: Mood, cx = 66, force = false): void {
+export function drawMannequinHeadOverlay(l: Layer, mood: Mood, cx = 66, force = false, dy = 0): void {
   // force: 마지막 밤 "가장 왼쪽의 단발이 고개만 돌려 이쪽을 본다" (mood와 상관없이)
   if (!force && mood !== 'dread' && mood !== 'collapse' && mood !== 'breach') return;
+  if (dy) { shifted(l, dy, (t) => drawMannequinHeadOverlay(t, mood, cx, force)); return; }
   // 고개가 1도트 왼쪽 아래로 기울어 정면을 본다
   ellipse(l, 'bone', cx - 1, 57, 4, 6);
   if (mood !== 'dread' || force) {
@@ -548,7 +563,7 @@ export function bakeScene(shift: Shift, layout: SceneLayout = DEFAULT_LAYOUT): S
   drawMirror(back);
   drawDoor(back);
   drawShelves(back, shift, layout.roseGray);
-  for (const m of mannequinSlots(layout.day)) drawMannequin(back, m.cx, m.kind, shift);
+  for (const m of mannequinSlots(layout.day)) shifted(back, m.dy, (t) => drawMannequin(t, m.cx, m.kind, shift), m.dy > 0);
   drawPedestals(back, shift, layout.day);
   drawCounter(front, shift);
   if (shift === 'dawn') {
@@ -687,7 +702,7 @@ export function drawSceneCue(l: Layer, cue: SceneCueView, layout: SceneLayout, s
   if (cue === 'extra_one') drawMannequin(t, a, 'dress', shift);
   else if (cue === 'extra_two') { drawMannequin(t, a, 'dress', shift); drawMannequin(t, b, 'coat', shift); }
   else if (cue === 'uniform_added') drawMannequin(t, a, 'uniform', shift);
-  else for (const m of mannequinSlots(layout.day)) headToDoor(t, m.cx, m.kind === 'bob');
+  else for (const m of mannequinSlots(layout.day)) shifted(t, m.dy, (u) => headToDoor(u, m.cx, m.kind === 'bob'));
   if (shift === 'dawn') lighting([t]); // 굽힌 배경과 같은 새벽 조명 아래에 서 있게
   for (let i = 0; i < t.data.length; i++) if (t.data[i] !== T) l.data[i] = t.data[i] as number;
 }
@@ -729,7 +744,7 @@ export const APPARITION_SPOTS: readonly Apparition[] = [
 
 /** 그날·그 분위기에 보이는 것만: 4일차부터는 거울 앞에 단발 마네킹이 서서 거울 속이 가려진다 */
 export function apparitionSpots(day: number, moodTier: 0 | 1 | 2 | 3 = 3): readonly Apparition[] {
-  const mirrorBlocked = mannequinSlots(day).some((m) => m.cx < 42);
+  const mirrorBlocked = mannequinSlots(day).some((m) => m.kind === 'bob'); // 거울 앞을 단발 마네킹이 막고 선다
   return APPARITION_SPOTS.filter((a) => a.tier <= moodTier && !(mirrorBlocked && a.mirror));
 }
 

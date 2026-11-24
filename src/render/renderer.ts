@@ -286,7 +286,7 @@ export class Renderer {
     if (this.app && !this.artFor(this.app.a.kind)) drawApparition(this.mid, this.app.a, (this.clock - this.app.start) / this.app.dur, this.reduced);
     const twitch = this.app?.a.kind === 'mannequinTwitch' && (this.reduced || Math.floor((this.clock - this.app.start) * 12) % 3 !== 2);
     if (this.cue) drawSceneCue(this.mid, this.cue, this.layout, this.shift);
-    else drawMannequinHeadOverlay(this.mid, this.mood, left?.cx ?? 66, this.finaleTurn || twitch);
+    else drawMannequinHeadOverlay(this.mid, this.mood, left?.cx ?? 66, this.finaleTurn || twitch, left?.dy ?? 0);
     drawSilhouette(this.mid, this.sil.level, this.sil.palm);
     if (this.customer && this.customer.sprite.draw !== 'drawOutsideColour' && !this.imageSprite()) {
       drawCustomer(this.customer, { mid: this.mid, top: this.top }, { t: this.t, reduced: this.reduced, shift: this.shift });
