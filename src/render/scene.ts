@@ -21,7 +21,8 @@ export interface SceneBake {
 
 /**
  * 이야기에 따라 바뀌는 배경(굽기에 들어가는 것). 대사의 서술과 맞춘다.
- * - 2일차 "마네킹이 한 칸 옮겨져 있다": 드레스 마네킹이 거울 쪽으로 한 칸, 원래 자리엔 받침대 자국
+ * - 2일차 "마네킹이 한 칸 옮겨져 있다": 드레스 마네킹과 옆 받침대(분홍 가방)가 자리를 바꿨다.
+ *   마네킹이 선반 쪽으로 한 칸 가 있고, 원래 마네킹 자리에 받침대가 서 있다 (거울과 겹치지 않게)
  * - 4일차 "마네킹이 세 개로 늘어 있다": 거울 앞에 단발 마네킹(서윤의 유니폼). 한서진이 보는 "단발 마네킹",
  *   마지막 밤 "가장 왼쪽의 단발"이 이것이다
  * - 바깥에서 온 색 "진열장의 장밋빛 하나가 영원히 회색이 된다": 선반의 첫 분홍 가방이 회색
@@ -33,10 +34,14 @@ export type MannequinKind = 'dress' | 'coat' | 'bob' | 'uniform';
 export function mannequinSlots(day: number): { cx: number; kind: MannequinKind }[] {
   const out: { cx: number; kind: MannequinKind }[] = [];
   if (day >= 4) out.push({ cx: 22, kind: 'bob' });
-  out.push({ cx: day >= 2 ? 48 : 66, kind: 'dress' });
+  out.push({ cx: day >= 2 ? PEDESTAL_X[0] : DRESS_X, kind: 'dress' });
   out.push({ cx: 258, kind: 'coat' });
   return out;
 }
+/** 받침대 자리 (왼쪽·오른쪽). 2일차부터 왼쪽 받침대는 드레스 마네킹과 자리를 바꾼다 */
+const PEDESTAL_X = [90, 232] as const;
+const DRESS_X = 66;
+function pedestalSlots(day: number): number[] { return [day >= 2 ? DRESS_X : PEDESTAL_X[0], PEDESTAL_X[1]]; }
 /** 잠깐 늘어나는 마네킹 자리: 진열대 끝(문 앞), 선반 앞 */
 export const EXTRA_MANNEQUIN_X = [292, 112];
 
@@ -366,8 +371,8 @@ const APPAREL_MINI: Record<Shift, [string, string]> = {
   dawn: ['warm_memory_glove', 'stage_cloak'],
 };
 
-function drawPedestals(l: Layer, shift: Shift): void {
-  [90, 232].forEach((cx, i) => {
+function drawPedestals(l: Layer, shift: Shift, day: number): void {
+  pedestalSlots(day).forEach((cx, i) => {
     const id = APPAREL_MINI[shift][i] as string;
     stamp(l, drawMini(id), cx - 8, 92);
     rect(l, 'stone', cx - 9, 108, 19, 8);
@@ -543,13 +548,8 @@ export function bakeScene(shift: Shift, layout: SceneLayout = DEFAULT_LAYOUT): S
   drawMirror(back);
   drawDoor(back);
   drawShelves(back, shift, layout.roseGray);
-  if (layout.day >= 2 && layout.day < 4) {
-    // 옮겨진 마네킹의 원래 자리: 받침대 자국만 남았다
-    ellipseLine(back, 'stone', 66, 117, 8, 2);
-    dither(back, 'mist', null, 60, 117, 13, 1);
-  }
   for (const m of mannequinSlots(layout.day)) drawMannequin(back, m.cx, m.kind, shift);
-  drawPedestals(back, shift);
+  drawPedestals(back, shift, layout.day);
   drawCounter(front, shift);
   if (shift === 'dawn') {
     drawLamp(front);

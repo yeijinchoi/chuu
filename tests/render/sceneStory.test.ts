@@ -10,6 +10,8 @@ describe('이야기에 따라 바뀌는 배경', () => {
   it('1일차 마네킹 둘 → 2일차 "한 칸 옮겨져 있다" → 4일차 "세 개로 늘어 있다" (맨 왼쪽은 단발)', () => {
     expect(mannequinSlots(1).map((m) => m.kind)).toEqual(['dress', 'coat']);
     expect(mannequinSlots(2).find((m) => m.kind === 'dress')?.cx).not.toBe(mannequinSlots(1).find((m) => m.kind === 'dress')?.cx);
+    // 옮겨진 드레스 마네킹은 거울(x 5~43)과 겹치지 않는다 (거울 앞 단발 마네킹만 일부러 가린다)
+    for (const day of [1, 2, 3, 4, 5]) for (const m of mannequinSlots(day)) if (m.kind === 'dress') expect(m.cx - 15, `${day}일차`).toBeGreaterThan(43);
     expect(mannequinSlots(4)).toHaveLength(3);
     expect(mannequinSlots(4)[0]?.kind).toBe('bob'); // 마지막 밤 "가장 왼쪽의 단발"
     expect(mannequinSlots(5)).toEqual(mannequinSlots(4));
