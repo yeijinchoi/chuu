@@ -83,10 +83,8 @@ export function reactClose(ctx: Ctx, c: CustomerDef, choice: CloseId): void {
 }
 
 export function reactThought(ctx: Ctx, c: CustomerDef, key: keyof NonNullable<CustomerReactions['thought']>): void {
-  // 재방문이면 첫 만남의 속마음("나도 처음인데", "첫 판매다")을 되풀이하지 않는다
+  // 재방문이면 첫 만남의 속마음("나도 처음인데")을 되풀이하지 않는다
   if (effectiveVisit(ctx, c.id) >= 2) thought(ctx, returnsFor(ctx, c)?.thought?.[key]);
-  // "첫 판매다"는 정말 그날 첫 판매일 때만
-  else if (key === 'sold' && ctx.state.salesCount > 1) return;
   else thought(ctx, c.reactions?.thought?.[key]);
 }
 
