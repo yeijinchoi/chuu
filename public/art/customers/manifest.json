@@ -94,5 +94,133 @@
   "h": 171,
   "breathSplit": 151,
   "blink": false
+ },
+ "ma": {
+  "x": 276,
+  "y": 112,
+  "w": 88,
+  "h": 154,
+  "breathSplit": 134,
+  "blink": true
+ },
+ "do": {
+  "x": 272,
+  "y": 104,
+  "w": 97,
+  "h": 162,
+  "breathSplit": 142,
+  "blink": true
+ },
+ "hwangbo": {
+  "x": 278,
+  "y": 113,
+  "w": 85,
+  "h": 153,
+  "breathSplit": 133,
+  "blink": true
+ },
+ "jamie": {
+  "x": 275,
+  "y": 115,
+  "w": 90,
+  "h": 151,
+  "breathSplit": 131,
+  "blink": true
+ },
+ "song": {
+  "x": 273,
+  "y": 108,
+  "w": 95,
+  "h": 158,
+  "breathSplit": 138,
+  "blink": true
+ },
+ "lee": {
+  "x": 276,
+  "y": 115,
+  "w": 88,
+  "h": 151,
+  "breathSplit": 131,
+  "blink": true
+ },
+ "jung": {
+  "x": 277,
+  "y": 106,
+  "w": 86,
+  "h": 160,
+  "breathSplit": 140,
+  "blink": true
+ },
+ "borrowed": {
+  "x": 274,
+  "y": 107,
+  "w": 92,
+  "h": 159,
+  "breathSplit": 139,
+  "blink": true
+ },
+ "mirror": {
+  "x": 276,
+  "y": 102,
+  "w": 89,
+  "h": 164,
+  "breathSplit": 144,
+  "blink": true
+ },
+ "sleeper": {
+  "x": 281,
+  "y": 112,
+  "w": 79,
+  "h": 154,
+  "breathSplit": 134,
+  "blink": false
+ },
+ "cats": {
+  "x": 272,
+  "y": 118,
+  "w": 96,
+  "h": 148,
+  "breathSplit": 128,
+  "blink": true
+ },
+ "rain": {
+  "x": 274,
+  "y": 92,
+  "w": 93,
+  "h": 174,
+  "breathSplit": 154,
+  "blink": true
+ },
+ "nametag": {
+  "x": 274,
+  "y": 105,
+  "w": 92,
+  "h": 161,
+  "breathSplit": 141,
+  "blink": true
+ },
+ "nametag_2": {
+  "x": 274,
+  "y": 105,
+  "w": 92,
+  "h": 161,
+  "breathSplit": 141,
+  "blink": true
+ },
+ "nametag_3": {
+  "x": 275,
+  "y": 106,
+  "w": 91,
+  "h": 160,
+  "breathSplit": 140,
+  "blink": true
+ },
+ "nametag_4": {
+  "x": 274,
+  "y": 94,
+  "w": 92,
+  "h": 172,
+  "breathSplit": 152,
+  "blink": true
  }
 }

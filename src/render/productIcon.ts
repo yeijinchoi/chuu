@@ -19,6 +19,15 @@ function bagBody(l: Layer, k: K, hi: K, lo: K, top = 14): void {
   lit(l, k, hi, lo, 4, top, 24, 28 - top);
   hline(l, 'ink', 5, 28, 22); // 접지 그림자
 }
+/** 패턴(퀼팅·엮은 결)을 몸통이 칠해진 칸 안에만 그린다. 실루엣 밖으로 삐져나가면 테두리가 보풀처럼 일어난다. */
+function clipped(dst: Layer, mask: Layer, draw: (l: Layer) => void): void {
+  const t = new Layer(S, S);
+  draw(t);
+  for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
+    const v = t.get(x, y);
+    if (v !== T && mask.get(x, y) !== T) dst.set(x, y, v);
+  }
+}
 /** 구슬(진주) */
 function pearl(l: Layer, cx: number, cy: number, r: number, base: K, hi: K, lo: K): void {
   circle(l, base, cx, cy, r);
@@ -406,6 +415,302 @@ const ICONS: Record<string, Pen> = {
     // 열린 뚜껑
     heart(g, 'rose-dark', 26, 10, 3, 11);
     heart(g, 'shadow', 26, 10, 2, 7);
+  },
+
+  // ───────── 확장 상품 (docs/EXPANSION.md §1·§2, 콘셉트: docs/concept/items-v3/) ─────────
+
+  bucket_ink: (b, f) => {
+    arch(b, 'stone', 16, 12, 8, 9, 1);
+    polygon(b, 'shadow', [[8, 12], [24, 12], [26, 27], [6, 27]]);
+    lit(b, 'shadow', 'stone', 'ink', 6, 12, 20, 16);
+    for (let x = 8; x <= 23; x += 2) px(b, 'dusk', x, 13); // 오므린 주름
+    hline(b, 'ink', 7, 28, 18);
+    // 졸라맨 끈 + 매듭 두 가닥
+    hline(f, 'ash', 9, 15, 14);
+    for (const x of [14, 18]) { vline(f, 'ash', x, 15, 6); rect(f, 'brass', x - 1 + (x === 14 ? 0 : 0), 21, 2, 2); px(f, 'brass-light', x - 1, 21); }
+  },
+
+  chain_clutch_pearl: (b, f, g) => {
+    for (let i = 0; i <= 8; i++) {
+      const t = i / 8, x = Math.round(7 + 18 * t), y = Math.round(13 - 9 * (1 - Math.pow(2 * t - 1, 2)));
+      pearl(b, x, y, 1, 'bone', 'paper', 'ash');
+    }
+    rect(b, 'paper', 5, 14, 22, 13);
+    lit(b, 'paper', 'paper', 'bone', 5, 14, 22, 13);
+    hline(b, 'ash', 5, 27, 22);
+    hline(b, 'ink', 6, 28, 20);
+    // 퀼팅: 몸통 안에서만, 4칸 간격 마름모
+    clipped(g, b, (l) => { for (let k = -12; k <= 24; k += 5) { line(l, 'bone', 5 + k, 26, 17 + k, 14); line(l, 'bone', 17 + k, 26, 5 + k, 14); } });
+    // 덮개 + 쇠 장식
+    hline(f, 'ash', 5, 20, 22);
+    hline(f, 'paper', 5, 15, 22);
+    rect(f, 'brass', 14, 19, 4, 3);
+    px(f, 'brass-light', 14, 19);
+    px(f, 'brass-dark', 17, 21);
+  },
+
+  coin_purse_peach: (b, f) => {
+    ellipse(b, 'rose', 16, 20, 11, 8);
+    rect(b, 'rose', 6, 13, 20, 7);
+    lit(b, 'rose', 'rose-light', 'rose-dark', 5, 12, 22, 17);
+    for (const x of [10, 14, 18, 22]) vline(b, 'rose-dark', x, 19, 7); // 주름
+    hline(b, 'ink', 9, 28, 14);
+    // 똑딱이 입구 + 구슬 두 개 (분홍 상품의 쇠붙이는 은색: 포인트 색은 한 계열만)
+    hline(f, 'bone', 6, 13, 20);
+    hline(f, 'mist', 6, 14, 20);
+    for (const x of [13, 19]) { circle(f, 'ash', x, 10, 2); px(f, 'paper', x - 1, 9); }
+  },
+
+  weekender_dune: (b, f) => {
+    // 말아 쥔 손잡이 두 개 (서로 떨어지게, 가늘게)
+    arch(b, 'skin-b', 10, 14, 3, 5, 1);
+    arch(b, 'skin-b', 22, 14, 3, 5, 1);
+    polygon(b, 'taupe', [[3, 14], [29, 14], [30, 27], [2, 27]]);
+    lit(b, 'taupe', 'bone', 'mist', 2, 14, 28, 14);
+    hline(b, 'ash', 3, 28, 26);
+    hline(b, 'mist', 4, 21, 24); // 박음질 선
+    // 지퍼 + 양옆 가죽 탭
+    hline(f, 'brass', 5, 15, 22);
+    px(f, 'brass-light', 24, 15);
+    rect(f, 'skin-b', 3, 17, 3, 6);
+    rect(f, 'skin-b', 26, 17, 3, 6);
+    px(f, 'brass', 4, 19); px(f, 'brass', 27, 19);
+  },
+
+  trench_three: (b, f) => {
+    jacket(b, 'taupe', 'bone', 'mist', true);
+    polygon(f, 'bone', [[9, 5], [14, 5], [16, 13], [10, 11]]);
+    polygon(f, 'bone', [[23, 5], [18, 5], [16, 13], [22, 11]]);
+    rect(f, 'skin-b', 4, 19, 24, 2); // 벨트
+    rect(f, 'brass', 14, 18, 4, 4);
+    rect(f, 'skin-b', 15, 19, 2, 2);
+    for (const y of [14, 23, 26]) { px(f, 'shadow', 13, y); px(f, 'shadow', 19, y); } // 더블 단추
+  },
+
+  silk_blouse_window: (b, f) => {
+    jacket(b, 'paper', 'paper', 'bone');
+    vline(b, 'bone', 16, 12, 13);
+    // 목에 맨 리본 + 늘어진 끈
+    polygon(f, 'bone', [[16, 8], [10, 5], [10, 11]]);
+    polygon(f, 'bone', [[16, 8], [22, 5], [22, 11]]);
+    rect(f, 'ash', 15, 7, 3, 3);
+    polygon(f, 'ash', [[15, 9], [17, 9], [14, 17], [12, 17]]);
+    polygon(f, 'ash', [[16, 9], [18, 9], [20, 16], [18, 16]]);
+  },
+
+  velvet_jacket_rose: (b, f) => {
+    jacket(b, 'rose', 'rose-light', 'rose-dark');
+    // 칼라·라펠 + 소맷단 + 덮개 주머니 + 단추 두 줄
+    polygon(f, 'rose-dark', [[10, 5], [14, 5], [16, 14], [11, 12]]);
+    polygon(f, 'rose-dark', [[22, 5], [18, 5], [16, 14], [21, 12]]);
+    line(f, 'rose-light', 11, 6, 15, 13);
+    vline(f, 'ink', 16, 15, 12);
+    hline(f, 'rose-dark', 4, 21, 4); hline(f, 'rose-dark', 24, 21, 4);
+    hline(f, 'rose-dark', 10, 21, 4); hline(f, 'rose-dark', 18, 21, 4);
+    for (const y of [16, 20]) { px(f, 'paper', 14, y); px(f, 'paper', 18, y); px(f, 'bone', 14, y + 1); px(f, 'bone', 18, y + 1); }
+    px(f, 'rose-light', 6, 9); px(f, 'rose-light', 25, 9);
+  },
+
+  leather_glove_night: (b, f) => {
+    // 한 짝은 세우고 한 짝은 비스듬히 겹친다. 손가락 사이 틈과 가죽 광택으로 모양을 읽힌다
+    const glove = (ox: number, oy: number): void => {
+      rect(b, 'dusk', ox, oy + 9, 10, 10);
+      for (const [x, h] of [[0, 6], [3, 9], [6, 8], [9, 5]] as const) rect(b, 'dusk', ox + x, oy + 9 - h, 2, h);
+      polygon(b, 'dusk', [[ox - 2, oy + 12], [ox, oy + 10], [ox + 1, oy + 15], [ox - 2, oy + 15]]);
+      lit(b, 'dusk', 'mist', 'shadow', ox - 2, oy, 13, 19); // 기존 검은 장갑(nameless_glove)과 같은 밝기
+      for (const x of [2, 5, 8]) vline(f, 'ink', ox + x, oy + 5, 4); // 손가락 사이
+      for (const [x, h] of [[0, 6], [3, 9], [6, 8]] as const) px(f, 'ash', ox + x, oy + 10 - h); // 손끝 광택
+      vline(f, 'shadow', ox + 3, oy + 11, 4); // 손등 박음질
+      vline(f, 'shadow', ox + 6, oy + 11, 4);
+      rect(f, 'shadow', ox, oy + 16, 10, 3); // 손목 띠
+      hline(f, 'stone', ox, oy + 16, 10);
+      rect(f, 'brass', ox + 7, oy + 16, 2, 3);
+      px(f, 'brass-light', ox + 7, oy + 16);
+    };
+    glove(5, 4);
+    glove(17, 8);
+  },
+
+  cameo_letter: (b, f) => {
+    ellipse(b, 'brass', 16, 16, 10, 13);
+    lit(b, 'brass', 'brass-light', 'brass-dark', 6, 3, 21, 27);
+    ellipse(b, 'taupe', 16, 16, 8, 11);
+    lit(b, 'taupe', 'bone', 'mist', 8, 5, 17, 23);
+    // 옆얼굴: 틀어 올린 머리 + 코 + 목
+    circle(f, 'paper', 15, 10, 3);
+    polygon(f, 'paper', [[12, 12], [18, 11], [20, 14], [19, 15], [20, 17], [18, 19], [18, 24], [13, 24], [12, 18]]);
+    rect(f, 'bone', 13, 20, 4, 4);
+    px(f, 'mist', 18, 14);
+    for (const [x, y] of [[16, 3], [16, 29], [6, 16], [26, 16]] as const) px(f, 'brass-light', x, y);
+  },
+
+  tennis_constellation: (b, f) => {
+    // 아래로 휜 한 줄 팔찌: 알마다 흰 돌 + 금 테
+    for (let i = 0; i <= 11; i++) {
+      const t = i / 11, x = Math.round(3 + 26 * t), y = Math.round(10 + 12 * (1 - Math.pow(2 * t - 1, 2)));
+      rect(b, 'brass-dark', x - 1, y - 1, 3, 3);
+      rect(f, 'paper', x - 1, y - 1, 2, 2);
+      px(f, i % 3 === 0 ? 'paper' : 'bone', x, y);
+    }
+    rect(f, 'brass', 2, 8, 3, 3);
+    rect(f, 'brass', 27, 8, 3, 3);
+  },
+
+  pearl_pin_morning: (b, f) => {
+    // 두 갈래 핀 + 끝의 진주 하나
+    line(b, 'brass', 7, 27, 21, 9);
+    line(b, 'brass', 10, 28, 23, 11);
+    line(b, 'brass-dark', 8, 27, 22, 9);
+    rect(b, 'brass', 20, 8, 4, 3);
+    pearl(f, 23, 7, 4, 'bone', 'paper', 'ash');
+  },
+
+  rosequartz_first: (b, f) => {
+    for (let i = 0; i <= 6; i++) {
+      px(b, 'ash', 4 + i * 2, 3 + i * 2);
+      px(b, 'ash', 28 - i * 2, 3 + i * 2);
+    }
+    rect(b, 'bone', 15, 15, 3, 2);
+    // 하트 펜던트
+    circle(f, 'rose', 13, 20, 3); circle(f, 'rose', 19, 20, 3);
+    polygon(f, 'rose', [[10, 21], [22, 21], [16, 28]]);
+    lit(f, 'rose', 'rose-light', 'rose-dark', 10, 17, 13, 12);
+    px(f, 'paper', 12, 19);
+  },
+
+  nine_sleep_basket: (b, f, g) => {
+    arch(b, 'skin-b', 16, 12, 10, 9, 2);
+    polygon(b, 'taupe', [[5, 16], [27, 16], [25, 28], [7, 28]]);
+    lit(b, 'taupe', 'bone', 'mist', 5, 16, 22, 13);
+    // 엮은 결: 몸통 안에서만, 3칸 간격 가로줄 + 엇갈린 세로 매듭
+    clipped(g, b, (l) => {
+      for (let y = 19; y <= 26; y += 3) hline(l, 'skin-b', 5, y, 22);
+      for (let y = 17; y <= 26; y += 3) for (let x = 7 + (y % 2) * 2; x <= 25; x += 4) px(l, 'bone', x, y);
+    });
+    hline(b, 'ink', 8, 29, 16);
+    // 살짝 들린 뚜껑 + 틈 속 눈 아홉 쌍
+    polygon(b, 'taupe', [[4, 11], [26, 8], [27, 10], [5, 13]]);
+    lit(b, 'taupe', 'bone', 'mist', 4, 8, 23, 6);
+    polygon(f, 'ink', [[5, 13], [27, 10], [27, 16], [5, 16]]);
+    for (const [x, y] of [[7, 14], [11, 13], [15, 14], [19, 12], [23, 13], [9, 15], [17, 15], [21, 15], [25, 12]] as const) {
+      px(f, 'steel-light', x, y); px(f, 'steel-light', x + 1, y);
+    }
+  },
+
+  folded_rain_clutch: (b, f, g) => {
+    // 접힌 우산 덮개 모양: 위는 은 입구, 아래는 물결 끝
+    hline(b, 'bone', 7, 9, 18);
+    hline(b, 'mist', 7, 10, 18);
+    for (const x of [13, 19]) { circle(b, 'ash', x, 6, 2); px(b, 'paper', x - 1, 5); }
+    polygon(b, 'paper', [[7, 11], [25, 11], [29, 21], [26, 23], [22, 21], [19, 23], [16, 21], [13, 23], [10, 21], [6, 23], [3, 21]]);
+    lit(b, 'paper', 'paper', 'bone', 3, 11, 26, 12);
+    for (const [x0, x1] of [[10, 6], [14, 13], [18, 19], [22, 26]] as const) line(f, 'ash', x0, 11, x1, 21); // 살대
+    // 아무것도 없는 위에서 떨어지는 빗방울
+    for (const [x, y] of [[6, 25], [11, 27], [16, 25], [21, 28], [26, 25]] as const) { px(g, 'steel-light', x, y); px(g, 'steel', x, y + 1); }
+  },
+
+  soundless_purse: (b, f) => {
+    ellipse(b, 'shadow', 16, 21, 11, 7);
+    rect(b, 'shadow', 6, 15, 20, 6);
+    lit(b, 'shadow', 'stone', 'ink', 5, 14, 22, 15);
+    for (const x of [10, 14, 18, 22]) vline(b, 'dusk', x, 21, 6); // 주름
+    // 벌어진 쇠틀 입구
+    ellipse(f, 'ink', 16, 15, 9, 2);
+    ellipseLine(f, 'ash', 16, 15, 10, 3);
+    hline(f, 'bone', 8, 12, 5);
+    for (const x of [6, 26]) { rect(f, 'ash', x - 1, 13, 2, 3); px(f, 'bone', x - 1, 13); }
+    // 위로 떠오르는 동전 (그림자가 없다)
+    for (const [x, y] of [[14, 9], [19, 6], [12, 4], [21, 2]] as const) {
+      rect(f, 'ash', x, y, 3, 2); px(f, 'paper', x, y); px(f, 'mist', x + 2, y + 1);
+    }
+  },
+
+  borrowed_size_jacket: (b, f) => {
+    // 남의 몸에 맞춘 재킷: 어깨 높이가 다르고, 왼소매는 바닥까지, 오른소매는 팔꿈치에서 끊긴다
+    polygon(b, 'rose', [[9, 4], [21, 7], [26, 9], [28, 14], [24, 15], [24, 26], [8, 26], [8, 14], [6, 29], [2, 29], [3, 8]]);
+    lit(b, 'rose', 'rose-light', 'rose-dark', 2, 4, 26, 26);
+    line(b, 'rose-dark', 8, 13, 8, 26); // 왼소매 경계
+    line(b, 'rose-dark', 24, 11, 24, 15); // 오른소매 경계
+    polygon(f, 'rose-dark', [[10, 5], [14, 6], [16, 15], [11, 12]]);
+    polygon(f, 'rose-dark', [[21, 7], [18, 7], [16, 15], [20, 13]]);
+    line(f, 'rose-light', 11, 6, 15, 13);
+    vline(f, 'ink', 16, 15, 11);
+    for (const y of [18, 22]) { px(f, 'paper', 14, y); px(f, 'bone', 14, y + 1); }
+    hline(f, 'rose-dark', 18, 21, 4); // 주머니
+    rect(f, 'paper', 2, 27, 4, 2); // 너무 긴 소맷단
+    hline(f, 'bone', 2, 28, 4);
+    hline(f, 'paper', 24, 14, 4); // 너무 짧은 소맷단
+  },
+
+  unwaking_gown: (b, f, g) => {
+    polygon(b, 'paper', [[12, 2], [20, 2], [22, 8], [21, 13], [27, 25], [24, 26], [8, 26], [5, 25], [11, 13], [10, 8]]);
+    lit(b, 'paper', 'paper', 'bone', 5, 2, 22, 25);
+    hline(b, 'bone', 8, 25, 16);
+    // 안에 누운 사람 자국(텅 빈 주름)
+    polygon(f, 'bone', [[14, 6], [18, 6], [19, 13], [21, 23], [11, 23], [13, 13]]);
+    polygon(f, 'ash', [[15, 9], [17, 9], [18, 20], [14, 20]]);
+    // 받침에서 떠 있다: 밑에 따로 떨어진 그림자
+    hline(g, 'dusk', 9, 30, 14);
+  },
+
+  wet_lace_veil: (b, f, g) => {
+    polygon(b, 'paper', [[14, 2], [18, 2], [27, 22], [24, 25], [20, 23], [16, 25], [12, 23], [8, 25], [5, 22]]);
+    lit(b, 'paper', 'paper', 'bone', 5, 2, 22, 23);
+    // 레이스: 노이즈 대신 정해진 간격의 꽃무늬 구멍 + 물결 단
+    clipped(f, b, (l) => {
+      for (let y = 9; y <= 19; y += 5) for (let x = 8 + ((y / 5) % 2) * 2; x <= 24; x += 4) { px(l, 'ash', x, y); px(l, 'bone', x - 1, y); px(l, 'bone', x + 1, y); px(l, 'bone', x, y - 1); }
+    });
+    for (const x of [8, 12, 16, 20, 24]) px(f, 'ash', x, 23);
+    for (const [x, y] of [[8, 25], [16, 25], [24, 25]] as const) { px(f, 'steel-light', x, y + 1); px(f, 'steel', x, y + 2); }
+    ellipse(g, 'steel-dark', 16, 29, 11, 1); // 물웅덩이
+    hline(g, 'steel', 9, 29, 4);
+  },
+
+  dry_handkerchief: (b, f) => {
+    polygon(b, 'rose', [[16, 9], [27, 17], [16, 24], [5, 17]]);
+    lit(b, 'rose', 'rose-light', 'rose-dark', 5, 9, 23, 16);
+    line(b, 'rose-dark', 16, 10, 16, 23);
+    polygon(f, 'rose-light', [[16, 9], [21, 13], [16, 17], [11, 13]]); // 접힌 윗장
+    // 바싹 마른 손수건 둘레에만 고인 눈물
+    for (const [x, y] of [[4, 23], [9, 27], [16, 28], [23, 27], [28, 23], [3, 12], [29, 11]] as const) {
+      px(f, 'paper', x, y); px(f, 'ash', x, y + 1);
+    }
+  },
+
+  unreflecting_brooch: (b, f) => {
+    ellipse(b, 'taupe', 16, 16, 11, 13);
+    lit(b, 'taupe', 'bone', 'mist', 5, 3, 23, 27);
+    for (const [x, y] of [[16, 2], [16, 30], [5, 16], [27, 16], [8, 6], [24, 6], [8, 26], [24, 26]] as const) circle(b, 'bone', x, y, 1);
+    // 가운데 거울: 아무것도 비치지 않는 평평한 회색 (하이라이트 없음)
+    ellipse(f, 'mist', 16, 16, 7, 9);
+    ellipseLine(f, 'stone', 16, 16, 7, 9);
+  },
+
+  other_name_tag: (b, f, g) => {
+    rect(b, 'stone', 13, 4, 6, 6); // 핀 고리
+    rect(b, 'dusk', 14, 5, 4, 4);
+    rect(b, 'brass', 2, 11, 28, 13);
+    lit(b, 'brass', 'brass-light', 'brass-dark', 2, 11, 28, 13);
+    rect(b, 'shadow', 4, 13, 24, 9);
+    for (const [x, y] of [[3, 12], [28, 12], [3, 22], [28, 22]] as const) px(b, 'brass-dark', x, y);
+    // 이름 자리: 수없이 긁힌 자국
+    for (const [x0, y0, x1, y1] of [[6, 20, 15, 14], [9, 21, 20, 14], [13, 20, 25, 15], [7, 15, 24, 20], [17, 21, 26, 14]] as const) line(f, 'mist', x0, y0, x1, y1);
+    line(g, 'ash', 11, 15, 19, 20);
+  },
+
+  rusted_key_pendant: (b, f, g) => {
+    for (let i = 0; i <= 5; i++) { px(b, 'ash', 6 + i * 2, 2 + i); px(b, 'ash', 26 - i * 2, 2 + i); }
+    // 열쇠: 고리 자체가 열쇠 구멍 모양. 검은 쇠라도 어두운 진열장에서 읽히게 한 단계 밝게
+    circle(b, 'stone', 16, 11, 5);
+    rect(b, 'stone', 15, 15, 3, 13);
+    rect(b, 'stone', 18, 22, 4, 2);
+    rect(b, 'stone', 18, 26, 3, 2);
+    lit(b, 'stone', 'mist', 'dusk', 11, 6, 11, 22);
+    circle(f, 'ink', 16, 10, 2);
+    polygon(f, 'ink', [[15, 11], [17, 11], [18, 15], [14, 15]]);
+    // 녹
+    for (const [x, y] of [[15, 18], [17, 21], [16, 25], [12, 9], [20, 12]] as const) px(g, 'brass-dark', x, y);
+    px(g, 'skin-b', 19, 22);
   },
 
   voice_dummy: () => undefined,

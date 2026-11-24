@@ -10,8 +10,8 @@ const family = (k: PaletteKey): string | null => {
 };
 
 describe('product icons', () => {
-  it('has one icon per product (26)', () => {
-    expect(ICON_IDS).toHaveLength(26);
+  it('has one icon per product (26) + expansion products (22, docs/EXPANSION.md)', () => {
+    expect(ICON_IDS).toHaveLength(26 + 22);
     for (const p of products as { id: string }[]) expect(ICON_IDS).toContain(p.id);
   });
 

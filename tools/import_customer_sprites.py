@@ -72,8 +72,13 @@ SHEET_IDS = {
     'a': ['hanyeoreum', 'kang', 'jin', 'oh'],
     'b': ['cha', 'park', 'yoon', 'seojin'],
     'c': ['marsh', 'faceless', 'baek', 'actor'],
+    # 확장(docs/EXPANSION.md): 오후 7명 + 새벽 사람형 6명. 같은 배율·같은 톤 맞춤(시트 a 기준)으로 들어간다
+    'd': ['ma', 'do', 'hwangbo', 'jamie'],
+    'e': ['song', 'lee', 'jung', 'borrowed'],
+    'f': ['mirror', 'sleeper', 'cats', 'rain'],
+    'g': ['nametag', 'nametag_2', 'nametag_3', 'nametag_4'],  # 명찰을 단 손님: 방문마다 다른 어드바이저
 }
-NO_BLINK = {'marsh', 'faceless', 'actor'}  # 마시: 눈꺼풀이 없다. 얼굴 없는 여자·가면 배우: 눈이 안 보인다
+NO_BLINK = {'marsh', 'faceless', 'actor', 'sleeper'}  # 마시: 눈꺼풀이 없다. 얼굴 없는 여자·가면 배우: 눈이 안 보인다. 잠든 아이: 늘 감고 있다
 
 
 def bg_color(im):
@@ -196,6 +201,61 @@ def match_to(img, src_stats, ref_stats):
     return img.point(lut)
 
 
+# 확장 시트는 시트마다 피부가 한 톤 어둡게 나와서(옷 색이 달라 전체 톤 맞춤만으로는 피부가 밀린다),
+# 피부처럼 보이는 픽셀만 시트 a의 피부 평균색으로 옮긴다. 기존 시트(a·b·c)는 건드리지 않는다.
+SKIN_FIX = {'d', 'e', 'f'}
+_REF_SKIN = None
+
+
+def skin_like(c):
+    Lc, A, B = lab(c)
+    return 35 < Lc < 92 and 4 < A < 30 and 6 < B < 35
+
+
+def skin_zone(img, alpha, n, max_dist=8):
+    """칸마다 피부처럼 보이는 픽셀을 덩어리로 묶고, 그 인물 얼굴 피부(위 35%)와 색이 가까운 덩어리만 피부로 본다.
+    손은 얼굴과 색 거리 1~3, 베이지 옷은 15 이상이라 옷이 피부색으로 바뀌지 않는다. 얼굴이 피부색이 아닌 인물은 건너뛴다."""
+    ip, ap = img.load(), alpha.load(); w, h = img.size; col = w / n
+    zone = set()
+    for i in range(n):
+        x0, x1 = int(i * col), int((i + 1) * col)
+        ys = [y for y in range(h) if any(ap[x, y] > 230 for x in range(x0, x1, 2))]
+        if not ys: continue
+        top, bot = min(ys), max(ys); hh = bot - top
+        sk = {(x, y) for y in range(top, bot + 1) for x in range(x0, x1) if ap[x, y] > 230 and skin_like(ip[x, y])}
+        face = [ip[x, y] for (x, y) in sk if y < top + hh * 0.35]
+        if len(face) < 30: continue
+        fm = lab(tuple(sum(p[j] for p in face) / len(face) for j in range(3)))
+        seen = set()
+        for p0 in sk:
+            if p0 in seen: continue
+            q = deque([p0]); seen.add(p0); comp = [p0]
+            while q:
+                cx, cy = q.popleft()
+                for nb in ((cx + 1, cy), (cx - 1, cy), (cx, cy + 1), (cx, cy - 1)):
+                    if nb in sk and nb not in seen: seen.add(nb); q.append(nb); comp.append(nb)
+            m = lab(tuple(sum(ip[x, y][j] for x, y in comp) / len(comp) for j in range(3)))
+            if math.dist(m, fm) < max_dist: zone.update(comp)
+    return zone
+
+
+def skin_mean(img, alpha, zone=None):
+    ip, ap = img.load(), alpha.load()
+    v = [ip[x, y] for (x, y) in zone] if zone is not None else [ip[x, y] for y in range(img.height) for x in range(img.width) if ap[x, y] > 230 and skin_like(ip[x, y])]
+    return tuple(sum(p[i] for p in v) / len(v) for i in range(3)) if v else None
+
+
+def shift_skin(img, src, ref, zone=None):
+    d = [ref[i] - src[i] for i in range(3)]
+    out = img.copy(); op = out.load()
+    for y in range(img.height):
+        for x in range(img.width):
+            c = op[x, y]
+            if (zone is None or (x, y) in zone) and skin_like(c):
+                op[x, y] = tuple(max(0, min(255, round(c[i] + d[i]))) for i in range(3))
+    return out
+
+
 def process_sheet(key, ids, manifest):
     opened = Image.open(os.path.join(SHEETS, f'sheet-{key}-open.png')).convert('RGB')
     size = (round(opened.width * SCALE), round(opened.height * SCALE))
@@ -205,14 +265,26 @@ def process_sheet(key, ids, manifest):
     if os.path.exists(alpha_full):
         a_small = Image.open(alpha_full).convert('L').resize(size, Image.BOX)
         st = char_stats(small, a_small)
+        global _REF_SKIN
         if _REF_STATS is None:
             _REF_STATS = st
+            _REF_SKIN = skin_mean(small, a_small)
         else:
             small = match_to(small, st, _REF_STATS)
+        if key in SKIN_FIX and _REF_SKIN:
+            zone = skin_zone(small, a_small, len(ids))
+            src_skin = skin_mean(small, a_small, zone)
+            if src_skin:
+                small = shift_skin(small, src_skin, _REF_SKIN, zone)
+                print(key, 'skin', [round(v) for v in src_skin], '->', [round(v) for v in _REF_SKIN])
     closed_path = os.path.join(SHEETS, f'sheet-{key}-closed.png')
     small_closed = Image.open(closed_path).convert('RGB').resize(size, Image.BOX) if os.path.exists(closed_path) else None
     if small_closed is not None and key != 'a' and os.path.exists(alpha_full):
         small_closed = match_to(small_closed, char_stats(small_closed, a_small), _REF_STATS)
+        if key in SKIN_FIX and _REF_SKIN:
+            czone = skin_zone(small_closed, a_small, len(ids))
+            cs = skin_mean(small_closed, a_small, czone)
+            if cs: small_closed = shift_skin(small_closed, cs, _REF_SKIN, czone)
     w, h = size
     alpha_path = os.path.join(SHEETS, f'sheet-{key}-alpha.png')
     if os.path.exists(alpha_path):
