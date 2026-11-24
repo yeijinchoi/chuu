@@ -50,7 +50,7 @@ describe('★ 반응 대사와 속마음', () => {
     expect(lines(act(g, { type: 'propose', productId: bestOffer(g) }))).toContain(han().propose!.perfect);
     const ev = act(g, { type: 'close', choice: 'boxGold' });
     const t = lines(ev);
-    expect(t).toContain('와, 포장까지… 엄마가 상자만 봐도 놀라시겠다.');
+    expect(t).toContain((han().close!.box as { gold?: string }).gold); // 문구는 편집기로 바뀔 수 있어 데이터에서 읽는다
     if (encOf(g).step === 'regularOffer') {
       expect(lines(act(g, { type: 'regularOffer', accept: false }))).toContain('한여름이 꾸벅 인사하고 나간다.');
     }
