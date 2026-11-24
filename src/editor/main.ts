@@ -1,6 +1,7 @@
 import '../ui/styles/fonts.css';
 import '../ui/styles/tokens.css';
 import './editor.css';
+import { publishChanges, type PublishResult } from './github';
 import { LIVE, loadPatch, PATCH_KEY, savePatch } from './store';
 import {
   applyPatch, collectAll, FILE_IDS, FILE_NAMES, isNarration, labelOf, missingPlaceholders, splitId,
@@ -48,8 +49,17 @@ const state = {
 };
 
 const stored = loadPatch();
-if (stored.ok) state.patch = stored.patch;
-else state.loadError = stored.reason;
+let cleaned = 0;
+if (stored.ok) {
+  // 이미 게시돼 사이트 원문이 된 수정(원문과 같아진 것)은 목록에서 정리한다
+  for (const [id, text] of Object.entries(stored.patch)) {
+    const r = ROW_BY_ID.get(id);
+    if (!r) { cleaned++; continue; }
+    if (r.leaf.text === text) { cleaned++; continue; }
+    state.patch[id] = text;
+  }
+  if (cleaned > 0) savePatch(state.patch);
+} else state.loadError = stored.reason;
 
 // ------------------------------------------------------------ DOM 도우미
 function el<K extends keyof HTMLElementTagNameMap>(tag: K, cls = '', text?: string): HTMLElementTagNameMap[K] {
@@ -126,7 +136,10 @@ previewLink.href = './?edited=1';
 previewLink.target = '_blank';
 previewLink.rel = 'noopener';
 previewLink.title = '이 브라우저에 저장된 수정 내용으로 게임을 새 탭에서 엽니다';
+const publishBtn = btn('게임에 반영(게시)', 'ed-btn ed-btn--primary', () => openPublish());
+publishBtn.title = '수정한 글을 저장소의 게임 데이터에 올려, 배포된 게임 전체에 반영합니다';
 actions.append(
+  publishBtn,
   previewLink,
   btn('패치 복사', 'ed-btn', () => void copyPatch()),
   btn('패치 내려받기', 'ed-btn', downloadPatch),
@@ -353,6 +366,125 @@ function resetAll(): void {
   paintStatus();
   say('모두 원문으로 되돌렸어요.');
 }
+
+// ------------------------------------------------------------ 게시 (GitHub에 커밋)
+const GH_KEY = 'closing-time.editor.gh.v1';
+interface GhSettings { repo: string; branch: string; token: string; remember: boolean }
+function loadGh(): GhSettings {
+  const d: GhSettings = { repo: 'yeijinchoi/chuu', branch: 'claude/trusting-faraday-4mk8i9', token: '', remember: false };
+  try {
+    const v = JSON.parse(localStorage.getItem(GH_KEY) ?? 'null') as Partial<GhSettings> | null;
+    if (v) return { repo: v.repo ?? d.repo, branch: v.branch ?? d.branch, token: v.token ?? '', remember: !!v.token };
+  } catch { /* 설정을 못 읽어도 기본값으로 */ }
+  return d;
+}
+
+const publishDialog = el('dialog', 'ed-dialog');
+const pubSummary = el('p', 'ed-dialog__hint');
+const pubResult = el('div', 'ed-dialog__result');
+pubResult.setAttribute('role', 'status');
+const pubGo = btn('게시하기', 'ed-btn ed-btn--primary', () => void doPublish());
+
+function field(label: string, input: HTMLInputElement, hint = ''): HTMLElement {
+  const w = el('label', 'ed-field');
+  w.append(el('span', 'ed-field__l', label), input);
+  if (hint) w.append(el('span', 'ed-field__h', hint));
+  return w;
+}
+const inRepo = el('input', 'ed-input');
+const inBranch = el('input', 'ed-input');
+const inToken = el('input', 'ed-input');
+inToken.type = 'password';
+inToken.autocomplete = 'off';
+const inRemember = el('input');
+inRemember.type = 'checkbox';
+
+function openPublish(): void {
+  const n = Object.keys(state.patch).length;
+  const gh = loadGh();
+  inRepo.value = gh.repo;
+  inBranch.value = gh.branch;
+  inToken.value = gh.token;
+  inRemember.checked = gh.remember;
+  const files = new Set(Object.keys(state.patch).map((id) => splitId(id)?.file).filter((f): f is NonNullable<typeof f> => !!f));
+  pubSummary.textContent = n === 0
+    ? '아직 올릴 수정이 없어요.'
+    : `수정 ${n}개(${[...files].map((f) => FILE_NAMES[f]).join(', ')})를 저장소의 게임 데이터에 올려요. 올라가면 배포가 다시 돌고, 1~2분 뒤 게임을 여는 모두에게 바뀐 글이 보여요.`;
+  pubResult.textContent = '';
+  pubResult.dataset.kind = '';
+  pubGo.disabled = n === 0;
+  publishDialog.showModal();
+}
+
+async function doPublish(): Promise<void> {
+  const repo = inRepo.value.trim();
+  const branch = inBranch.value.trim();
+  const token = inToken.value.trim();
+  if (!/^[\w.-]+\/[\w.-]+$/.test(repo)) { showPub({ ok: false, kind: 'notfound', step: '확인', message: '저장소는 "소유자/이름" 형식이어야 해요.' }); return; }
+  if (!branch) { showPub({ ok: false, kind: 'notfound', step: '확인', message: '브랜치를 입력해 주세요.' }); return; }
+  if (!token) { showPub({ ok: false, kind: 'auth', step: '확인', message: '토큰을 입력해 주세요. 아래 안내대로 만들 수 있어요.' }); return; }
+  try {
+    localStorage.setItem(GH_KEY, JSON.stringify({ repo, branch, token: inRemember.checked ? token : '' }));
+  } catch { /* 기억하지 못해도 게시는 된다 */ }
+  pubGo.disabled = true;
+  pubGo.textContent = '올리는 중…';
+  pubResult.textContent = 'GitHub에 올리는 중이에요. 창을 닫지 마세요.';
+  pubResult.dataset.kind = '';
+  const changes = Object.entries(state.patch).flatMap(([id, after]) => {
+    const r = ROW_BY_ID.get(id);
+    return r ? [{ id, before: r.leaf.text, after }] : [];
+  });
+  const result = await publishChanges({ repo, branch, token }, changes);
+  pubGo.disabled = false;
+  pubGo.textContent = '게시하기';
+  showPub(result);
+}
+
+function showPub(r: PublishResult): void {
+  pubResult.replaceChildren();
+  if (r.ok) {
+    pubResult.dataset.kind = 'ok';
+    pubResult.append(el('b', '', `${r.applied}개를 저장소에 올렸어요. `), el('span', '', '배포에 1~2분 걸려요. 그동안 이 페이지를 새로고침하지 않아도 돼요.'));
+    const a = el('a', 'ed-link', ' 커밋 보기');
+    a.href = r.commitUrl;
+    a.target = '_blank';
+    a.rel = 'noopener';
+    pubResult.append(a);
+    if (r.skipped.length) pubResult.append(el('div', 'ed-dialog__sub', `${r.skipped.length}개는 건너뛰었어요(저장소의 글이 편집기 원문과 달라진 칸): ${r.skipped.slice(0, 3).map((x) => x.id).join(', ')}${r.skipped.length > 3 ? ' …' : ''}`));
+    say(`게시 완료 · ${r.applied}개. 1~2분 뒤 게임에 반영돼요.`);
+  } else {
+    pubResult.dataset.kind = 'warn';
+    pubResult.append(el('b', '', '게시하지 못했어요. '), el('span', '', r.message));
+    if (r.skipped?.length) pubResult.append(el('div', 'ed-dialog__sub', `건너뜀 ${r.skipped.length}개: ${r.skipped.slice(0, 3).map((x) => x.id).join(', ')}`));
+  }
+}
+
+(() => {
+  const box = el('div', 'ed-dialog__box');
+  const how = el('details', 'ed-how');
+  how.append(el('summary', '', '토큰은 어떻게 만드나요?'));
+  const ol = el('ol');
+  for (const t of [
+    'GitHub 로그인 → 오른쪽 위 프로필 → Settings → Developer settings → Personal access tokens → Fine-grained tokens → Generate new token',
+    'Repository access: "Only select repositories" → 이 게임 저장소만 선택',
+    'Permissions → Repository permissions → Contents: Read and write',
+    '만든 토큰(github_pat_…)을 아래 칸에 붙여넣기. 토큰은 비밀번호처럼 다루세요.',
+  ]) ol.append(el('li', '', t));
+  how.append(ol);
+  const rememberRow = el('label', 'ed-check');
+  rememberRow.append(inRemember, el('span', '', '이 브라우저에 토큰 기억하기 (내 컴퓨터에서만 체크하세요)'));
+  const row = el('div', 'ed-dialog__row');
+  row.append(pubGo, btn('닫기', 'ed-btn', () => publishDialog.close()));
+  box.append(
+    el('h2', '', '게임에 반영(게시)'), pubSummary,
+    field('저장소', inRepo, '소유자/이름'),
+    field('브랜치', inBranch, '이 브랜치가 배포되는 곳이어야 게임에 반영돼요'),
+    field('토큰', inToken),
+    rememberRow, how, pubResult, row,
+  );
+  publishDialog.append(box);
+  app.append(publishDialog);
+})();
 
 // ------------------------------------------------------------ 불러오기
 const importDialog = el('dialog', 'ed-dialog');

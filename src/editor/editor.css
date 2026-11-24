@@ -83,3 +83,16 @@ html, body.editor { margin: 0; height: 100%; background: var(--color-bg); color:
   .ed-row { grid-template-columns: minmax(0, 1fr); }
   .ed-actions { margin-left: 0; }
 }
+
+.ed-btn--primary { background: var(--brass); border-color: var(--brass-light); color: var(--ink); font-weight: 700; }
+.ed-btn--primary:hover { background: var(--brass-light); }
+.ed-btn:disabled { opacity: 0.55; cursor: progress; }
+.ed-field { display: flex; flex-direction: column; gap: 3px; }
+.ed-field__l { font-weight: 700; }
+.ed-field__h { font-size: 9px; color: var(--color-text-muted); }
+.ed-input { height: 34px; padding: 0 10px; background: var(--color-bg); border: 2px solid var(--color-border); border-radius: 0; }
+.ed-input:focus { outline: 2px solid var(--steel); outline-offset: 1px; }
+.ed-how { font-size: 9px; color: var(--color-text-muted); }
+.ed-how summary { cursor: pointer; color: var(--steel-light); }
+.ed-how ol { margin: 6px 0 0; padding-left: 18px; }
+.ed-dialog__sub { margin-top: 4px; font-size: 9px; color: var(--color-text-muted); }
