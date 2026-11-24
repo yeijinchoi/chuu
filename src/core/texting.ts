@@ -1,8 +1,9 @@
 import {
   applyScoreDelta, baseKind, findDawnTaboo, isRegistered, scoreCare,
 } from './care';
-import { changeComposure, dayDef, str, thought, type Ctx } from './ctx';
+import { changeComposure, dayDef, narrate, str, thought, type Ctx } from './ctx';
 import { SCORE } from './encounter';
+import { restingUntilFinal } from './dayFlow';
 import type { CareTemplateId, ContactDef, CustomerDef, SalesTemplateId, Shift } from './types';
 
 /** {name} {contact} {customer} {product} {event} 치환 */
@@ -54,18 +55,22 @@ export function doSendText(ctx: Ctx, contactId: string, template: SalesTemplateI
   const card = customer ? s.cards[customer.id] : undefined;
   if (card) card.lastContactDay = s.day;
 
+  const replies = { ...contact.replies, ...contact.repliesByDay?.[String(s.day)] };
   let reply: string | undefined;
   if (!customer) {
-    reply = contact.replies.any ?? contact.replies.neutral;
+    reply = replies.any ?? replies.neutral;
   } else if (card?.tier === 'lost') {
     reply = undefined; // 이탈한 손님은 문자에 반응하지 않는다
+  } else if (!canComeToday(ctx, customer.id, shift)) {
+    // 오늘은 올 수 없는 손님(일정에 없거나 마지막 날까지 쉬는 중): 올 것처럼 답하지 않는다
+    reply = replies.busy ?? str(ctx.data, 'text.contactBusy');
   } else if (template === contact.prefers) {
-    reply = contact.replies.prefer ?? contact.replies.any;
+    reply = replies.prefer ?? replies.any;
     s.visitors[customer.id] = { time: scheduledTime(ctx, customer, shift), bonus: SCORE.textBonus };
   } else if (template === contact.dislikes) {
-    reply = contact.replies.dislike ?? contact.replies.any;
+    reply = replies.dislike ?? replies.any;
   } else {
-    reply = contact.replies.neutral ?? contact.replies.any;
+    reply = replies.neutral ?? replies.any;
     s.visitors[customer.id] = { time: scheduledTime(ctx, customer, shift), bonus: 0 };
   }
   if (reply) ctx.emit({ type: 'phone', from: contact.name, text: reply });
@@ -73,6 +78,12 @@ export function doSendText(ctx: Ctx, contactId: string, template: SalesTemplateI
   if (!customer && contact.composureOnSend) thought(ctx, str(ctx.data, 'thoughts.zeroReply'));
   if (contact.composureOnSend) changeComposure(ctx, contact.composureOnSend);
   return true;
+}
+
+/** 오늘 이 교대에 문자로 부를 수 있는 손님인가: 일정에 자리가 있고, 마지막 날까지 쉬는 중이 아니다 */
+export function canComeToday(ctx: Ctx, customerId: string, shift: Shift): boolean {
+  if (restingUntilFinal(ctx, customerId)) return false;
+  return dayDef(ctx).schedule.some((x) => x.shift === shift && x.condition !== 'always' && (x.customerId === customerId || x.candidates?.includes(customerId)));
 }
 
 function scheduledTime(ctx: Ctx, customer: CustomerDef, shift: Shift): string {
@@ -106,6 +117,7 @@ export function careBlock(
   if (card?.tier === 'lost') return 'lost';
   if (isThanks) {
     if (!card || card.purchases.length === 0) return 'noPurchase';
+    if (card.lastThanksDay === ctx.state.day) return 'sent'; // 같은 날 감사 문자는 한 번만
   } else if (!card || (!isRegistered(card) && !customer.care.noContact)) {
     return 'notRegistered';
   }
@@ -169,8 +181,12 @@ export function doSendCare(ctx: Ctx, customerId: string, template: CareTemplateI
 
   if (!taboo && shift === 'afternoon' && profile.chat) {
     s.pendingReplies[customerId] = true;
-    ctx.emit({ type: 'phone', from: customer.name, text: profile.chat.reply });
+    const again = (card.chats ?? 0) > 0 && profile.chat.replyAgain;
+    card.chats = (card.chats ?? 0) + 1;
+    ctx.emit({ type: 'phone', from: customer.name, text: again ? (profile.chat.replyAgain as string) : profile.chat.reply });
     ctx.emit({ type: 'replyChoices', customerId, options: profile.chat.options });
+  } else if (!taboo && shift === 'dawn' && profile.ack) {
+    narrate(ctx, profile.ack);
   }
   return true;
 }

@@ -1,7 +1,7 @@
 import { applyScoreDelta, fillCardFromProbe, newCard, registerRegular, isRegistered } from './care';
-import { changeComposure, clamp, setClock, setPhase, str, type Ctx } from './ctx';
+import { changeComposure, clamp, setClock, setPhase, str, strAt, type Ctx } from './ctx';
 import {
-  classifyProposal, emitReaction, react, reactClose, reactGreet, reactPropose, reactThought,
+  acceptsFor, classifyProposal, emitReaction, react, reactClose, reactGreet, reactPropose, reactThought,
 } from './reactions';
 import { checkChoice, checkRequire, type CheckResult } from './rules';
 import { effectiveVisit, grantClue, returnsFor, runBeats, sayLine, setFlag } from './plot';
@@ -52,7 +52,7 @@ const PROBE_FIELDS: ProbeId[] = ['askCategory', 'askOccasion', 'askBudget', 'obs
  * 제안 카드: ① 카테고리·색 일치 ② 카테고리만 일치 ③ 다른 카테고리. 후보가 여럿이면 시드 RNG로 고르고 순서도 섞는다.
  * 손님과 같은 교대의 상품만 쓴다. "아무거나" 손님은 무작위 3장. onlyProduct 손님은 +1장(총 4장).
  */
-export function pickOffers(customer: CustomerDef, products: readonly Product[], rng: Rng): string[] {
+export function pickOffers(customer: CustomerDef, products: readonly Product[], rng: Rng, accepts: readonly string[] | undefined = customer.accepts): string[] {
   const pool = products.filter((p) => p.shift === customer.shift && p.id !== EMPTY_BOX);
   const chosen: Product[] = [];
   const add = (p: Product | undefined): void => {
@@ -65,7 +65,8 @@ export function pickOffers(customer: CustomerDef, products: readonly Product[], 
     // 원하는 상품: 색이 맞고(색 제한이 없으면 카테고리만) 예산 안에 드는 것. 그런 상품이 없으면 예산을 무시한다.
     const colorOk = sameCat.filter((p) => customer.color === null || p.color === customer.color);
     const affordable = colorOk.filter((p) => customer.budget === null || p.price <= customer.budget);
-    const exact = affordable.length > 0 ? affordable : colorOk.filter(() => customer.color !== null);
+    const wanted = accepts ? sameCat.filter((p) => accepts.includes(p.id)) : [];
+    const exact = wanted.length > 0 ? wanted : affordable.length > 0 ? affordable : colorOk.filter(() => customer.color !== null);
     const partial = sameCat.filter((p) => !exact.includes(p));
     const other = pool.filter((p) => p.category !== customer.category);
     add(pickOne(rng, exact.length > 0 ? exact : partial));
@@ -119,8 +120,9 @@ function addAffinity(ctx: Ctx, e: EncounterState, delta: number): void {
   ctx.emit({ type: 'affinity', delta: e.affinity - before, value: e.affinity });
 }
 
+/** 손님 대사. "> "로 시작하면 지문으로 낸다 (사라짐·결제 장면 등) */
 function say(ctx: Ctx, c: CustomerDef, text: string | undefined): void {
-  if (text) ctx.emit({ type: 'line', speaker: c.name, text });
+  if (text) sayLine(ctx, c, text);
 }
 function narrate(ctx: Ctx, text: string | undefined): void {
   if (text) ctx.emit({ type: 'line', speaker: null, text });
@@ -230,7 +232,7 @@ export function doServe(ctx: Ctx, drink: 'water' | 'chocolate' | 'none'): boolea
   const e = enc(ctx);
   if (!e || e.step !== 'serve') return false;
   const c = ctx.customers[e.customerId] as CustomerDef;
-  const h = c.hospitality;
+  const h = c.hospitality ? { ...c.hospitality, ...returnsFor(ctx, c)?.hospitality } : undefined; // 재방문이면 그 방문의 대접 반응
   if (!h) return false;
   const card = ensureCard(ctx, c);
   const match = serveMatches(h.pref, drink);
@@ -284,10 +286,11 @@ export function doProbe(ctx: Ctx, probe: ProbeId): boolean {
     e.mannerSlips++;
     ctx.state.mannerSlips++;
     ctx.emit({ type: 'mannerSlip', text: str(ctx.data, 'manner.note') });
-    emitReaction(ctx, c, c.reactions?.manner);
+    react(ctx, c, 'manner');
     addAffinity(ctx, e, SCORE.mannerSlip);
   } else {
-    say(ctx, c, answer);
+    if (probe === 'observe') narrate(ctx, answer?.replace(/^>\s*/, ''));
+    else say(ctx, c, answer);
     fillCard(ctx, card, c, probe, true);
     if (probe === 'observe') reactThought(ctx, c, 'observe');
     else addAffinity(ctx, e, SCORE.probe);
@@ -297,7 +300,7 @@ export function doProbe(ctx: Ctx, probe: ProbeId): boolean {
     if (miss !== null) return violate(ctx, e, miss);
     e.step = 'propose';
     const rng = deriveRng(ctx.state.seed, ctx.state.day, c.id, 'offers');
-    e.offered = pickOffers(c, ctx.data.products, rng);
+    e.offered = pickOffers(c, ctx.data.products, rng, acceptsFor(ctx, c));
   }
   return true;
 }
@@ -325,8 +328,8 @@ export function doPropose(ctx: Ctx, productId: string): boolean {
   return true;
 }
 
-function rejectProduct(ctx: Ctx, e: EncounterState, c: CustomerDef, product: Product, kind: 'deptOnly' | 'wrong' | 'overBudget'): boolean {
-  const delta = kind === 'deptOnly' ? SCORE.wrongColor : kind === 'overBudget' ? SCORE.overBudget : SCORE.wrongProduct;
+function rejectProduct(ctx: Ctx, e: EncounterState, c: CustomerDef, product: Product, kind: 'deptOnly' | 'wrong' | 'overBudget' | 'notThis'): boolean {
+  const delta = kind === 'deptOnly' || kind === 'notThis' ? SCORE.wrongColor : kind === 'overBudget' ? SCORE.overBudget : SCORE.wrongProduct;
   addAffinity(ctx, e, delta);
   reactPropose(ctx, c, product);
   e.rejected.push(product.id);
@@ -363,9 +366,9 @@ export function doReroll(ctx: Ctx): boolean {
     next[next.length - 1] = w.id;
   }
   if (c.onlyProduct && !e.rejected.includes(c.onlyProduct) && !next.includes(c.onlyProduct)) next.push(c.onlyProduct);
+  narrate(ctx, strAt(ctx.data, 'text.rerolled', e.rerolls));
   e.rerolls++;
   e.offered = shuffle(rng, [...new Set(next)]);
-  narrate(ctx, str(ctx.data, 'text.rerolled'));
   ctx.emit({ type: 'sfx', id: 'cloth_pull' });
   return true;
 }
@@ -438,7 +441,7 @@ function recordSale(ctx: Ctx, e: EncounterState, c: CustomerDef): void {
   e.outcome = 'sold';
   s.salesCount++;
   say(ctx, c, pickLine(ctx, c, 'success'));
-  narrate(ctx, c.lines.successNote);
+  narrate(ctx, pickLine(ctx, c, 'successNote'));
   if (e.shift === 'afternoon') {
     s.revenue += product.price;
     s.totalRevenue += product.price;
@@ -484,7 +487,7 @@ function finish(ctx: Ctx, e: EncounterState): void {
     if (farewell) reactThought(ctx, c, 'farewell');
   }
   if (e.outcome === 'sold') {
-    emitReaction(ctx, c, c.reactions?.leave);
+    react(ctx, c, 'leave');
     reactThought(ctx, c, 'sold');
   }
   ctx.emit({ type: 'customerLeave', customerId: e.customerId, outcome: e.outcome });
@@ -497,9 +500,8 @@ function violate(ctx: Ctx, e: EncounterState, rule: RuleId): boolean {
   ctx.state.violations++;
   e.outcome = 'horror';
   e.step = 'done';
-  const text = c.lines.violation[String(rule)];
-  if (text) say(ctx, c, text);
-  else narrate(ctx, str(ctx.data, 'violation.default'));
+  // 위반 장면은 손님의 말이 아니라 매장에서 벌어지는 일이다 (따옴표 안의 말만 손님 목소리)
+  narrate(ctx, c.lines.violation[String(rule)] ?? str(ctx.data, 'violation.default'));
   ctx.emit({ type: 'violation', rule, severe: true });
   ctx.emit({ type: 'horror', customerId: c.id, kind: 'breach' });
   ctx.emit({ type: 'sfx', id: 'violation' });

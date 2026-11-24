@@ -82,7 +82,7 @@ describe('재방문: 첫 만남 문구를 되풀이하지 않는다', () => {
     const second = visit('hanyeoreum', 'afternoon', 2);
     expect(first.some((t) => t.includes('나도 처음인데'))).toBe(true);
     expect(second.some((t) => t.includes('나도 처음인데'))).toBe(false);
-    expect(second.some((t) => t.includes('어제 첫 손님이 오늘은 단골이다'))).toBe(true);
+    expect(second.some((t) => t.includes('첫날 첫 손님이 오늘은 단골이다'))).toBe(true);
     // 첫 방문의 입장 지문("문이 조심스럽게 열린다…")도 되풀이하지 않는다
     expect(second.some((t) => t.includes('문이 조심스럽게 열린다'))).toBe(false);
   });
@@ -92,7 +92,7 @@ describe('재방문: 첫 만남 문구를 되풀이하지 않는다', () => {
     const second = visit('marsh', 'dawn', 2);
     expect(first.some((t) => t.includes('눈이 크고, 깜빡이지 않는다'))).toBe(true);
     expect(second.some((t) => t.includes('눈이 크고, 깜빡이지 않는다'))).toBe(false);
-    expect(second.some((t) => t.includes('어제보다 짙다'))).toBe(true);
+    expect(second.some((t) => t.includes('지난번보다 짙다'))).toBe(true);
   });
 
   it('VIP 보상 대사는 한 번만 한다', () => {

@@ -24,6 +24,15 @@ export function str(data: GameData, path: string): string {
   return typeof v === 'string' ? v : '';
 }
 
+/** 날마다·차례마다 바뀌는 글: 배열이면 i번째(넘치면 마지막), 글이면 그대로 */
+export function strAt(data: GameData, path: string, i: number): string {
+  const v = lookup(data.strings, path);
+  if (typeof v === 'string') return v;
+  if (!Array.isArray(v) || v.length === 0) return '';
+  const x = v[Math.max(0, Math.min(i, v.length - 1))];
+  return typeof x === 'string' ? x : '';
+}
+
 export function strList(data: GameData, path: string): string[] {
   const v = lookup(data.strings, path);
   return Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : [];

@@ -1,9 +1,9 @@
 import { rolloverCards } from './care';
-import { changeComposure, dayDef, narrate, setClock, setPhase, str, strList, thought, type Ctx } from './ctx';
+import { changeComposure, dayDef, narrate, setClock, setPhase, str, strAt, strList, thought, type Ctx } from './ctx';
 import { startEncounter, SCORE } from './encounter';
 import { moodFor } from './mood';
 import { checkClosingReply, ruleText } from './rules';
-import { beginFinale } from './plot';
+import { beginFinale, FINAL_DAY } from './plot';
 import { computeResults } from './results';
 import { buildSave } from './save';
 import type { ResolvedSlot, ScheduleSlot, Shift, StorageAdapter } from './types';
@@ -29,6 +29,7 @@ export function buildSlots(ctx: Ctx, shift: Shift): ResolvedSlot[] {
       sl = { ...sl, customerId: pick, condition: 'always' };
     }
     if (present.has(sl.customerId)) continue; // 같은 손님이 한 교대에 두 번 오지 않는다
+    if (sl.condition !== 'always' && restingUntilFinal(ctx, sl.customerId)) continue;
     const v = s.visitors[sl.customerId];
     const forgotten = !v && pending.has(sl.customerId);
     if (sl.condition === 'always') {
@@ -46,7 +47,7 @@ export function buildSlots(ctx: Ctx, shift: Shift): ResolvedSlot[] {
   // 오늘 일정에 없는 잊힌 단골
   if (shift === 'dawn') {
     for (const id of pending) {
-      if (!present.has(id) && ctx.customers[id]?.shift === 'dawn') {
+      if (!present.has(id) && ctx.customers[id]?.shift === 'dawn' && !restingUntilFinal(ctx, id)) {
         slots.push({ shift, time: day.clocks.uninvited, customerId: id, uninvited: true, forgotten: true });
       }
     }
@@ -68,16 +69,26 @@ export function buildSlots(ctx: Ctx, shift: Shift): ResolvedSlot[] {
   return slots;
 }
 
-/** 재방문 슬롯: 한 번이라도 판매한 후보 중 관계 점수가 가장 높은 손님 (동점이면 앞 순서). 없으면 슬롯을 비운다. */
+/** 재방문 슬롯: 한 번이라도 판매한 후보 중 오늘 초대한 손님 → 관계 점수가 가장 높은 손님 (동점이면 앞 순서). 없으면 슬롯을 비운다. */
+/**
+ * 한 손님은 첫 방문 · 중간에 한 번 · 마지막 날에만 온다. 중간에 이미 다시 온 손님(2회 방문)은 마지막 날 전에는 오지 않는다.
+ * 그래야 "마지막 방문" 대사가 마지막 날에만 나오고, 같은 재방문 대사가 날마다 되풀이되지 않는다.
+ */
+export function restingUntilFinal(ctx: Ctx, customerId: string): boolean {
+  return ctx.state.day < FINAL_DAY && (ctx.state.cards[customerId]?.visits ?? 0) >= 2;
+}
+
 function pickReturning(ctx: Ctx, sl: ScheduleSlot, taken: ReadonlySet<string>): string | null {
   let best: string | null = null;
   let bestScore = -Infinity;
   for (const id of sl.candidates ?? [sl.customerId]) {
     const card = ctx.state.cards[id];
-    if (taken.has(id) || !card || card.purchases.length === 0 || card.tier === 'lost') continue;
-    if (card.score > bestScore) {
+    if (taken.has(id) || !card || card.purchases.length === 0 || card.tier === 'lost' || restingUntilFinal(ctx, id)) continue;
+    // 문자로 초대해 "갈게요"라고 답한 손님이 먼저 온다 (초대에 응하고 안 오는 일이 없게)
+    const score = card.score + (ctx.state.visitors[id] ? 1000 : 0);
+    if (score > bestScore) {
       best = id;
-      bestScore = card.score;
+      bestScore = score;
     }
   }
   return best;
@@ -118,7 +129,7 @@ export function beginBriefing(ctx: Ctx, shift: Shift): void {
     if (first) thought(ctx, str(ctx.data, 'thoughts.afterNote'));
   } else {
     // 첫 새벽에만 새벽 교대를 처음 알리는 말을 한다
-    say(str(ctx.data, ctx.state.day === 1 ? 'briefing.dawn.intro' : 'briefing.dawn.introAgain'));
+    say(ctx.state.day === 1 ? str(ctx.data, 'briefing.dawn.intro') : strAt(ctx.data, 'briefing.dawn.introAgain', ctx.state.day - 2));
     say(str(ctx.data, 'briefing.dawn.title'));
     for (const r of ctx.data.rules.filter((x) => x.day <= ctx.state.day)) say(`${r.id}. ${ruleText(r, ctx.state.day)}`);
     say(str(ctx.data, 'briefing.dawn.outro'));
@@ -142,7 +153,7 @@ export function beginTexting(ctx: Ctx, shift: Shift): void {
       narrate(ctx, str(ctx.data, 'briefing.dawn.cover'));
       narrate(ctx, str(ctx.data, 'briefing.dawn.notebook'));
     } else {
-      narrate(ctx, str(ctx.data, 'briefing.dawn.coverAgain'));
+      narrate(ctx, strAt(ctx.data, 'briefing.dawn.coverAgain', ctx.state.day - 2));
     }
   }
 }
@@ -194,8 +205,8 @@ export function finishAftercare(ctx: Ctx, storage?: StorageAdapter): boolean {
   if (p.shift === 'afternoon') {
     setPhase(ctx, { kind: 'shiftBreak' });
     ctx.emit({ type: 'sfx', id: 'lights_off' });
-    narrate(ctx, str(ctx.data, 'shiftBreak.narration'));
-    thought(ctx, str(ctx.data, 'thoughts.shiftBreak'));
+    narrate(ctx, strAt(ctx.data, 'shiftBreak.narration', s.day - 1));
+    thought(ctx, strAt(ctx.data, 'thoughts.shiftBreak', s.day - 1));
     return true;
   }
   // 고맙다는 말에는 꼭 답할 것: 방문한 날 감사 문자를 안 보내면 다음 새벽에 초대 없이 찾아온다

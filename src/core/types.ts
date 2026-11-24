@@ -33,10 +33,12 @@ export interface ClientCard {
   drink?: Hospitality['pref']; // 대접 취향 (undefined = 아직 모름)
   lastThanksDay?: number; // 마지막으로 감사 문자를 보낸 날
   vipSaid?: boolean; // VIP 보상 대사를 이미 들었다
+  chats?: number; // 관리 문자 답장을 받은 횟수
 }
 
 export interface ChatDef {
   reply: string;
+  replyAgain?: string; // 다른 날 다시 연락했을 때 (같은 답장을 되풀이하지 않는다)
   options: [string, string];
   best: 0 | 1;
 }
@@ -61,6 +63,7 @@ export interface CareProfile {
   noContact?: boolean; // 문 밖의 손님: 방치가 정답, 연락이 곧 금기
   unreachable?: boolean; // 바깥에서 온 색: 연락 수단 없음
   redBoxCare?: boolean; // 얼굴 없는 여자
+  ack?: string; // 새벽 손님: 관리 문자를 보낸 뒤의 반응 지문 (새벽 손님은 답장 대화가 없다)
   overcontactSafe?: boolean; // 오미란: 과잉 연락 페널티 없음
   mustThank?: boolean; // 백설: 방문 다음 애프터케어에 감사 문자를 안 보내면 다음 새벽에 찾아온다
   vipReveal?: string; // VIP 보상 대사
@@ -120,13 +123,16 @@ export type CustomerReturnLines = Partial<Omit<CustomerLines, 'violation'>> & {
   enter?: string; // 재방문 입장 지문 ("> "로 시작)
   entrance?: string; // 새벽 재방문 입장 묘사
   thought?: NonNullable<CustomerReactions['thought']>; // 재방문 속마음 (첫 만남 속마음은 되풀이하지 않는다)
+  reactions?: CustomerReactions; // 이 방문에만 바뀌는 반응
+  hospitality?: Partial<Hospitality>; // 이 방문에만 바뀌는 대접 반응
+  accepts?: string[]; // 이 방문에 원하는 상품
 };
 
 /** ★ 손님별 반응 대사 (SCRIPT_DAY1 §0). 문자열이 "> "로 시작하면 지문, 아니면 손님의 대사다. 없으면 strings의 공통 반응을 쓴다. */
 export interface CustomerReactions {
   enter?: string; // 입장 지문
   greet?: { match?: string; mismatch?: string | Partial<Record<GreetStyle, string>> };
-  propose?: { perfect?: string; deptOnly?: string; wrong?: string; overBudget?: string };
+  propose?: { perfect?: string; deptOnly?: string; wrong?: string; overBudget?: string; notThis?: string };
   close?: { tryOn?: string; box?: string | { red?: string; gold?: string }; checkout?: string };
   regular?: { accept?: string; decline?: string };
   manner?: string; // 매너 실수 뒤 덧붙이는 지문
@@ -190,10 +196,14 @@ export interface CustomerDef {
   returns?: Partial<Record<'2' | '3', CustomerReturnLines>>;
   vvip?: boolean; // 처음부터 VIP 대접을 받는 손님
   hospitality?: Hospitality;
+  /** 손님이 원하는 상품 id. 없으면 카테고리·색·예산이 맞는 상품이면 된다 */
+  accepts?: string[];
   onVisit?: PlotBeat[]; // 입장 직후(첫 대사 뒤)
   afterSale?: PlotBeat[]; // 판매 직후
   talk?: TalkDef; // 판매 직후 선택 대화
 }
+
+export interface ContactReplies { prefer?: string; neutral?: string; dislike?: string; any?: string; busy?: string }
 
 export interface ContactDef {
   id: string;
@@ -207,7 +217,9 @@ export interface ContactDef {
   dislikes: TemplateId | null;
   comesUninvited?: boolean; // baek
   composureOnSend?: number; // zero: -5
-  replies: { prefer?: string; neutral?: string; dislike?: string; any?: string };
+  replies: ContactReplies;
+  /** 날짜별로 바뀌는 답장 ("2" = 2일차). 그날 일정에 맞춘 시각·말투. 없는 칸은 replies를 쓴다 */
+  repliesByDay?: Partial<Record<string, Partial<ContactReplies>>>;
 }
 
 export interface ScheduleSlot {

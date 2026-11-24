@@ -22,11 +22,7 @@ function goldenPath(seed: number): { events: GameEvent[]; game: ReturnType<typeo
     if (encOf(g).step === 'serve') A({ type: 'serve', drink: 'water' });
     A({ type: 'probe', probe: 'askCategory' });
     A({ type: 'probe', probe: 'askOccasion' });
-    const e = encOf(g);
-    const pid = e.offered.find((id) => {
-      const p = data.products.find((x) => x.id === id)!;
-      return p.category === c.category && p.color === c.color;
-    })!;
+    const pid = bestOffer(g);
     A({ type: 'propose', productId: pid });
     A({ type: 'close', choice: close });
     if (encOf(g).step === 'regularOffer') A({ type: 'regularOffer', accept: true });
@@ -58,13 +54,7 @@ function goldenPath(seed: number): { events: GameEvent[]; game: ReturnType<typeo
     A({ type: 'greet', style: c.greetPref });
     A({ type: 'probe', probe: 'askCategory' });
     A({ type: 'probe', probe: 'askOccasion' });
-    const e = encOf(g);
-    const pid = c.traits.wantsAnything
-      ? e.offered[0]!
-      : e.offered.find((id) => {
-          const p = data.products.find((x) => x.id === id)!;
-          return p.category === c.category && p.color === c.color;
-        })!;
+    const pid = bestOffer(g);
     A({ type: 'propose', productId: pid });
     A({ type: 'close', choice: close });
     if (encOf(g).step === 'regularOffer') A({ type: 'regularOffer', accept: true });

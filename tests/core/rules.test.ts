@@ -138,7 +138,9 @@ describe('수칙 판정 (rules.json 데이터 기반, 범용 checkChoice)', () =
     expect(kinds).toContain('violation');
     expect(kinds).toContain('horror');
     expect(kinds).toContain('composure');
-    expect(ev.find((e) => e.type === 'line' && e.speaker === '백설')).toBeTruthy();
+    // 위반 장면은 손님 대사가 아니라 지문으로 나온다
+    expect(ev.find((e) => e.type === 'line' && e.speaker === null && e.text.includes('장갑이 얼어 부서진다'))).toBeTruthy();
+    expect(ev.find((e) => e.type === 'line' && e.speaker === '백설' && e.text.includes('장갑이 얼어'))).toBeFalsy();
     expect(st(g).composure).toBe(75);
     expect(st(g).violations).toBe(1);
     expect(st(g).salesCount).toBe(0);

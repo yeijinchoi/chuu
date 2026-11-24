@@ -467,7 +467,7 @@ function showPub(r: PublishResult): void {
   for (const t of [
     'GitHub 로그인 → 오른쪽 위 프로필 → Settings → Developer settings → Personal access tokens → Fine-grained tokens → Generate new token',
     'Repository access: "Only select repositories" → 이 게임 저장소만 선택',
-    'Permissions → Repository permissions → Contents: Read and write',
+    'Permissions 칸의 "+ Add permissions" → 목록에서 Contents 선택 → 오른쪽 Access를 Read and write로 (Metadata: Read-only는 자동으로 붙어요)',
     '만든 토큰(github_pat_…)을 아래 칸에 붙여넣기. 토큰은 비밀번호처럼 다루세요.',
   ]) ol.append(el('li', '', t));
   how.append(ol);

@@ -1,38 +1,155 @@
 [
   {
-    "id": "kang", "name": "강도윤", "book": "afternoon",
+    "id": "kang",
+    "name": "강도윤",
+    "book": "afternoon",
     "memo": "신상 나오면 무조건 연락. 바쁨.",
-    "customerId": "kang", "prefers": "new_arrival", "dislikes": "greeting",
-    "replies": { "prefer": "오 신상? 세 시 반쯤 갈게요.", "neutral": "네 이따 들를게요.", "dislike": "아 네… 바빠서요." }
+    "customerId": "kang",
+    "prefers": "new_arrival",
+    "dislikes": "greeting",
+    "replies": {
+      "prefer": "오 신상? 세 시 반쯤 갈게요.",
+      "neutral": "네 이따 들를게요.",
+      "dislike": "아 네… 바빠서요.",
+      "busy": "이번 주는 일정이 꽉 찼어요. 마지막 날쯤 들를게요."
+    },
+    "repliesByDay": {
+      "2": {
+        "prefer": "또 신상이에요? 두 시 십오 분쯤 잠깐 들를게요."
+      },
+      "3": {
+        "prefer": "점심 미팅 끝나고 들를게요. 오늘은 오래 못 있어요."
+      },
+      "4": {
+        "prefer": "오늘 오후에 잠깐 들를게요.",
+        "busy": "아직도 일정이 꽉 찼어요. 금요일엔 꼭 들를게요."
+      },
+      "5": {
+        "prefer": "금요일이네요. 시간 내서 들를게요.",
+        "busy": "오늘은 정말 못 가요. 미안해요."
+      }
+    }
   },
   {
-    "id": "jin", "name": "진영숙", "book": "afternoon",
+    "id": "jin",
+    "name": "진영숙",
+    "book": "afternoon",
     "memo": "VVIP. 말 많은 거 싫어하심. 탄산수. 레몬 없이.",
-    "customerId": "jin", "prefers": "private", "dislikes": "new_arrival",
-    "replies": { "prefer": "다섯 시 반. 조용히 보고 싶네요.", "neutral": "시간 되면 들를게요.", "dislike": "단체 문자는 사양할게요." }
+    "customerId": "jin",
+    "prefers": "private",
+    "dislikes": "new_arrival",
+    "replies": {
+      "prefer": "다섯 시 반. 조용히 보고 싶네요.",
+      "neutral": "시간 되면 들를게요.",
+      "dislike": "단체 문자는 사양할게요.",
+      "busy": "오늘은 못 가요. 마지막 날에 갈게요."
+    },
+    "repliesByDay": {
+      "2": {
+        "prefer": "다섯 시 십오 분. 오늘도 조용히 보고 싶네요."
+      },
+      "3": {
+        "prefer": "가죠. 사람 없을 때로."
+      },
+      "4": {
+        "prefer": "가죠. 조용할 때로.",
+        "busy": "오늘도 못 가요. 금요일에 봐요."
+      },
+      "5": {
+        "prefer": "마지막 날이라 했죠. 가요.",
+        "busy": "…오늘은 못 가요. 미안해요."
+      }
+    }
   },
   {
-    "id": "oh", "name": "오미란", "book": "afternoon",
+    "id": "oh",
+    "name": "오미란",
+    "book": "afternoon",
     "memo": "주말에만 오심.",
-    "customerId": null, "prefers": null, "dislikes": null,
-    "replies": { "any": "어머 이번 주는 어렵겠어요 ㅠ 주말에 꼭 갈게요!" }
+    "customerId": null,
+    "prefers": null,
+    "dislikes": null,
+    "replies": {
+      "any": "어머 이번 주는 어렵겠어요 ㅠ 주말에 꼭 갈게요!"
+    }
   },
   {
-    "id": "marsh", "name": "마시 씨", "book": "dawn", "address": "항구 17번지, 물 아래",
+    "id": "marsh",
+    "name": "마시 씨",
+    "book": "dawn",
+    "address": "항구 17번지, 물 아래",
     "memo": "진주 좋아함. 눈 보지 말 것.",
-    "customerId": "marsh", "prefers": "dawn_offer", "dislikes": "dawn_name",
-    "replies": { "prefer": "진주. 진주. 두 시 이십이 분에 올라가겠습니다.", "neutral": "올라가겠습니다.", "dislike": "이름을 함부로 부르지 마십시오." }
+    "customerId": "marsh",
+    "prefers": "dawn_offer",
+    "dislikes": "dawn_name",
+    "replies": {
+      "prefer": "진주. 진주. 두 시 이십이 분에 올라가겠습니다.",
+      "neutral": "올라가겠습니다.",
+      "dislike": "이름을 함부로 부르지 마십시오.",
+      "busy": "오늘은 물이 낮습니다. 다음 만조를 기다리겠습니다."
+    },
+    "repliesByDay": {
+      "2": {
+        "prefer": "물이 차오릅니다. 두 시 삼십 분에 올라가겠습니다."
+      },
+      "3": {
+        "prefer": "오늘은 물이 일찍 찹니다. 올라가겠습니다."
+      },
+      "4": {
+        "prefer": "오늘은 물이 늦게 찹니다. 그래도 올라가겠습니다.",
+        "busy": "물이 아직 낮습니다. 마지막 만조에 올라가겠습니다."
+      },
+      "5": {
+        "prefer": "마지막 만조입니다. 올라가겠습니다.",
+        "busy": "…물이 빠졌습니다. 올라갈 수 없습니다."
+      }
+    }
   },
   {
-    "id": "baek", "name": "백설", "book": "dawn", "address": "북쪽, 바람 위",
-    "memo": "답장 빠름. 늘 고맙다고 함.", "memoStruck": "연락하지 말 것",
-    "customerId": "baek", "prefers": "dawn_name", "dislikes": null, "comesUninvited": true,
-    "replies": { "prefer": "문자 고마워요. 늘 고마워요. 세 시 삼십삼 분에 갈게요.", "neutral": "고마워요. 갈게요." }
+    "id": "baek",
+    "name": "백설",
+    "book": "dawn",
+    "address": "북쪽, 바람 위",
+    "memo": "답장 빠름. 늘 고맙다고 함.",
+    "memoStruck": "연락하지 말 것",
+    "customerId": "baek",
+    "prefers": "dawn_name",
+    "dislikes": null,
+    "comesUninvited": true,
+    "replies": {
+      "prefer": "문자 고마워요. 늘 고마워요. 세 시 삼십삼 분에 갈게요.",
+      "neutral": "고마워요. 갈게요.",
+      "busy": "오늘은 갈 수 없어요. 그래도 문자 고마워요. 늘 고마워요."
+    },
+    "repliesByDay": {
+      "2": {
+        "prefer": "또 문자 줬네요. 고마워요. 세 시 반에 갈게요."
+      },
+      "3": {
+        "prefer": "또 불러 줬네요. 고마워요. 이따 갈게요."
+      },
+      "4": {
+        "prefer": "늘 고마워요. 오늘도 갈게요.",
+        "busy": "오늘도 못 가요. 마지막 날엔 꼭 갈게요. 고마워요."
+      },
+      "5": {
+        "prefer": "마지막 날이네요. 고마워요. 꼭 갈게요.",
+        "busy": "오늘은… 갈 수 없어요. 그래도 늘 고마워요."
+      }
+    }
   },
   {
-    "id": "zero", "name": "(빈칸)", "book": "dawn", "address": "(빈칸)",
+    "id": "zero",
+    "name": "(빈칸)",
+    "book": "dawn",
+    "address": "(빈칸)",
     "memo": "(메모 없음)",
-    "customerId": null, "prefers": null, "dislikes": null, "composureOnSend": -5,
-    "replies": { "any": "담당자님은 거기 없어요." }
+    "customerId": null,
+    "prefers": null,
+    "dislikes": null,
+    "composureOnSend": -5,
+    "replies": {
+      "any": "담당자님은 거기 없어요."
+    }
   }
 ]

@@ -25,7 +25,7 @@ describe('pickOffers', () => {
         const ids = pickOffers(c, data.products, mulberry32(seed));
         const ps = ids.map(product);
         // 손님이 원하는 상품: 부서·색·예산이 모두 맞는 것
-        const exact = ps.filter((p) => p.category === c.category && (c.color === null || p.color === c.color) && (c.budget === null || p.price <= c.budget));
+        const exact = ps.filter((p) => (c.accepts ? c.accepts.includes(p.id) : p.category === c.category && (c.color === null || p.color === c.color) && (c.budget === null || p.price <= c.budget)));
         if (c.color !== null) expect(exact.length, `${c.id}/${seed}`).toBeGreaterThanOrEqual(1);
         if (!c.onlyProduct) expect(ps.some((p) => p.category === c.category && !exact.includes(p))).toBe(true);
         expect(ps.some((p) => p.category !== c.category)).toBe(true);
