@@ -23,7 +23,7 @@ OUT = os.path.join(ROOT, 'public/art/apparitions')
 # 시트·칸 → 이름, 목표 크기(가로·세로 최대, 화면 px), 장면에 붙는 자리(화면 px)와 기준점
 # anchor: 'center' | 'bottom' (아래 가운데) | 'top' (위 가운데)
 ITEMS = {
-    ('a', 0): dict(kind='doorGapEyes', box=(34, 120), at=(590, 132), anchor='center', vcrop=(0.24, 0.70), thr=110),  # 얼굴·눈이 있는 가운데만   # 출입문 두 짝 사이 틈
+    ('a', 0): dict(kind='doorGapEyes', box=(30, 88), at=(607, 128), anchor='center', vcrop=(0.26, 0.68), thr=110),  # 오른쪽 문짝 유리 한 칸(30×88)에 맞춘다. 얼굴·눈이 있는 가운데만   # 출입문 두 짝 사이 틈
     ('a', 1): dict(kind='hallHand', box=(30, 52), at=(588, 240), anchor='bottom'),       # 문 앞 바닥에서 올라온 손
     ('a', 2): dict(kind='shelfFingers', box=(34, 16), at=(356, 108), anchor='bottom'),   # 맨 위 선반 가장자리
     ('a', 3): dict(kind='mirrorFace', box=(62, 84), at=(46, 112), anchor='center'),      # 거울 유리에 붙은 얼굴

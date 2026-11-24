@@ -58,6 +58,7 @@ describe('괴현상의 단계 (레퍼런스: 평온할 땐 작고 짧게, 무너
   });
   it('새 괴현상은 모두 무언가를 그린다', () => {
     for (const a of APPARITION_SPOTS) {
+      if (a.kind === 'mannequinTwitch') continue; // 마네킹 고개는 렌더러가 머리 연출로 돌린다
       const l = new Layer(W, H);
       drawApparition(l, a, 0.4, true);
       expect(l.data.some((v) => v !== T), a.kind).toBe(true);
@@ -74,5 +75,32 @@ describe('괴현상 그림 (public/art/apparitions)', () => {
       expect(manifest[ref!.art], kind).toBeTruthy();
       expect(fs.existsSync(`public/art/apparitions/${ref!.art}.png`), kind).toBe(true);
     }
+  });
+});
+
+describe('괴현상 움직임 (apparitionAnim)', () => {
+  it('문틈 얼굴: 유리가 먼저 꺼지고 얼굴이 스며 나왔다 사라진다', async () => {
+    const { apparitionAnim } = await import('../../src/render/scene');
+    expect(apparitionAnim('doorGapEyes', 0, 1.1, false).dither).toBe(0);
+    expect(apparitionAnim('doorGapEyes', 0.55, 1.1, false).dither).toBe(4);
+    expect(apparitionAnim('doorGapEyes', 0.55, 1.1, false).glass).toBe(1);
+  });
+  it('바닥의 손은 아래에서부터 올라오고, 핏자국은 위에서부터 흘러내린다', async () => {
+    const { apparitionAnim } = await import('../../src/render/scene');
+    const hand = (t: number) => apparitionAnim('hallHand', t, 1.5, false).clip[1];
+    expect(hand(0.1)).toBeGreaterThan(hand(0.45)); // 위쪽 잘림이 줄어든다 = 올라온다
+    const blood = (t: number) => apparitionAnim('blood', t, 2.6, false).clip[3];
+    expect(blood(1.4)).toBeGreaterThan(blood(0.2));
+  });
+  it('거울 속 여자는 끊기듯 다가오고(배율이 단계로 커진다), 거대한 눈은 한 번 깜빡인다', async () => {
+    const { apparitionAnim } = await import('../../src/render/scene');
+    const s = (t: number) => apparitionAnim('mirrorFigure', t, 1.8, false).sx;
+    expect(s(0.3)).toBeLessThan(s(0.9));
+    expect(s(0.9)).toBeLessThan(s(1.5));
+    expect(apparitionAnim('giantEyes', 1.2, 2.0, false).sy).toBeLessThan(0.2);
+  });
+  it('움직임 줄이기면 움직이지 않고 그대로 보인다', async () => {
+    const { apparitionAnim } = await import('../../src/render/scene');
+    expect(apparitionAnim('mirrorFigure', 0.1, 1.8, true)).toMatchObject({ show: true, sx: 1, dither: 4 });
   });
 });

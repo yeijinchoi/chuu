@@ -698,7 +698,7 @@ export function drawSceneCue(l: Layer, cue: SceneCueView, layout: SceneLayout, s
  */
 export type ApparitionKind =
   | 'eyes' | 'eyesMany' | 'hand' | 'blood' | 'mirrorFace'
-  | 'doorGapEyes' | 'mirrorFigure' | 'mirrorVoid' | 'noiseFigure' | 'hallHand' | 'shelfFingers' | 'giantEyes';
+  | 'doorGapEyes' | 'mirrorFigure' | 'mirrorVoid' | 'noiseFigure' | 'hallHand' | 'shelfFingers' | 'giantEyes' | 'mannequinTwitch';
 /**
  * tier: 이 단계부터 나온다 (0 평온 · 1 불안 · 2 공포 · 3 붕괴). 평온할 때는 작고 짧은 것만,
  * 평정심이 떨어질수록 크고 노골적인 것이 풀린다. (레퍼런스: docs/HORROR_REFERENCES.md)
@@ -707,10 +707,11 @@ export interface Apparition { kind: ApparitionKind; x: number; y: number; tier: 
 export const APPARITION_SPOTS: readonly Apparition[] = [
   // 평온: 작고 짧은 것 — "방금 뭐였지?"
   { kind: 'eyes', x: 84, y: 24, tier: 0 }, // 샹들리에 왼쪽 벽 위 어둠
-  { kind: 'doorGapEyes', x: 295, y: 66, tier: 0 }, // 출입문 두 짝 사이가 벌어지고 그 틈에 두 눈
+  { kind: 'doorGapEyes', x: 303.5, y: 64, tier: 0 }, // 오른쪽 문짝 유리 너머에서 들여다보는 얼굴
   { kind: 'hallHand', x: 294, y: 120, tier: 0 }, // 출입문 앞 바닥에서 작게 올라온 손 하나
   { kind: 'shelfFingers', x: 178, y: 54, tier: 0 }, // 맨 위 선반, 가방 사이로 걸친 손가락
   { kind: 'mirrorVoid', x: 23, y: 72, tier: 0, mirror: true }, // 거울이 아무것도 비추지 않는다
+  { kind: 'mannequinTwitch', x: 0, y: 0, tier: 0 }, // 맨 왼쪽 마네킹이 고개를 확 돌렸다가 원래대로
   // 불안
   { kind: 'eyes', x: 252, y: 12, tier: 1 }, // 코트 마네킹 위 벽
   { kind: 'hand', x: 292, y: 62, tier: 1 }, // 문 유리에 바깥에서 짚은 손
@@ -750,11 +751,81 @@ export const APPARITION_ART: Partial<Record<ApparitionKind, { art: string; ancho
 /** 나타나 있는 시간(초): 작은 것일수록 짧게 */
 export function apparitionDuration(a: Apparition): number {
   switch (a.kind) {
-    case 'blood': return 2.2;
-    case 'eyesMany': case 'giantEyes': return 1.6;
-    case 'mirrorFigure': case 'noiseFigure': return 1.1;
-    case 'mirrorVoid': case 'hallHand': case 'shelfFingers': case 'doorGapEyes': return 0.55;
-    default: return 0.8;
+    case 'blood': return 2.6;
+    case 'giantEyes': return 2.0;
+    case 'eyesMany': case 'mirrorFigure': return 1.8;
+    case 'hallHand': return 1.5;
+    case 'mirrorFace': case 'noiseFigure': return 1.3;
+    case 'doorGapEyes': case 'shelfFingers': return 1.1;
+    case 'mannequinTwitch': return 0.45;
+    case 'mirrorVoid': return 0.6;
+    default: return 0.9;
+  }
+}
+
+/** 오른쪽 문짝 유리 한 칸 (장면 좌표): 문틈 얼굴은 이 안에만 보인다 */
+export const DOOR_GLASS = { x: 296, y: 42, w: 15, h: 44 };
+
+/**
+ * 괴현상 그림의 움직임 (그리지 않고 계산만). 도트 게임답게 초당 12장으로 끊어 움직이고,
+ * 반투명 대신 체커 무늬로 스민다(dither 0~4: 0 = 안 보임, 4 = 다 보임). 팔레트 밖 중간색이 생기지 않게.
+ * clip: 그림의 보이는 부분(0~1 비율, [왼, 위, 오른, 아래]). dx·dy는 화면 도트, sx·sy는 배율.
+ */
+export interface ApparitionAnim { show: boolean; dx: number; dy: number; sx: number; sy: number; clip: [number, number, number, number]; dither: number; glass?: number }
+
+export function apparitionAnim(kind: ApparitionKind, tt: number, dur: number, reduced: boolean): ApparitionAnim {
+  const base: ApparitionAnim = { show: true, dx: 0, dy: 0, sx: 1, sy: 1, clip: [0, 0, 1, 1], dither: 4 };
+  if (reduced) return base;
+  const f = Math.floor(tt * 12) / 12; // 초당 12장
+  const end = dur - f; // 남은 시간
+  const ramp = (t: number, len: number): number => Math.min(1, Math.max(0, Math.floor((t / len) * 4) / 4)); // 4단계
+  switch (kind) {
+    case 'doorGapEyes': {
+      // 유리가 먼저 어둡게 꺼지고(glass) 그 안에서 얼굴이 스며 나온다 → 눈이 한 번 움찔 → 스며 사라지고 유리가 돌아온다
+      const inn = ramp(f, 0.3), out = ramp(end, 0.25);
+      return { ...base, glass: Math.min(ramp(f, 0.15), ramp(end, 0.15)), dither: Math.round(4 * Math.min(inn, out)), dx: f > 0.55 && f < 0.65 ? 1 : 0 };
+    }
+    case 'hallHand': {
+      // 바닥에서 천천히 올라온다 → 손가락이 경련하듯 떨린다 → 휙 꺼진다
+      const up = Math.min(1, f / 0.5), down = end < 0.12 ? 0 : 1;
+      const rise = Math.floor(up * 8) / 8 * down;
+      return { ...base, show: rise > 0, clip: [0, 1 - rise, 1, 1], dy: 0, dx: f > 0.5 && Math.floor(f * 12) % 3 === 0 ? 1 : 0 };
+    }
+    case 'shelfFingers': {
+      // 가장자리로 기어 올라온다 → 끝에서 툭 미끄러져 사라진다
+      const up = Math.floor(Math.min(1, f / 0.35) * 4) / 4;
+      if (end < 0.12) return { ...base, show: false };
+      return { ...base, clip: [0, 1 - up, 1, 1] };
+    }
+    case 'mirrorFace': {
+      // 스며 나온다 → 유리에 쾅 부딪히듯 한 번 커진다 → 스며 사라진다
+      const slam = f >= 0.5 && f < 0.67;
+      return { ...base, dither: Math.round(4 * Math.min(ramp(f, 0.3), ramp(end, 0.3))), sx: slam ? 1.12 : 1, sy: slam ? 1.12 : 1 };
+    }
+    case 'mirrorFigure': {
+      // 멀리 서 있다가 끊기듯 두 번 다가온다 (움직이는 장면은 보이지 않고 위치만 바뀐다) → 툭 사라진다
+      const s = f < 0.6 ? 0.62 : f < 1.2 ? 0.8 : 1;
+      return { ...base, sx: s, sy: s, dither: f < 0.15 ? 2 : 4 };
+    }
+    case 'giantEyes': {
+      // 천천히 떠진다 → 한 번 깜빡인다 → 감긴다
+      const open = Math.min(ramp(f, 0.4), ramp(end, 0.3));
+      const blink = f >= dur * 0.55 && f < dur * 0.55 + 0.17; // 두 장 동안 (초당 12장에서 빠지지 않게)
+      const sy = blink ? 0.12 : Math.max(0.12, open);
+      return { ...base, sy };
+    }
+    case 'eyesMany': {
+      // 스며 나와 숨 쉬듯 부풀었다 줄었다 한다
+      const breathe = Math.floor(f * 4) % 2 === 0 ? 1 : 0.94;
+      return { ...base, dither: Math.round(4 * Math.min(ramp(f, 0.4), ramp(end, 0.2))), sx: breathe, sy: breathe };
+    }
+    case 'blood': {
+      // 손자국에서 아래로 흘러내린다 (16단계)
+      const flow = Math.max(0.18, Math.floor(Math.min(1, f / 1.4) * 16) / 16);
+      return { ...base, clip: [0, 0, 1, flow] };
+    }
+    default:
+      return base;
   }
 }
 
@@ -836,7 +907,8 @@ export function drawApparition(l: Layer, a: Apparition, p: number, reduced: bool
     }
     case 'noiseFigure': {
       // 지직거리는 노이즈로 된 사람 모양 (레퍼런스: "YOU'RE FINALLY HERE."). 그릴 때마다 노이즈가 바뀐다
-      const fx = a.x, foot = a.y;
+      // 지직거리며 한두 도트씩 흔들린다
+      const fx = a.x + (reduced ? 0 : Math.floor(Math.random() * 3) - 1), foot = a.y;
       const inside = (x: number, y: number): boolean => {
         const hy = foot - 52;
         if ((x - fx) ** 2 / 16 + (y - hy) ** 2 / 25 <= 1) return true; // 머리

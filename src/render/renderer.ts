@@ -1,7 +1,7 @@
 import { DRAIN_ORDER, PALETTE, buildLut, type Mood, type PaletteKey } from './palette';
 import { Layer, toImageData } from './pixel';
 import {
-  W, H, APPARITION_ART, APPARITION_SPOTS, DEFAULT_LAYOUT, apparitionDuration, apparitionSpots, bakeScene, drawApparition, drawChandelier, drawMannequinHeadOverlay, drawSceneCue, drawSilhouette, mannequinSlots,
+  W, H, APPARITION_ART, APPARITION_SPOTS, DEFAULT_LAYOUT, DOOR_GLASS, apparitionAnim, apparitionDuration, apparitionSpots, bakeScene, drawApparition, drawChandelier, drawMannequinHeadOverlay, drawSceneCue, drawSilhouette, mannequinSlots,
   type Apparition, type SceneBake, type SceneCueView, type SceneLayout, type Shift,
 } from './scene';
 import { drawCustomer, drawOutsideColour, type SpriteDef } from './customerSprite';
@@ -136,32 +136,73 @@ export class Renderer {
     const ref = APPARITION_ART[kind as keyof typeof APPARITION_ART];
     return ref ? this.art.get(ref.art) : undefined;
   }
-  /** 그림 괴현상: 장면 버퍼를 깐 뒤, 손님보다 먼저(뒤에) 그린다 */
+  /** 체커 무늬로 스미기: level 0~4 (2×2 순서 디더). 반투명을 쓰지 않아 팔레트 밖 중간색이 생기지 않는다 */
+  private ditherCache = new Map<string, HTMLCanvasElement>();
+  private dithered(key: string, src: CanvasImageSource, w: number, h: number, level: number): CanvasImageSource {
+    if (level >= 4) return src;
+    const ck = `${key}|${level}`;
+    const hit = this.ditherCache.get(ck);
+    if (hit) return hit;
+    const cv = document.createElement('canvas');
+    cv.width = w; cv.height = h;
+    const cx = cv.getContext('2d');
+    if (!cx) return src;
+    cx.drawImage(src, 0, 0);
+    const d = cx.getImageData(0, 0, w, h);
+    const bayer = [0, 2, 3, 1];
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      if ((bayer[(y % 2) * 2 + (x % 2)] as number) >= level) d.data[(y * w + x) * 4 + 3] = 0;
+    }
+    cx.putImageData(d, 0, 0);
+    this.ditherCache.set(ck, cv);
+    return cv;
+  }
+
+  /** 그림 괴현상: 장면 버퍼를 깐 뒤, 손님보다 먼저(뒤에) 그린다. 움직임은 scene.apparitionAnim이 정한다 */
   private drawApparitionArt(target: CanvasRenderingContext2D, k: number): void {
     const app = this.app;
     if (!app) return;
     const sp = this.artFor(app.a.kind);
     const ref = APPARITION_ART[app.a.kind];
     if (!sp || !ref) return;
-    const p = (this.clock - app.start) / app.dur;
+    const tt = this.clock - app.start;
+    const an = apparitionAnim(app.a.kind, tt, app.dur, this.reduced);
     // 눈 종류는 끝나기 직전에 먼저 사라진다: 깜빡이고 없어진 것처럼
-    if (!this.reduced && p > 0.85 && (app.a.kind === 'giantEyes' || app.a.kind === 'eyesMany' || app.a.kind === 'doorGapEyes')) return;
-    const img = spriteFor(`app:${ref.art}`, sp, this.mood);
-    const place = (sx: number, flip = false): void => {
-      const cx = sx * k, ay = app.a.y * k;
-      const x = Math.round(cx - sp.w / 2);
-      const y = Math.round(ref.anchor === 'center' ? ay - sp.h / 2 : ref.anchor === 'bottom' ? ay - sp.h : ay);
-      if (!flip) { target.drawImage(img, x, y); return; }
-      target.save(); target.translate(x + sp.w, y); target.scale(-1, 1); target.drawImage(img, 0, 0); target.restore();
-    };
-    if (app.a.kind === 'doorGapEyes') {
-      // 출입문 두 짝 사이가 벌어진 어둠: 문 높이 전체 (얼굴은 그 안에)
+    if (!this.reduced && tt / app.dur > 0.9 && (app.a.kind === 'eyesMany' || app.a.kind === 'doorGapEyes')) an.dither = 0;
+    const key = `app:${ref.art}|${this.mood}`;
+    const img = this.dithered(key, spriteFor(`app:${ref.art}`, sp, this.mood), sp.w, sp.h, an.dither);
+    const doorGlass = app.a.kind === 'doorGapEyes';
+    if (doorGlass && an.glass) {
+      // 오른쪽 문짝 유리가 어둡게 꺼진다 (반쯤일 땐 체커)
+      const g = DOOR_GLASS;
       target.fillStyle = PALETTE.ink;
-      target.fillRect(app.a.x * k - sp.w / 2 - 2, 32 * k, sp.w + 4, 76 * k);
+      if (an.glass >= 1) target.fillRect(g.x * k, g.y * k, g.w * k, g.h * k);
+      else for (let y = 0; y < g.h * k; y++) for (let x = 0; x < g.w * k; x++) if ((x + y) % 2 === 0) target.fillRect(g.x * k + x, g.y * k + y, 1, 1);
     }
+    if (!an.show || an.dither <= 0) return;
+    const place = (sx: number, flip = false): void => {
+      const W2 = sp.w * an.sx, H2 = sp.h * an.sy;
+      const ax = sx * k + an.dx, ay = app.a.y * k + an.dy;
+      const X = ax - W2 / 2;
+      const Y = ref.anchor === 'center' ? ay - H2 / 2 : ref.anchor === 'bottom' ? ay - H2 : ay;
+      const [c0, c1, c2, c3] = an.clip;
+      const srcX = Math.round(c0 * sp.w), srcY = Math.round(c1 * sp.h);
+      const srcW = Math.max(1, Math.round((c2 - c0) * sp.w)), srcH = Math.max(1, Math.round((c3 - c1) * sp.h));
+      const dx = Math.round(X + c0 * W2), dy = Math.round(Y + c1 * H2);
+      const dw = Math.round(srcW * an.sx), dh = Math.round(srcH * an.sy);
+      target.save();
+      if (doorGlass) {
+        const g = DOOR_GLASS;
+        target.beginPath(); target.rect(g.x * k, g.y * k, g.w * k, g.h * k); target.clip();
+      }
+      if (flip) { target.translate(dx * 2 + dw, 0); target.scale(-1, 1); }
+      target.drawImage(img, srcX, srcY, srcW, srcH, dx, dy, dw, dh);
+      target.restore();
+    };
     if (app.a.kind === 'giantEyes') { place(app.a.x - 52); place(app.a.x + 52, true); }
     else place(app.a.x);
   }
+
   /** 라이브2D 느낌의 대기 동작: 2.5~5.5초마다 0.12초 눈 감기, 3.2초 주기로 상체 1도트 숨쉬기 */
   private nextBlink = 1.5;
   private blinkUntil = -1;
@@ -241,8 +282,9 @@ export class Renderer {
     drawChandelier(this.mid, this.shift, this.flicker.level);
     const left = mannequinSlots(this.layout.day)[0];
     if (this.app && !this.artFor(this.app.a.kind)) drawApparition(this.mid, this.app.a, (this.clock - this.app.start) / this.app.dur, this.reduced);
+    const twitch = this.app?.a.kind === 'mannequinTwitch' && (this.reduced || Math.floor((this.clock - this.app.start) * 12) % 3 !== 2);
     if (this.cue) drawSceneCue(this.mid, this.cue, this.layout, this.shift);
-    else drawMannequinHeadOverlay(this.mid, this.mood, left?.cx ?? 66, this.finaleTurn);
+    else drawMannequinHeadOverlay(this.mid, this.mood, left?.cx ?? 66, this.finaleTurn || twitch);
     drawSilhouette(this.mid, this.sil.level, this.sil.palm);
     if (this.customer && this.customer.sprite.draw !== 'drawOutsideColour' && !this.imageSprite()) {
       drawCustomer(this.customer, { mid: this.mid, top: this.top }, { t: this.t, reduced: this.reduced, shift: this.shift });
