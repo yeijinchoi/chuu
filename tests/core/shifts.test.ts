@@ -260,7 +260,7 @@ describe('다시 뽑기는 세 번 안에 반드시 원하는 상품이 나온�
         const g = rig(c.id, c.shift, seed);
         act(g, { type: 'greet', style: c.greetPref === 'warm' && c.rules.includes(7) ? 'quiet' : c.greetPref });
         if (encOf(g).step === 'serve') act(g, { type: 'serve', drink: 'none' });
-        const probes = c.rules.includes(8) ? ['askCategory', 'observe'] : c.rules.includes(9) ? ['askBudget', 'askCategory'] : ['askCategory', 'askOccasion'];
+        const probes = c.rules.includes(8) || c.rules.includes(17) ? ['askCategory', 'observe'] : c.rules.includes(9) ? ['askBudget', 'askCategory'] : ['askCategory', 'askOccasion'];
         for (const p of probes) act(g, { type: 'probe', probe: p as never });
         for (let i = 0; i < SCORE.maxRerolls; i++) act(g, { type: 'reroll' });
         const ctx = ctxOf(g);

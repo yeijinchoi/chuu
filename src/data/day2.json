@@ -59,6 +59,16 @@
       "condition": "invited"
     },
     {
+      "shift": "afternoon",
+      "time": "15:45",
+      "customerId": "do",
+      "condition": "walkIn",
+      "candidates": [
+        "do",
+        "ma"
+      ]
+    },
+    {
       "shift": "dawn",
       "time": "02:00",
       "customerId": "cylinder",

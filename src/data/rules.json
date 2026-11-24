@@ -95,5 +95,54 @@
       "boxRed",
       "boxGold"
     ]
+  },
+  {
+    "id": 12,
+    "day": 3,
+    "text": "거울에만 비치는 손님에게는 돌아보지 말고, 조용히 고개만 숙이세요.",
+    "stage": "greet",
+    "forbid": [
+      "warm",
+      "direct"
+    ]
+  },
+  {
+    "id": 13,
+    "day": 3,
+    "text": "잠옷 차림의 손님을 서두르게 하지 마세요. 깨면 돌아가지 못합니다.",
+    "stage": "greet",
+    "forbid": [
+      "direct"
+    ]
+  },
+  {
+    "id": 14,
+    "day": 3,
+    "text": "고양이를 안고 온 손님에게는 반드시 금색 상자에 담아 드리세요.",
+    "stage": "close",
+    "require": "boxGold"
+  },
+  {
+    "id": 15,
+    "day": 4,
+    "text": "자기 몸이 아닌 것 같은 손님에게는 꼭 입혀 보게 하세요. 몸에 맞는지 그 손님은 모릅니다.",
+    "stage": "close",
+    "require": "tryOn"
+  },
+  {
+    "id": 16,
+    "day": 4,
+    "text": "비 냄새가 나는 손님에게는 포장하지 말고 바로 계산해 드리세요. 젖은 상자는 마르지 않습니다.",
+    "stage": "close",
+    "require": "checkout"
+  },
+  {
+    "id": 17,
+    "day": 4,
+    "text": "명찰을 단 손님에게 무슨 일로 오셨는지 묻지 마세요. 그분들은 퇴근하러 왔습니다.",
+    "stage": "probe",
+    "forbid": [
+      "askOccasion"
+    ]
   }
 ]

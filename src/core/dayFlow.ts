@@ -2,6 +2,7 @@ import { rolloverCards } from './care';
 import { changeComposure, dayDef, narrate, setClock, setPhase, str, strAt, strList, thought, type Ctx } from './ctx';
 import { startEncounter, SCORE } from './encounter';
 import { moodFor } from './mood';
+import { deriveRng, pickOne } from './rng';
 import { checkClosingReply, ruleText } from './rules';
 import { beginFinale, FINAL_DAY } from './plot';
 import { computeResults } from './results';
@@ -26,6 +27,13 @@ export function buildSlots(ctx: Ctx, shift: Shift): ResolvedSlot[] {
     if (sl.condition === 'returning') {
       const pick = pickReturning(ctx, sl, present);
       if (pick === null) continue;
+      sl = { ...sl, customerId: pick, condition: 'always' };
+    }
+    if (sl.condition === 'walkIn') {
+      // 지나가는 손님: 이 교대에 없고, 아직 한 번도 안 온 후보 중 하나 (같은 시드면 늘 같은 손님)
+      const pool = (sl.candidates ?? [sl.customerId]).filter((id) => !present.has(id) && !(s.cards[id]?.visits));
+      const pick = pickOne(deriveRng(s.seed, s.day, shift, 'walkIn', sl.time), pool);
+      if (pick === undefined) continue;
       sl = { ...sl, customerId: pick, condition: 'always' };
     }
     if (present.has(sl.customerId)) continue; // 같은 손님이 한 교대에 두 번 오지 않는다

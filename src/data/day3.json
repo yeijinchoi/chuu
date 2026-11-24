@@ -60,6 +60,17 @@
       "condition": "invited"
     },
     {
+      "shift": "afternoon",
+      "time": "16:00",
+      "customerId": "hwangbo",
+      "condition": "walkIn",
+      "candidates": [
+        "hwangbo",
+        "lee",
+        "song"
+      ]
+    },
+    {
       "shift": "dawn",
       "time": "02:30",
       "customerId": "hound",
@@ -87,6 +98,17 @@
       "time": "03:00",
       "customerId": "baek",
       "condition": "invited"
+    },
+    {
+      "shift": "dawn",
+      "time": "02:15",
+      "customerId": "mirror",
+      "condition": "walkIn",
+      "candidates": [
+        "mirror",
+        "sleeper",
+        "cats"
+      ]
     }
   ]
 }

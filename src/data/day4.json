@@ -54,6 +54,16 @@
       ]
     },
     {
+      "shift": "afternoon",
+      "time": "14:30",
+      "customerId": "jung",
+      "condition": "walkIn",
+      "candidates": [
+        "jung",
+        "jamie"
+      ]
+    },
+    {
       "shift": "dawn",
       "time": "02:22",
       "customerId": "colour",
@@ -87,6 +97,17 @@
       "time": "03:50",
       "customerId": "baek",
       "condition": "invited"
+    },
+    {
+      "shift": "dawn",
+      "time": "02:10",
+      "customerId": "borrowed",
+      "condition": "walkIn",
+      "candidates": [
+        "borrowed",
+        "rain",
+        "nametag"
+      ]
     }
   ]
 }

@@ -8,7 +8,7 @@ const violates = (cust: string, stage: Parameters<typeof checkChoice>[1], choice
 
 describe('수칙 판정 (rules.json 데이터 기반, 범용 checkChoice)', () => {
   it('rules.json: 11개, 6번은 판정 없음', () => {
-    expect(R).toHaveLength(11);
+    expect(R).toHaveLength(17); // 1~11 + 확장 새벽 손님 수칙 12~17 (docs/EXPANSION.md §4)
     const six = R.find((r) => r.id === 6)!;
     expect(six.forbid).toBeUndefined();
     expect(six.require).toBeUndefined();

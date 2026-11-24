@@ -1,5 +1,5 @@
 import { applyScoreDelta, fillCardFromProbe, newCard, registerRegular, isRegistered } from './care';
-import { changeComposure, clamp, setClock, setPhase, str, strAt, type Ctx } from './ctx';
+import { changeComposure, clamp, setClock, setPhase, str, strAt, strList, type Ctx } from './ctx';
 import {
   acceptsFor, classifyProposal, emitReaction, react, reactClose, reactGreet, reactPropose, reactThought,
 } from './reactions';
@@ -386,6 +386,9 @@ export function doClose(ctx: Ctx, choice: CloseId): boolean {
 
   if (e.affinity < SCORE.sold) {
     e.outcome = 'walked';
+    // 맞는 물건에 "이거예요"라고 해 놓고 바로 돌아서면 흐름이 끊긴다: 마음이 식었다는 지문으로 잇는다
+    const cooled = strList(ctx.data, 'text.closeCooled');
+    narrate(ctx, pickOne(deriveRng(ctx.state.seed, ctx.state.day, c.id, 'cooled'), cooled));
     say(ctx, c, pickLine(ctx, c, 'fail'));
     narrate(ctx, c.lines.failNote);
     finish(ctx, e);

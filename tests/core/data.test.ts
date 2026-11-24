@@ -2,24 +2,36 @@ import { describe, expect, it } from 'vitest';
 import { customer, data } from './helpers';
 
 describe('데이터 무결성', () => {
-  it('상품 26종: 오후 14 + 새벽 12, 새벽 상품은 설명 포함', () => {
-    expect(data.products).toHaveLength(26);
-    expect(data.products.filter((p) => p.shift === 'afternoon')).toHaveLength(14);
+  it('상품 48종: 오후 26 + 새벽 22 (확장 22종 포함), 새벽 상품은 설명 포함', () => {
+    expect(data.products).toHaveLength(48);
+    expect(data.products.filter((p) => p.shift === 'afternoon')).toHaveLength(26);
     const dawn = data.products.filter((p) => p.shift === 'dawn');
-    expect(dawn).toHaveLength(12);
+    expect(dawn).toHaveLength(22);
     for (const p of dawn) expect(p.description, p.id).toBeTruthy();
-    expect(new Set(data.products.map((p) => p.id)).size).toBe(26);
+    expect(new Set(data.products.map((p) => p.id)).size).toBe(48);
     expect(data.products.find((p) => p.id === 'empty_box')).toMatchObject({ color: null, price: 0 });
   });
 
-  it('손님 16명: 오후 8 + 새벽 8, 부서 분포 (오후 가방3·의류3·주얼리2)', () => {
-    expect(data.customers).toHaveLength(16);
+  it('손님마다 정답 상품(accepts)이 실제 상품이고, 그 손님의 교대 상품이다', () => {
+    for (const c of data.customers) {
+      for (const id of c.accepts ?? []) {
+        const p = data.products.find((x) => x.id === id);
+        expect(p, `${c.id} → ${id}`).toBeTruthy();
+        expect(p?.shift, `${c.id} → ${id}`).toBe(c.shift);
+      }
+    }
+  });
+
+  it('손님 29명: 본편 16(오후 8·새벽 8) + 확장 13(오후 7·새벽 6)', () => {
+    expect(data.customers).toHaveLength(29);
     const aft = data.customers.filter((c) => c.shift === 'afternoon');
-    expect(aft).toHaveLength(8);
-    expect(aft.filter((c) => c.category === 'bag')).toHaveLength(3);
-    expect(aft.filter((c) => c.category === 'apparel')).toHaveLength(3);
-    expect(aft.filter((c) => c.category === 'jewelry')).toHaveLength(2);
-    expect(data.customers.filter((c) => c.shift === 'dawn')).toHaveLength(8);
+    expect(aft).toHaveLength(15);
+    expect(data.customers.filter((c) => c.shift === 'dawn')).toHaveLength(14);
+    // 본편 오후 손님의 부서 분포 (가방3·의류3·주얼리2)
+    const main = aft.filter((c) => ['hanyeoreum', 'kang', 'jin', 'oh', 'cha', 'park', 'yoon', 'seojin'].includes(c.id));
+    expect(main.filter((c) => c.category === 'bag')).toHaveLength(3);
+    expect(main.filter((c) => c.category === 'apparel')).toHaveLength(3);
+    expect(main.filter((c) => c.category === 'jewelry')).toHaveLength(2);
     // 오후 손님은 수칙·특수 지불이 없다
     for (const c of aft) {
       expect(c.rules).toEqual([]);
@@ -27,7 +39,7 @@ describe('데이터 무결성', () => {
     }
   });
 
-  it('모든 손님 대사 필드가 채워져 있고, draftLines는 2~3일차 10명에만', () => {
+  it('모든 손님 대사 필드가 채워져 있고, draftLines는 2~3일차 10명과 확장 13명에만', () => {
     for (const c of data.customers) {
       for (const k of ['opening', 'askCategory', 'askOccasion', 'askBudget', 'observe', 'success', 'fail'] as const) {
         expect(c.lines[k], `${c.id}.${k}`).toBeTruthy();
@@ -35,7 +47,10 @@ describe('데이터 무결성', () => {
       for (const r of c.rules) expect(data.rules.some((x) => x.id === r), `${c.id} rule ${r}`).toBe(true);
     }
     const drafted = data.customers.filter((c) => c.draftLines).map((c) => c.id).sort();
-    expect(drafted).toEqual(['actor', 'cha', 'colour', 'cylinder', 'door', 'hound', 'oh', 'park', 'seojin', 'yoon']);
+    expect(drafted).toEqual([
+      'actor', 'borrowed', 'cats', 'cha', 'colour', 'cylinder', 'do', 'door', 'hound', 'hwangbo', 'jamie', 'jung',
+      'lee', 'ma', 'mirror', 'nametag', 'oh', 'park', 'rain', 'seojin', 'sleeper', 'song', 'yoon',
+    ]);
     for (const id of ['hanyeoreum', 'kang', 'jin', 'marsh', 'faceless', 'baek']) expect(customer(id).draftLines).toBeUndefined();
   });
 

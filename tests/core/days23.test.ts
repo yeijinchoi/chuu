@@ -65,6 +65,10 @@ function nextMorning(g: Game): void {
 }
 const ids = (xs: string[]): string[] => xs.map((x) => x.split(':')[0] as string);
 
+/** 본편 손님만 (확장 손님은 walkIn 슬롯으로 시드마다 바뀌어 끼어든다) */
+const EXPANSION = new Set(['ma', 'do', 'hwangbo', 'jamie', 'song', 'lee', 'jung', 'mirror', 'sleeper', 'cats', 'borrowed', 'rain', 'nametag']);
+const main = (id: string): boolean => !EXPANSION.has(id);
+
 describe('2~5일차', () => {
   it('2일차: 오미란 → 한여름(재방문) → 윤재희, 새벽은 원통 → 배우 → 04:10 잊힌 단골', () => {
     const g = newGame(11);
@@ -77,7 +81,8 @@ describe('2~5일차', () => {
     expect(notes.some((t) => t.startsWith('7.'))).toBe(true);
     expect(notes.some((t) => t.startsWith('11.'))).toBe(false);
     const d2 = playDay(g);
-    expect(ids(d2.afternoon)).toEqual(['oh', 'hanyeoreum', 'yoon']);
+    expect(ids(d2.afternoon).filter(main)).toEqual(['oh', 'hanyeoreum', 'yoon']);
+    expect(ids(d2.afternoon).filter((id) => !main(id))).toHaveLength(1); // 지나가는 손님 한 명 (도민혁·마은재 중)
     expect(ids(d2.dawn)).toEqual(['cylinder', 'actor', 'baek']); // 04:10 잊힌 단골이 끼어든다
     expect(st(g).clues).toEqual(expect.arrayContaining(['friday', 'sketchbook']));
     expect(st(g).cards['hanyeoreum']?.visits).toBe(2);
@@ -100,14 +105,15 @@ describe('2~5일차', () => {
     nextMorning(g);
     expect(st(g).day).toBe(3);
     const d3 = playDay(g);
-    expect(ids(d3.afternoon).slice(0, 2)).toEqual(['park', 'cha']);
-    expect(ids(d3.dawn)[0]).toBe('hound');
+    expect(ids(d3.afternoon).filter(main).slice(0, 2)).toEqual(['park', 'cha']);
+    expect(ids(d3.dawn).filter(main)[0]).toBe('hound');
+    expect(ids(d3.dawn).filter((id) => !main(id))).toHaveLength(1); // 거울·잠든 아이·고양이 노파 중 한 명
     expect(st(g).clues).toEqual(expect.arrayContaining(['guardLog', 'photo']));
     nextMorning(g);
     expect(st(g).day).toBe(4);
     const d4 = playDay(g);
     expect(ids(d4.afternoon)).toContain('seojin');
-    expect(ids(d4.dawn).slice(0, 2)).toEqual(['colour', 'door']);
+    expect(ids(d4.dawn).filter(main).slice(0, 2)).toEqual(['colour', 'door']);
     expect(st(g).flags['ally']).toBe(true); // 선택 대화의 두 번째 답
   });
 

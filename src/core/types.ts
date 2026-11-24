@@ -70,7 +70,7 @@ export interface CareProfile {
   chat?: ChatDef; // 오후 관리 문자 답장과 짧은 대화
 }
 
-export type RuleId = number; // 1~11. 6번(찢김)은 데이터에만 있고 판정 없음
+export type RuleId = number; // 1~17 (12~17은 확장 새벽 손님). 6번(찢김)은 데이터에만 있고 판정 없음
 export type Stage = 'greet' | 'probe' | 'propose' | 'close';
 
 /** 수칙은 코드가 아니라 데이터(rules.json)로 정의한다 */
@@ -226,9 +226,12 @@ export interface ScheduleSlot {
   shift: Shift;
   time: string;
   customerId: string;
-  condition: 'always' | 'invited' | 'invitedElse' | 'returning';
+  condition: 'always' | 'invited' | 'invitedElse' | 'returning' | 'walkIn';
   altTime?: string;
-  /** returning: 후보 순서. 카드가 있는 후보 중 관계 점수가 가장 높은 손님이 온다(동점이면 앞 순서). */
+  /**
+   * returning: 후보 순서. 카드가 있는 후보 중 관계 점수가 가장 높은 손님이 온다(동점이면 앞 순서).
+   * walkIn: 지나가다 들르는 손님 후보. 아직 온 적 없는 후보 중 하나를 시드로 고른다(다시 플레이하면 다른 손님).
+   */
   candidates?: string[];
 }
 

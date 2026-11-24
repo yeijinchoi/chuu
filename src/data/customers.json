@@ -335,6 +335,9 @@
         "clue": "lastWordsKang",
         "flag": "lastWords"
       }
+    ],
+    "accepts": [
+      "tailored_suit"
     ]
   },
   {
@@ -1009,7 +1012,10 @@
           ]
         }
       ]
-    }
+    },
+    "accepts": [
+      "warm_memory_glove"
+    ]
   },
   {
     "id": "oh",
@@ -1109,7 +1115,10 @@
         "decline": "> 아쉽다는 듯 손을 흔들고 나간다."
       },
       "leave": "> 문 앞에서 한참 서 있다가 뒤돌아본다. \"목요일까지만 있어 봐, 자기.\""
-    }
+    },
+    "accepts": [
+      "luna_tote_rose"
+    ]
   },
   {
     "id": "cha",
@@ -1208,7 +1217,10 @@
         "decline": "> 진열장을 한 번 더 찍고 나간다."
       },
       "leave": "> 나가면서도 휴대폰 화면을 넘겨 본다."
-    }
+    },
+    "accepts": [
+      "opera_shoulder"
+    ]
   },
   {
     "id": "park",
@@ -1304,7 +1316,10 @@
         "decline": "> 모자를 고쳐 쓰고 꾸벅 인사한다."
       },
       "leave": "> 나가면서 손목시계를 한 번 더 본다. 바늘은 그대로다."
-    }
+    },
+    "accepts": [
+      "petite_pearl_ring"
+    ]
   },
   {
     "id": "yoon",
@@ -1400,7 +1415,10 @@
         "decline": "> 스케치북을 두고 갈 뻔하다가 다시 안는다."
       },
       "leave": "> 문을 나서기 전, 스케치북이 있던 자리를 한 번 돌아본다."
-    }
+    },
+    "accepts": [
+      "garden_scarf"
+    ]
   },
   {
     "id": "seojin",
@@ -1510,7 +1528,10 @@
         "decline": "> 마네킹 쪽을 한 번 보고 나간다."
       },
       "leave": "> 문을 나서기 전, 단발 마네킹 앞에서 한참 서 있다."
-    }
+    },
+    "accepts": [
+      "firstsnow_coat"
+    ]
   },
   {
     "id": "cylinder",
@@ -1614,7 +1635,10 @@
         "success": "고마워요. 이분은 이번에도 저를 아주 아껴요.",
         "fail": "이분이 오늘은 그냥 가자고 해요."
       }
-    }
+    },
+    "accepts": [
+      "inner_bag"
+    ]
   },
   {
     "id": "colour",
@@ -1808,7 +1832,10 @@
         "success": "훌륭해요. 이번엔 주연을 맡겨도 되겠군요.",
         "fail": "막이 내렸군요. 박수는 다음에."
       }
-    }
+    },
+    "accepts": [
+      "stage_cloak"
+    ]
   },
   {
     "id": "hound",
@@ -2012,6 +2039,1281 @@
         "observe": "흡반의 눈들이 지난번보다 많다. 몇 개는 감겨 있다.",
         "success": "(똑.) 다. 시. 꿈. 에. 서.",
         "fail": "(똑. 똑. 똑.) 기. 다. 리. 겠. 다."
+      }
+    },
+    "accepts": [
+      "drowned_choker"
+    ]
+  },
+  {
+    "id": "ma",
+    "name": "마은재",
+    "shift": "afternoon",
+    "draftLines": true,
+    "greetPref": "direct",
+    "category": "jewelry",
+    "color": "pink",
+    "budget": 3000000,
+    "mentionsPrice": false,
+    "occasionIsGift": true,
+    "form": "humanoid",
+    "wants": "분홍 주얼리",
+    "cardNote": "일정표의 금요일 칸만 비어 있었다",
+    "rules": [],
+    "traits": {},
+    "sprite": {
+      "hair": "bob",
+      "hairColor": "hair",
+      "skin": "skin-a",
+      "outfit": "shadow",
+      "accent": "brass"
+    },
+    "care": {
+      "likes": [
+        "recommend",
+        "thanks"
+      ],
+      "dislikes": [
+        "checkin"
+      ],
+      "vipReveal": "제 고객 신부님들, 다음 달 것까지 다 여기로 보낼게요.",
+      "chat": {
+        "reply": "네, 마은재입니다. 지금 리허설 중이라 짧게요!",
+        "options": [
+          "바쁘신데 짧게 인사만 드려요.",
+          "신부님 선물은 마음에 들어 하셨나요?"
+        ],
+        "best": 1,
+        "replyAgain": "또 연락 주셨네요. 들러리 대표가 그 선물 하고 사진 찍었어요. 보내 드릴게요."
+      }
+    },
+    "lines": {
+      "opening": "안녕하세요. 웨딩플래너 마은재입니다. 시간이 없어서 바로 말씀드릴게요. 들러리 선물 하나요.",
+      "askCategory": "주얼리요. 신부가 분홍을 좋아해서 들러리 드레스도 다 분홍이에요.",
+      "askOccasion": "토요일 결혼식이에요. 들러리 대표한테 주는 선물이고요. 신부가 직접 고르라고 했는데, 제가 대신 왔어요.",
+      "askBudget": "삼백까지요. 그 이상은 신부 쪽에서 결재가 안 나요.",
+      "observe": "태블릿 화면에 일정표가 빼곡하다. 이번 주 금요일 칸만 비어 있다.",
+      "success": "완벽해요. 일정표에서 \"선물\" 한 줄 지울게요.",
+      "fail": "오늘은 결정이 안 되네요. 다른 매장 한 군데 더 보고 올게요.",
+      "violation": {}
+    },
+    "hospitality": {
+      "pref": "water",
+      "match": "물 좋네요. 오늘 처음 앉아 보는 거예요.",
+      "mismatch": "단 건 괜찮아요. 드레스 피팅 날이라서요.",
+      "none": "괜찮아요. 금방 갈게요."
+    },
+    "accepts": [
+      "rose_gold_band",
+      "rosequartz_first"
+    ],
+    "afterSale": [
+      {
+        "lines": [
+          "…아, 그러고 보니 여기 예전 직원분도 저한테 상담 예약을 했었어요. 한서윤 씨였나.",
+          "금요일로 잡았다가, 전날 취소했어요. 이유는 말 안 했고요."
+        ],
+        "thought": "금요일. 또 금요일이다."
+      }
+    ],
+    "reactions": {
+      "enter": "> 태블릿을 든 채 문을 밀고 들어온다. 걸음이 빠르다.",
+      "greet": {
+        "match": "좋아요, 바로 보죠.",
+        "mismatch": {
+          "quiet": "아… 네. 조용한 데는 오랜만이네요.",
+          "warm": "네, 반가워요. 근데 제가 좀 급해서요."
+        }
+      },
+      "propose": {
+        "perfect": "이거예요. 사진 찍어서 신부한테 보내도 되죠? …답 왔어요. 이거래요.",
+        "deptOnly": "예쁜데 분홍이 아니네요. 드레스랑 맞춰야 해요.",
+        "wrong": "주얼리요. 들러리 드레스에 하는 거.",
+        "overBudget": "이건 결재가 안 나요. 조금만 낮춰 주세요.",
+        "notThis": "비슷한데 이거 말고요. 분홍 주얼리요."
+      },
+      "close": {
+        "tryOn": "제가 해 봐도 소용없어요. 들러리 대표는 저보다 목이 기니까요.",
+        "box": {
+          "red": "빨간 건 신부 어머님이 싫어하세요.",
+          "gold": "금색이요. 사진에 잘 나와요."
+        },
+        "checkout": "법인 카드로 할게요."
+      },
+      "regular": {
+        "accept": "좋아요. 다음 신부들도 여기로 보낼게요.",
+        "decline": "> 일정표에 무언가를 적고 나간다."
+      },
+      "leave": "> 나가면서 벌써 다음 통화를 시작한다. \"네, 선물은 끝났어요.\"",
+      "thought": {
+        "opening": "웨딩플래너. 남의 가장 중요한 날을 대신 챙기는 사람이다."
+      }
+    }
+  },
+  {
+    "id": "do",
+    "name": "도민혁",
+    "shift": "afternoon",
+    "draftLines": true,
+    "greetPref": "quiet",
+    "category": "bag",
+    "color": "pink",
+    "budget": 600000,
+    "mentionsPrice": true,
+    "occasionIsGift": true,
+    "form": "humanoid",
+    "wants": "작은 분홍 지갑",
+    "cardNote": "석 달 모은 돈을 봉투째 들고 왔다",
+    "rules": [],
+    "traits": {},
+    "sprite": {
+      "hair": "short",
+      "hairColor": "hair",
+      "skin": "skin-a",
+      "outfit": "dusk",
+      "accent": "steel"
+    },
+    "care": {
+      "likes": [
+        "thanks",
+        "checkin"
+      ],
+      "dislikes": [
+        "recommend"
+      ],
+      "vipReveal": "걔가 그 지갑 보고 울었어요. 저도 울었고요. 헤헤.",
+      "chat": {
+        "reply": "앗, 연락 주셨네요! 걔가 그 지갑 매일 들고 다녀요.",
+        "options": [
+          "두 분 다 행복하셨으면 좋겠어요.",
+          "새로 들어온 상품도 구경 오세요."
+        ],
+        "best": 0,
+        "replyAgain": "또 연락 주셨네요. 이번 달은 야간 두 번 더 뛰어요. 천 일 때 꼭 갈게요."
+      }
+    },
+    "lines": {
+      "opening": "저, 저기… 육십만 원으로 살 수 있는 게 있을까요? 여자친구랑 백 일이라서요.",
+      "askCategory": "지갑 같은 거요. 작은 거. 걔가 동전을 맨날 주머니에 넣고 다녀서요.",
+      "askOccasion": "백 일이요. 내일이에요. 처음으로 제대로 된 선물을 해 주고 싶어서…",
+      "askBudget": "육십만 원이요. 석 달 동안 편의점 야간 뛰어서 모았어요.",
+      "observe": "손에 쥔 봉투가 땀에 젖어 있다. 한 장씩 센 만 원짜리가 비친다.",
+      "success": "와… 진짜 예뻐요. 걔 엄청 좋아하겠다. 감사합니다, 진짜로요.",
+      "fail": "아… 역시 제 돈으로는 무리네요. 그래도 구경시켜 주셔서 감사해요.",
+      "violation": {}
+    },
+    "hospitality": {
+      "pref": "chocolate",
+      "match": "어, 이거 먹어도 돼요? …맛있다.",
+      "mismatch": "아, 탄산은… 괜찮아요. 그냥 둘게요.",
+      "none": "아, 네. 괜찮아요."
+    },
+    "accepts": [
+      "coin_purse_peach"
+    ],
+    "afterSale": [
+      {
+        "lines": [
+          "그러고 보니 걔가 그러더라고요. 이 매장, 새벽에도 불 켜져 있던데 뭐 하는 데냐고."
+        ],
+        "thought": "새벽에 불이 켜진 매장. 밖에서도 보이는구나."
+      }
+    ],
+    "reactions": {
+      "enter": "> 문 앞에서 한 번 돌아섰다가 다시 들어온다. 손에 흰 봉투를 쥐고 있다.",
+      "greet": {
+        "match": "아, 네… 안녕하세요.",
+        "mismatch": {
+          "warm": "아, 네! 안, 안녕하세요…",
+          "direct": "아, 저… 아직 뭘 볼지 몰라서요."
+        }
+      },
+      "propose": {
+        "perfect": "이거요. 이거면 동전 안 흘리겠다. 색도 걔가 좋아하는 색이에요.",
+        "deptOnly": "예쁜데… 걔는 분홍을 좋아해요.",
+        "wrong": "아, 저 지갑 같은 거 보러 왔는데요…",
+        "overBudget": "> 가격표를 보고 봉투를 쥔 손에 힘이 들어간다.",
+        "notThis": "이것도 예쁜데, 지갑 같은 걸로요. 작은 거."
+      },
+      "close": {
+        "tryOn": "제가요? 아, 아니에요. 그냥 포장해 주세요.",
+        "box": {
+          "red": "빨간 상자도 예쁘네요.",
+          "gold": "금색 상자요? 와, 이거 열 때 걔 표정 보고 싶다."
+        },
+        "checkout": "봉투째 드릴게요. 세어 보셔도 돼요."
+      },
+      "regular": {
+        "accept": "단골이요? 저 같은 사람도요? …감사합니다. 천 일 때 또 올게요.",
+        "decline": "> 꾸벅 인사하고 나간다."
+      },
+      "leave": "> 상자를 품에 안고 나간다. 문밖에서 한 번 더 상자를 들여다본다.",
+      "thought": {
+        "opening": "석 달 치 야간 근무. 가볍게 응대할 손님이 아니다."
+      }
+    }
+  },
+  {
+    "id": "hwangbo",
+    "name": "황보선",
+    "shift": "afternoon",
+    "draftLines": true,
+    "greetPref": "quiet",
+    "category": "jewelry",
+    "color": "beige",
+    "budget": 2000000,
+    "mentionsPrice": false,
+    "occasionIsGift": false,
+    "form": "humanoid",
+    "wants": "브로치",
+    "cardNote": "1990년대 메종 뤼미에르 1기 어드바이저",
+    "rules": [],
+    "traits": {},
+    "sprite": {
+      "hair": "short",
+      "hairColor": "ash",
+      "skin": "skin-a",
+      "outfit": "mist",
+      "accent": "brass"
+    },
+    "care": {
+      "likes": [
+        "checkin",
+        "thanks"
+      ],
+      "dislikes": [
+        "recommend"
+      ],
+      "vipReveal": "우리 기수는 다섯 명이었어요. 나만 그만뒀어요. 나머지는… 아직 여기 있대요.",
+      "chat": {
+        "reply": "어머, 연락을 다 주네요. 우리 때는 손편지였는데.",
+        "options": [
+          "선배님 이야기를 더 듣고 싶어요.",
+          "새 브로치가 들어오면 알려 드릴게요."
+        ],
+        "best": 0,
+        "replyAgain": "또 연락 줬네요. 그 브로치 매일 달고 다녀요. 거울 볼 때마다 생각나요."
+      }
+    },
+    "lines": {
+      "opening": "…여기는 하나도 안 변했네요. 카운터 높이까지. 실례해요, 구경 좀 할게요.",
+      "askCategory": "브로치요. 옛날 우리 유니폼에는 꼭 브로치를 달았거든요.",
+      "askOccasion": "나한테 주는 거예요. 여기 그만두고 삼십 년 만에 처음 와 봤어요.",
+      "askBudget": "…요즘 어드바이저들은 그걸 먼저 묻나 봐요. 이백이면 충분해요.",
+      "observe": "카운터 모서리를 손끝으로 쓸어 본다. 익숙한 손길이다. 옷깃에 오래된 명찰 자국이 남아 있다.",
+      "success": "고마워요. 우리 때는 이걸 달고 손님을 맞았어요. 다시 다니까 허리가 펴지네.",
+      "fail": "괜찮아요. 오늘은 이 자리에 다시 서 본 걸로 충분해요.",
+      "violation": {}
+    },
+    "hospitality": {
+      "pref": "chocolate",
+      "match": "어머, 아직도 이 초콜릿을 내네요. 우리 때도 이거였어요.",
+      "mismatch": "탄산은 속이 놀라서요. 마음만 받을게요.",
+      "none": "괜찮아요. 우리 때도 아무나 대접하진 않았어요."
+    },
+    "accepts": [
+      "cameo_letter"
+    ],
+    "afterSale": [
+      {
+        "lines": [
+          "하나만 물어봐도 돼요? 점장님 성함이 혹시… 로즈예요?",
+          "…그렇구나. 우리 때 점장님도 로즈였어요. 얼굴도, 목소리도 그대로라던데."
+        ],
+        "thought": "삼십 년 전에도 로즈. 같은 이름을 물려받는 걸까. …아니면."
+      }
+    ],
+    "reactions": {
+      "enter": "> 문을 열고 한참 문턱에 서 있다. 매장 안을 천천히 둘러보다가 카운터로 온다.",
+      "greet": {
+        "match": "…네. 그렇게 고개만 숙이는 거예요. 잘 배웠네.",
+        "mismatch": {
+          "warm": "어머, 기운이 좋네. 우리 때는 그렇게 안 했는데.",
+          "direct": "급하지 않아요. 나는 시간이 많아요."
+        }
+      },
+      "propose": {
+        "perfect": "이거예요. …우리 유니폼 브로치랑 똑 닮았네.",
+        "deptOnly": "모양은 좋은데, 색이 너무 새것 같아요. 바랜 색이 좋아요.",
+        "wrong": "브로치를 보고 싶어요. 옷깃에 다는 거.",
+        "overBudget": "이건 내 연금으로는 좀 벅차네요.",
+        "notThis": "이것도 곱네. 그래도 브로치로 보고 싶어요."
+      },
+      "close": {
+        "tryOn": "달아 봐도 될까요? …거울 속이 그대로네. 거울도 안 바꿨구나.",
+        "box": {
+          "red": "빨간 상자. …우리 때는 그 상자를 손님 앞에 안 꺼냈는데.",
+          "gold": "금색 상자. 우리 때랑 같네요."
+        },
+        "checkout": "현금으로 할게요. 옛날 사람이라."
+      },
+      "regular": {
+        "accept": "이 나이에 단골이라니. 그래요, 가끔 들를게요.",
+        "decline": "> 카운터를 한 번 쓰다듬고 나간다."
+      },
+      "leave": "> 문을 나서기 전, 진열대 끝 마네킹 앞에서 잠깐 멈춘다. 고개를 숙이고 간다.",
+      "thought": {
+        "opening": "이 매장을 아는 사람이다. 나보다 훨씬 오래."
+      }
+    }
+  },
+  {
+    "id": "jamie",
+    "name": "제이미 리",
+    "shift": "afternoon",
+    "draftLines": true,
+    "greetPref": "warm",
+    "category": "jewelry",
+    "color": "white",
+    "budget": 12000000,
+    "mentionsPrice": true,
+    "occasionIsGift": false,
+    "form": "humanoid",
+    "wants": "반짝이는 팔찌",
+    "cardNote": "혼자 온 생일 여행",
+    "rules": [],
+    "traits": {},
+    "sprite": {
+      "hair": "short",
+      "hairColor": "bone",
+      "skin": "skin-a",
+      "outfit": "mist",
+      "accent": "steel"
+    },
+    "care": {
+      "likes": [
+        "recommend",
+        "checkin"
+      ],
+      "dislikes": [
+        "thanks"
+      ],
+      "vipReveal": "제 친구들도 다 여기로 보낼게요. 서울 오면 무조건 여기!",
+      "chat": {
+        "reply": "Hi!! 저 지금 공항이에요. 팔찌 아직 차고 있어요!",
+        "options": [
+          "조심히 들어가세요. 또 오세요!",
+          "새 팔찌가 들어오면 알려 드릴게요."
+        ],
+        "best": 0,
+        "replyAgain": "Hello again! 집에 왔어요. 팔찌 사진, 친구들한테 다 자랑했어요."
+      }
+    },
+    "lines": {
+      "opening": "Hi! 안녕하세요! 한국어 조금 해요. 여기 팔찌, 얼마예요? 택스 프리 돼요?",
+      "askCategory": "Bracelet! 팔찌요. 반짝이는 거. 여행 기념으로요.",
+      "askOccasion": "제 생일 여행이에요. 혼자 왔어요. 나한테 주는 선물이에요.",
+      "askBudget": "음, 천이백만 원? 환율 계산하면… okay, 괜찮아요.",
+      "observe": "목에 건 카메라 화면에 이 매장 외관 사진이 떠 있다. 찍은 시각은 새벽 3시 12분.",
+      "success": "Perfect! 너무 예뻐요. 서울 최고의 기념품이에요!",
+      "fail": "It's okay. 다른 데도 가 볼게요. 고마워요!",
+      "violation": {}
+    },
+    "hospitality": {
+      "pref": "water",
+      "match": "Oh, 탄산수! 고마워요.",
+      "mismatch": "초콜릿은 괜찮아요, 다이어트 중이라. 하하.",
+      "none": "괜찮아요!"
+    },
+    "accepts": [
+      "tennis_constellation"
+    ],
+    "afterSale": [
+      {
+        "lines": [
+          "아, 그리고 이거 봐요. 며칠 전 밤에 호텔 창문에서 찍었어요.",
+          "이 매장, 새벽에 불이 켜져 있었어요. 손님 자리에 아주 키 큰 노란 사람이 있었어요. 파티해요?"
+        ],
+        "thought": "노란 옷의 배우. 밖에서도 보였던 거다."
+      }
+    ],
+    "reactions": {
+      "enter": "> 카메라를 목에 건 채 들어와 매장 사진부터 한 장 찍는다.",
+      "greet": {
+        "match": "Hi! 친절해요! 좋아요.",
+        "mismatch": {
+          "quiet": "Oh… 조용하네요. 도서관 같아요.",
+          "direct": "와, 빠르다! 좋아요, 보여 주세요."
+        }
+      },
+      "propose": {
+        "perfect": "세상에, 이거예요! 별자리 같아요.",
+        "deptOnly": "예쁜데 흰색이 좋아요. 반짝반짝.",
+        "wrong": "팔찌요! 팔찌 보고 싶어요.",
+        "overBudget": "Oh, 너무 비싸요… 조금 싼 거 있어요?",
+        "notThis": "예뻐요. 그런데 팔찌요."
+      },
+      "close": {
+        "tryOn": "차 봐도 돼요? …이것 봐! 사진 찍어 주세요!",
+        "box": {
+          "red": "빨간 상자? 설날 같아요. 하하.",
+          "gold": "금색 상자! 너무 고급스러워요."
+        },
+        "checkout": "카드요. 택스 프리 서류도요!"
+      },
+      "regular": {
+        "accept": "단골이요? 내년에도 올게요. 약속!",
+        "decline": "> 매장 사진을 한 장 더 찍고 손을 흔들며 나간다."
+      },
+      "leave": "> 문밖에서 매장 간판을 배경으로 셀카를 찍는다. 화면 속 매장 안이 조금 어둡다.",
+      "thought": {
+        "opening": "가격부터 묻는 손님. 이 손님에게는 예산을 물어도 괜찮겠다."
+      }
+    }
+  },
+  {
+    "id": "song",
+    "name": "송하람",
+    "shift": "afternoon",
+    "draftLines": true,
+    "greetPref": "direct",
+    "category": "apparel",
+    "color": "beige",
+    "budget": 4000000,
+    "mentionsPrice": false,
+    "occasionIsGift": false,
+    "form": "humanoid",
+    "wants": "베이지 코트",
+    "cardNote": "협찬 반납하러 왔다가 샀다",
+    "rules": [],
+    "traits": {},
+    "sprite": {
+      "hair": "slick",
+      "hairColor": "ash",
+      "skin": "skin-a",
+      "outfit": "shadow",
+      "accent": "steel"
+    },
+    "care": {
+      "likes": [
+        "recommend"
+      ],
+      "dislikes": [
+        "checkin"
+      ],
+      "vipReveal": "다음 시즌 의상은 다 여기서 할게요. 대신 마네킹은 좀 치워 주세요.",
+      "chat": {
+        "reply": "네, 송하람입니다. 촬영 중이라 짧게요.",
+        "options": [
+          "촬영 잘 마치시길 바랄게요.",
+          "새 코트가 들어오면 바로 알려 드릴게요."
+        ],
+        "best": 1,
+        "replyAgain": "아, 네. 그 코트로 찍은 컷 다 살았어요. 다음 화보도 부탁해요."
+      }
+    },
+    "lines": {
+      "opening": "안녕하세요. 협찬 반납하러 왔는데요… 온 김에 하나 사 가려고요.",
+      "askCategory": "코트요. 베이지. 다음 주 화보 콘셉트가 \"오후 세 시\"거든요.",
+      "askOccasion": "화보 촬영이요. 멤버 한 명이 입을 거예요. 협찬이 안 돼서 제 돈으로 사요.",
+      "askBudget": "…그걸 먼저 물어보시면 좀 그런데. 사백까지는 돼요.",
+      "observe": "어깨에 걸친 의상 가방 지퍼 사이로 반납할 옷이 보인다. 소매 끝이 젖어 있다.",
+      "success": "딱이네요. 이거 입히면 컷 다 살아요.",
+      "fail": "오늘은 그림이 안 나오네요. 다른 데 볼게요.",
+      "violation": {}
+    },
+    "hospitality": {
+      "pref": "water",
+      "match": "물 좋네요. 촬영장에선 물도 못 마셔요.",
+      "mismatch": "단 건 됐어요. 손에 묻으면 옷 버려요.",
+      "none": "괜찮아요."
+    },
+    "accepts": [
+      "trench_three"
+    ],
+    "afterSale": [
+      {
+        "lines": [
+          "아, 이건 좀 이상한 얘긴데요.",
+          "지난번에 여기서 찍은 영상을 보다가 알았어요. 뒤에 마네킹이 컷마다 다른 데를 봐요. 편집자는 원래 그런 거래요."
+        ],
+        "thought": "컷마다 다른 데를 보는 마네킹. …원래 그런 건 없다."
+      }
+    ],
+    "reactions": {
+      "enter": "> 의상 가방을 어깨에 걸치고 들어온다. 진열대를 사진 찍듯 훑어본다.",
+      "greet": {
+        "match": "네, 바로 보죠. 시간이 없어서요.",
+        "mismatch": {
+          "warm": "아, 네… 텐션 좋으시네요.",
+          "quiet": "…네. 근데 제가 좀 급해서요."
+        }
+      },
+      "propose": {
+        "perfect": "이거예요. 핏 나오네. 오후 세 시 그 자체네요.",
+        "deptOnly": "핏은 좋은데 베이지여야 해요. 콘셉트가 정해져 있어서.",
+        "wrong": "코트 보러 왔어요. 화보용으로.",
+        "overBudget": "이건 회사가 안 사 줘요. 제 돈이라서요.",
+        "notThis": "색은 맞는데, 코트로요."
+      },
+      "close": {
+        "tryOn": "제가 입어 볼게요. 멤버랑 키가 비슷해서요. …오, 좋네.",
+        "box": {
+          "red": "빨간 상자는 화보랑 안 어울려요.",
+          "gold": "금색이면 언박싱 영상 찍어도 되겠다."
+        },
+        "checkout": "바로 계산할게요. 코트는 접으면 안 돼서요."
+      },
+      "regular": {
+        "accept": "단골이요? 좋죠. 협찬 반납할 때마다 들를게요.",
+        "decline": "> 의상 가방을 고쳐 메고 나간다."
+      },
+      "leave": "> 나가면서 진열대 쪽을 휴대폰으로 한 장 찍는다. 화면을 보고 잠깐 멈췄다 간다.",
+      "thought": {
+        "opening": "스타일리스트. 옷을 사람에게 입히는 사람이다."
+      }
+    }
+  },
+  {
+    "id": "lee",
+    "name": "이복순",
+    "shift": "afternoon",
+    "draftLines": true,
+    "greetPref": "warm",
+    "category": "jewelry",
+    "color": "white",
+    "budget": 800000,
+    "mentionsPrice": false,
+    "occasionIsGift": true,
+    "form": "humanoid",
+    "wants": "진주 머리핀",
+    "cardNote": "이 건물 새벽 청소를 한다",
+    "rules": [],
+    "traits": {},
+    "sprite": {
+      "hair": "perm",
+      "hairColor": "hair",
+      "skin": "skin-a",
+      "outfit": "mist",
+      "accent": "brass"
+    },
+    "care": {
+      "likes": [
+        "thanks",
+        "checkin"
+      ],
+      "dislikes": [],
+      "vipReveal": "새벽에 복도를 닦을 때, 이 매장 유리에 단발머리 여자가 비쳐요. 안에는 아무도 없는데.",
+      "chat": {
+        "reply": "아이고, 문자를 다 주고. 손녀가 그 핀을 매일 꽂고 다녀요.",
+        "options": [
+          "손녀분 입학 축하드려요.",
+          "새 핀이 들어오면 알려 드릴게요."
+        ],
+        "best": 0,
+        "replyAgain": "또 문자 줬네. 오늘도 새벽에 그 복도 닦아요. 불 켜져 있더라."
+      }
+    },
+    "lines": {
+      "opening": "아이고, 이런 데는 처음이라… 신발 털고 들어와야 하나요?",
+      "askCategory": "손녀 머리핀이요. 대학에 붙었거든요. 하얀 진주 같은 거면 좋겠는데.",
+      "askOccasion": "우리 집에서 처음으로 대학을 가요. 입학식 날 꽂아 주려고요.",
+      "askBudget": "…팔십만 원. 그 이상은 안 돼요. 미안해요.",
+      "observe": "손등이 갈라져 있다. 소매 끝에 이 건물 청소 업체 이름이 수놓여 있다.",
+      "success": "이게 진주예요? 아이고, 손녀가 이걸 꽂으면 얼마나 예쁠까.",
+      "fail": "괜찮아요. 내가 너무 비싼 데를 왔지. 구경 잘했어요.",
+      "violation": {}
+    },
+    "hospitality": {
+      "pref": "chocolate",
+      "match": "아이고, 나한테도 이런 걸 줘요? 손녀 갖다줘야겠다.",
+      "mismatch": "탄산은 속이 쓰려서… 마음만 받을게요.",
+      "none": "괜찮아요. 그냥 구경 온 건데요, 뭘."
+    },
+    "accepts": [
+      "pearl_pin_morning"
+    ],
+    "afterSale": [
+      {
+        "lines": [
+          "근데 여기는 새벽에도 문을 열어요? 내가 새벽 네 시에 이 층 복도를 닦거든요.",
+          "다른 데는 다 깜깜한데 여기만 불이 켜져 있어요. 안에서 누가 계산을 하더라고. 유리 너머로 보면 손님이 꼭… 사람 같지가 않아."
+        ],
+        "thought": "새벽의 매장을 밖에서 본 사람이 있었다."
+      }
+    ],
+    "reactions": {
+      "enter": "> 문 앞에서 신발 바닥을 몇 번이나 털고 들어온다. 흰 봉투를 두 손으로 들고 있다.",
+      "greet": {
+        "match": "아이고, 반갑게 맞아 주네. 고마워요.",
+        "mismatch": {
+          "quiet": "아… 내가 잘못 들어왔나 봐요.",
+          "direct": "아, 저기, 천천히 볼게요…"
+        }
+      },
+      "propose": {
+        "perfect": "이거요. 하얀 진주. 우리 손녀 까만 머리에 딱이겠다.",
+        "deptOnly": "곱네요. 근데 하얀 게 좋겠어요. 진주처럼.",
+        "wrong": "머리핀이요. 손녀 머리에 꽂는 거.",
+        "overBudget": "> 가격표를 보고 봉투를 조용히 내려놓는다.",
+        "notThis": "예쁜데, 머리에 꽂는 걸로요."
+      },
+      "close": {
+        "tryOn": "내 머리에요? 아이고, 나는 됐어요.",
+        "box": {
+          "red": "빨간 상자도 좋네요. 복 들어오게.",
+          "gold": "금색 상자? 손녀가 상자부터 열어 보고 놀라겠네."
+        },
+        "checkout": "현금이에요. 세어 봐요. 딱 맞을 거예요."
+      },
+      "regular": {
+        "accept": "단골? 내가요? …그래요. 월급날마다 구경 올게요.",
+        "decline": "> 꾸벅 인사하고 나간다."
+      },
+      "leave": "> 상자를 봉투에 조심스레 넣는다. 문을 나서며 복도 쪽을 한 번 본다.",
+      "thought": {
+        "opening": "흰 봉투. 하루 번 돈이 아니라 몇 달 모은 돈이다."
+      }
+    }
+  },
+  {
+    "id": "jung",
+    "name": "정유나",
+    "shift": "afternoon",
+    "draftLines": true,
+    "greetPref": "quiet",
+    "category": "apparel",
+    "color": "white",
+    "budget": 1500000,
+    "mentionsPrice": false,
+    "occasionIsGift": false,
+    "form": "humanoid",
+    "wants": "흰 블라우스",
+    "cardNote": "손 아래 수첩에 무언가를 적고 있었다",
+    "rules": [],
+    "traits": {},
+    "sprite": {
+      "hair": "bun",
+      "hairColor": "hair",
+      "skin": "skin-a",
+      "outfit": "shadow",
+      "accent": "steel"
+    },
+    "care": {
+      "likes": [],
+      "dislikes": [],
+      "vipReveal": "본사 보고서에 당신 이름을 적었어요. 처음으로 금요일 다음 칸에요."
+    },
+    "lines": {
+      "opening": "블라우스를 좀 보고 싶은데요. 천천히 봐도 될까요?",
+      "askCategory": "블라우스요. 흰색. 출근할 때 입을 거예요.",
+      "askOccasion": "새 직장이요. 첫 출근이 다음 주라서요.",
+      "askBudget": "…아, 가격을 먼저 물으시네요. 백오십이요.",
+      "observe": "손 아래 숨긴 작은 수첩에 무언가를 적고 있다. \"인사\", \"응대\", 그리고 체크 표시.",
+      "success": "좋네요. 응대도요. …아, 그냥 혼잣말이에요.",
+      "fail": "오늘은 그냥 갈게요. 참고가 많이 됐어요.",
+      "violation": {}
+    },
+    "hospitality": {
+      "pref": "water",
+      "match": "감사합니다. 레몬은 안 넣으시네요.",
+      "mismatch": "단 건 괜찮습니다.",
+      "none": "괜찮습니다."
+    },
+    "accepts": [
+      "silk_blouse_window"
+    ],
+    "afterSale": [
+      {
+        "lines": [
+          "…사실 저, 본사에서 나왔어요. 오늘 응대는 기록해 갈게요. 좋은 쪽으로요.",
+          "그런데 이상해요. 이 매장 평가표는 앞사람들이 전부 금요일에서 멈춰 있어요. 그 뒤로는 칸이 비어 있고요."
+        ],
+        "thought": "평가표도 금요일에서 멈춘다. …나는 그다음 칸을 채울 수 있을까."
+      }
+    ],
+    "reactions": {
+      "enter": "> 단정한 걸음으로 들어와 매장을 한 바퀴 둘러본 뒤 카운터에 선다.",
+      "greet": {
+        "match": "…네. 좋습니다.",
+        "mismatch": {
+          "warm": "아, 네. …활기차시네요.",
+          "direct": "…바로 시작하시네요. 알겠습니다."
+        }
+      },
+      "propose": {
+        "perfect": "네, 이거예요. 제가 말한 걸 정확히 들으셨네요.",
+        "deptOnly": "디자인은 좋은데 흰색이요.",
+        "wrong": "블라우스를 찾고 있어요.",
+        "overBudget": "예산을 조금 넘네요. 다른 걸 보여 주시겠어요?",
+        "notThis": "흰색은 맞는데, 블라우스요."
+      },
+      "close": {
+        "tryOn": "입어 볼게요. …네, 맞네요. 피팅 안내도 좋았어요.",
+        "box": {
+          "red": "빨간 상자요. …기록해 둘게요.",
+          "gold": "포장까지 신경 써 주시네요."
+        },
+        "checkout": "카드로 할게요."
+      },
+      "regular": {
+        "accept": "단골 등록이요. 네, 그렇게 하죠. 다음에도 제가 올 거예요.",
+        "decline": "> 수첩을 덮고 가볍게 목례한 뒤 나간다."
+      },
+      "leave": "> 문을 나서며 수첩에 마지막 줄을 적는다.",
+      "thought": {
+        "opening": "조용하고 정확한 손님이다. 왠지 시험을 보는 기분이다."
+      }
+    }
+  },
+  {
+    "id": "mirror",
+    "name": "거울 속 손님",
+    "shift": "dawn",
+    "draftLines": true,
+    "motif": "시착 거울 속에서만 보이는 손님",
+    "entranceNote": "왼쪽 시착 거울 속에, 매장에는 없는 손님이 서 있다. 돌아보면 아무도 없다.",
+    "greetPref": "quiet",
+    "category": "jewelry",
+    "color": "beige",
+    "budget": 5000000,
+    "mentionsPrice": false,
+    "occasionIsGift": false,
+    "form": "humanoid",
+    "wants": "비치지 않는 브로치",
+    "cardNote": "거울에만 비친다. 가르마가 반대쪽이다",
+    "rules": [
+      12
+    ],
+    "traits": {},
+    "specialPayment": {
+      "label": "거울 조각 한 장",
+      "amount": 5000000
+    },
+    "sprite": {
+      "hair": "long",
+      "hairColor": "hair",
+      "skin": "skin-a",
+      "outfit": "mist",
+      "accent": "steel"
+    },
+    "care": {
+      "likes": [
+        "dawn_thanks"
+      ],
+      "dislikes": [],
+      "memo": "거울을 닦지 말 것.",
+      "vipReveal": "거울 속에서 서윤 씨를 봤어요. 그 사람은 아직 거울 쪽을 보고 서 있어요.",
+      "ack": "거울에 김이 서렸다가 사라진다. 그 자리에 손자국 하나가 남는다."
+    },
+    "lines": {
+      "opening": "…돌아보지 마세요. 거울로만 보세요. 저는 여기 있어요.",
+      "askCategory": "브로치요. 비치지 않는 것. 거울 속에서는 모든 게 비쳐서, 하나쯤은 안 비치는 게 갖고 싶어요.",
+      "askOccasion": "나가려고요. 비치지 않는 걸 달면 거울이 저를 놓아준대요.",
+      "askBudget": "값이요? …거울 속에서는 숫자가 거꾸로 보여요.",
+      "observe": "거울 속 그녀는 가르마가 반대쪽이다. 그녀 뒤로 비친 매장에는 내가 없다.",
+      "success": "고마워요. 이제 당신 얼굴이 조금 보여요. 거울에도, 저에게도.",
+      "successNote": "거울 조각 한 장을 받았다. 들여다보면 매장이 좌우가 바뀐 채 비친다.",
+      "fail": "> 거울 표면에 금이 하나 간다. 그녀는 더 이상 비치지 않는다.",
+      "violation": {
+        "12": "거울 속 그녀가 고개를 홱 돌린다. 시착 거울에 금이 거미줄처럼 번지고, 금마다 내 얼굴이 하나씩 비친다."
+      }
+    },
+    "hospitality": {
+      "pref": "none",
+      "match": "고마워요. 거울 속에서는 아무것도 마실 수 없어요.",
+      "mismatch": "> 잔이 거울에 비치지 않는다.",
+      "none": "고마워요. 거울 속에서는 아무것도 마실 수 없어요."
+    },
+    "accepts": [
+      "unreflecting_brooch"
+    ],
+    "reactions": {
+      "greet": {
+        "match": "…네. 그렇게요. 돌아보지 않아서 고마워요."
+      },
+      "propose": {
+        "perfect": "이거예요. …봐요, 이건 거울에 안 비치죠.",
+        "deptOnly": "거울 같은 색 말고, 바랜 색이요.",
+        "wrong": "브로치요. 비치지 않는 것.",
+        "overBudget": "> 거울 속 가격표의 숫자가 거꾸로 흘러내린다.",
+        "notThis": "브로치로요. 가슴에 다는 거."
+      },
+      "close": {
+        "tryOn": "달아 볼게요. …거울 밖으로 손을 내밀 수가 없네요. 그냥 주세요.",
+        "box": {
+          "red": "빨간 상자는 거울 속에서 초록으로 보여요.",
+          "gold": "금색은 거울 속에서도 금색이네요. 다행이다."
+        },
+        "checkout": "거울 앞에 두고 가세요. 제가 가져갈게요."
+      },
+      "regular": {
+        "accept": "또 올게요. 거울이 남아 있는 한.",
+        "decline": "> 거울 속 그녀가 멀어진다."
+      },
+      "leave": "> 거울에 매장만 비친다. 이번엔 나도 비친다. 한 박자 늦게.",
+      "thought": {
+        "opening": "거울에만 비친다. 수칙 12번. 돌아보지 말고, 조용히."
+      }
+    }
+  },
+  {
+    "id": "sleeper",
+    "name": "잠든 채 걷는 아이",
+    "shift": "dawn",
+    "draftLines": true,
+    "motif": "꿈의 나라에서 길을 잃은 아이",
+    "entranceNote": "문이 열리지 않았는데, 잠옷 차림의 아이가 카운터 앞에 서 있다. 눈을 감은 채 숨소리가 고르다.",
+    "greetPref": "quiet",
+    "category": "apparel",
+    "color": "white",
+    "budget": 4000000,
+    "mentionsPrice": false,
+    "occasionIsGift": false,
+    "form": "humanoid",
+    "wants": "깨지 않는 잠옷",
+    "cardNote": "발이 바닥에서 한 뼘 떠 있었다",
+    "rules": [
+      13
+    ],
+    "traits": {},
+    "specialPayment": {
+      "label": "꿈 한 토막",
+      "amount": 4000000
+    },
+    "sprite": {
+      "hair": "short",
+      "hairColor": "hair",
+      "skin": "skin-a",
+      "outfit": "mist",
+      "accent": "rose"
+    },
+    "care": {
+      "likes": [
+        "dawn_thanks"
+      ],
+      "dislikes": [],
+      "memo": "자장가만 보낼 것.",
+      "vipReveal": "…꿈에서 언니를 봤어요… 단발머리 언니… 카운터에 서 있었어요…",
+      "ack": "답장 대신 아주 작은 코 고는 소리가 녹음되어 온다."
+    },
+    "lines": {
+      "opening": "(잠꼬대처럼) …엄마가 여기서 잠옷 사 오래요. 깨지 않는 잠옷.",
+      "askCategory": "…잠옷이요… 하얀 거. 입으면 계속 자는 거.",
+      "askOccasion": "…깨면 안 돼요. 꿈 밖은 너무 시끄러워요.",
+      "askBudget": "(웅얼거린다) …사탕 세 개…",
+      "observe": "아이의 발이 바닥에서 한 뼘 떠 있다. 맨발인데 발바닥이 깨끗하다.",
+      "success": "…고마워요… 이제 계속 잘 수 있어요…",
+      "successNote": "꿈 한 토막을 받았다. 손바닥 위에서 구름처럼 천천히 굴러간다.",
+      "fail": "> 아이가 하품을 하고, 하품이 끝나기 전에 사라진다.",
+      "violation": {
+        "13": "아이의 눈꺼풀이 파르르 떨린다. 깨어나려 한다. 매장 바닥이 구름처럼 물러지고, 진열장이 한 칸씩 잠 속으로 가라앉는다."
+      }
+    },
+    "hospitality": {
+      "pref": "chocolate",
+      "match": "…(오물오물) 달아요…",
+      "mismatch": "…따가워요…",
+      "none": "> 아이가 입맛을 다신다."
+    },
+    "accepts": [
+      "unwaking_gown"
+    ],
+    "reactions": {
+      "greet": {
+        "match": "(쌔근쌔근) …안녕하세요…",
+        "mismatch": {
+          "warm": "(잠꼬대) …너무 밝아요… 불 꺼 주세요…"
+        }
+      },
+      "propose": {
+        "perfect": "…이거… 엄마 냄새 나요…",
+        "deptOnly": "…하얀 거요…",
+        "wrong": "…잠옷이요…",
+        "overBudget": "…사탕이 모자라요…",
+        "notThis": "…입는 거요… 잘 때 입는 거…"
+      },
+      "close": {
+        "tryOn": "(눈을 감은 채 팔을 든다) …입혀 주세요…",
+        "box": {
+          "red": "…빨간 상자… 무서워요…",
+          "gold": "…반짝반짝…"
+        },
+        "checkout": "…주머니에 있어요… 꿈이요…"
+      },
+      "regular": {
+        "accept": "…또 올게요… 잠들면…",
+        "decline": "> 아이가 돌아눕듯 몸을 돌리고, 사라진다."
+      },
+      "leave": "> 아이가 서 있던 자리에 베개 자국 같은 것이 남는다. 따뜻하다.",
+      "thought": {
+        "opening": "잠옷 차림. 수칙 13번. 서두르게 하지 말 것."
+      }
+    }
+  },
+  {
+    "id": "cats",
+    "name": "고양이를 안은 노파",
+    "shift": "dawn",
+    "draftLines": true,
+    "motif": "고양이들의 마을에서 온 노파",
+    "entranceNote": "발소리 대신 작은 발자국 소리가 여러 겹으로 들어온다. 키 작은 노파의 품에서 눈 아홉 쌍이 이쪽을 본다.",
+    "greetPref": "quiet",
+    "category": "bag",
+    "color": "beige",
+    "budget": 5000000,
+    "mentionsPrice": false,
+    "occasionIsGift": true,
+    "form": "humanoid",
+    "wants": "아홉 마리가 함께 잘 바구니",
+    "cardNote": "품에 고양이 아홉 마리. 눈 깜빡임이 한 번도 어긋나지 않는다",
+    "rules": [
+      14
+    ],
+    "traits": {},
+    "specialPayment": {
+      "label": "고양이 수염 아홉 가닥",
+      "amount": 4900000
+    },
+    "sprite": {
+      "hair": "long",
+      "hairColor": "ash",
+      "skin": "skin-a",
+      "outfit": "dusk",
+      "accent": "steel"
+    },
+    "care": {
+      "likes": [
+        "dawn_checkin"
+      ],
+      "dislikes": [],
+      "memo": "고양이 이름을 물을 것.",
+      "vipReveal": "애들이 그러는데, 서윤이라는 아이가 애들한테 이름을 지어 줬대. 아홉 개 다.",
+      "ack": "답장이 온다. \"냐.\" 아홉 번."
+    },
+    "lines": {
+      "opening": "애들이 여기 가 보자고 해서 왔어. 냐옹, 하더라고. 아홉 마리가 다.",
+      "askCategory": "바구니. 애들이 다 같이 잘 수 있는 거. 내가 오래는 못 안고 다녀서.",
+      "askOccasion": "내가 먼저 가게 생겼거든. 애들 잘 데는 있어야지.",
+      "askBudget": "값? 애들이 알아서 치를 거야.",
+      "observe": "고양이들이 동시에 눈을 깜빡인다. 한 마리도 어긋나지 않는다.",
+      "success": "좋다. 애들이 벌써 가르릉거리네. 고마워.",
+      "successNote": "고양이 수염 아홉 가닥을 받았다. 카운터에 놓자 저절로 가지런히 눕는다.",
+      "fail": "> 고양이들이 일제히 하악거린다. 노파와 고양이들이 문틈으로 흘러 나간다.",
+      "violation": {
+        "14": "고양이 아홉 마리가 동시에 털을 세운다. 진열장 유리마다 발톱 자국이 아홉 줄씩 그어지고, 노파의 눈도 고양이 눈이 된다."
+      }
+    },
+    "hospitality": {
+      "pref": "chocolate",
+      "match": "애들 말고 내가 먹는 거야. 고마워.",
+      "mismatch": "탄산은 애들이 놀라.",
+      "none": "> 고양이들이 빈손을 오래 쳐다본다."
+    },
+    "accepts": [
+      "nine_sleep_basket"
+    ],
+    "reactions": {
+      "greet": {
+        "match": "그래, 그래. 애들이 좋아하네.",
+        "mismatch": {
+          "warm": "아이고 시끄러. 애들 놀라.",
+          "direct": "급하긴. 애들은 천천히 고르는 거야."
+        }
+      },
+      "propose": {
+        "perfect": "이거다. 봐, 벌써 셋이 들어갔어.",
+        "deptOnly": "색이 차가워. 애들은 따뜻한 색을 좋아해.",
+        "wrong": "바구니라니까. 애들 잘 데.",
+        "overBudget": "애들이 그건 비싸대.",
+        "notThis": "그거 말고, 바구니. 뚜껑 있는 거."
+      },
+      "close": {
+        "tryOn": "내가 멜 건 아니고. 애들이 들어갈 거야.",
+        "box": {
+          "red": "빨간 건 애들이 싫어해.",
+          "gold": "금색이다. 애들이 이 색을 좋아해."
+        },
+        "checkout": "그냥 주면 애들이 서운해해."
+      },
+      "regular": {
+        "accept": "또 올게. 애들이 기억해.",
+        "decline": "> 노파가 돌아서자 고양이들이 일제히 이쪽을 본다."
+      },
+      "leave": "> 매장 바닥에 작은 발자국 아홉 줄이 문까지 이어져 있다.",
+      "thought": {
+        "opening": "고양이를 안고 왔다. 수칙 14번. 금색 상자."
+      }
+    }
+  },
+  {
+    "id": "borrowed",
+    "name": "몸을 빌린 손님",
+    "shift": "dawn",
+    "draftLines": true,
+    "motif": "시간 너머에서 몸을 빌려 입고 온 손님",
+    "entranceNote": "정장 차림의 회사원이 들어온다. 걸음이 한 박자씩 어긋난다. 무릎을 처음 써 보는 것처럼.",
+    "greetPref": "quiet",
+    "category": "apparel",
+    "color": "pink",
+    "budget": 6000000,
+    "mentionsPrice": false,
+    "occasionIsGift": true,
+    "form": "humanoid",
+    "wants": "이 몸에 맞는 겉옷",
+    "cardNote": "넥타이가 거꾸로 매여 있었다",
+    "rules": [
+      15
+    ],
+    "traits": {},
+    "specialPayment": {
+      "label": "미래 날짜가 찍힌 영수증",
+      "amount": 5300000
+    },
+    "sprite": {
+      "hair": "slick",
+      "hairColor": "hair",
+      "skin": "skin-a",
+      "outfit": "stone",
+      "accent": "steel"
+    },
+    "care": {
+      "likes": [
+        "dawn_thanks"
+      ],
+      "dislikes": [],
+      "memo": "어제 일을 묻지 말 것.",
+      "vipReveal": "이 몸의 주인은 낮에 이 매장에 왔었소. 시계를 자꾸 보던 남자였지.",
+      "ack": "답장이 온다. 보낸 날짜가 내년이다."
+    },
+    "lines": {
+      "opening": "좋은… 밤이오. 이 몸에 맞는 겉옷을 찾소. 이 몸의 주인은 분홍을 좋아했소.",
+      "askCategory": "겉옷이오. 이 몸에 맞는 것. 나는 이 몸의 치수를 모르오.",
+      "askOccasion": "돌려주러 가오. 빌린 것은 입혀서 돌려주는 게 예의라 들었소.",
+      "askBudget": "값은… 이 몸의 지갑에 있겠지. 나는 숫자를 세는 법이 다르오.",
+      "observe": "넥타이가 거꾸로 매여 있다. 손님은 자기 손등을 처음 보는 것처럼 오래 들여다본다.",
+      "success": "맞는군. 이 몸이 기뻐하는 것 같소. 나는 모르겠지만.",
+      "successNote": "영수증 한 장을 받았다. 날짜가 아직 오지 않은 날이다.",
+      "fail": "> 손님이 몸을 벗듯 어깨를 한 번 털자, 빈 정장만 바닥에 내려앉는다. 다시 보면 아무것도 없다.",
+      "violation": {
+        "15": "손님이 재킷을 받아 들고 고개를 갸웃한다. 입어 보지 않은 소매가 팔보다 한 뼘 길다. 몸이 재킷에 맞춰 늘어나기 시작한다. 뼈가 늘어나는 소리가 매장을 채운다."
+      }
+    },
+    "hospitality": {
+      "pref": "water",
+      "match": "거품. 이 몸이 좋아하오.",
+      "mismatch": "단 것은 이 몸이 싫어하오.",
+      "none": "> 손님이 빈 손바닥을 오래 들여다본다."
+    },
+    "accepts": [
+      "borrowed_size_jacket"
+    ],
+    "reactions": {
+      "greet": {
+        "match": "…그렇게 하는 것이군. 배웠소.",
+        "mismatch": {
+          "warm": "이 몸이 웃으려 하오. 얼굴이 아프군.",
+          "direct": "서두르지 마오. 이 몸은 빨리 움직이지 못하오."
+        }
+      },
+      "propose": {
+        "perfect": "이것이오. 소매 길이가 이 몸의 양팔과 같소. 이 몸의 양팔은 길이가 다르오.",
+        "deptOnly": "분홍이어야 하오. 주인이 좋아했소.",
+        "wrong": "겉옷이오. 몸에 걸치는 것.",
+        "overBudget": "이 몸의 지갑이 비명을 지르오.",
+        "notThis": "겉옷으로 보여 주오."
+      },
+      "close": {
+        "tryOn": "입혀 주오. …아. 이것이 \"맞는다\"는 느낌이군.",
+        "box": {
+          "red": "상자에 넣으면 이 몸이 모르오. 입어 봐야 하오.",
+          "gold": "금빛 상자. 이 몸은 좋아하겠지만, 나는 입어 봐야 하오."
+        },
+        "checkout": "값부터 치르라는 것이오? 입어 보지도 않고?"
+      },
+      "regular": {
+        "accept": "다시 오겠소. 다른 몸으로일지도 모르지만.",
+        "decline": "> 손님이 뒷걸음으로 문까지 간다. 앞으로 걷는 법을 잊은 것처럼."
+      },
+      "leave": "> 문 앞에서 손님이 자기 손을 흔들어 본다. 흔드는 법을 방금 배운 것처럼.",
+      "thought": {
+        "opening": "자기 몸이 아닌 것 같다. 수칙 15번. 꼭 입혀 볼 것."
+      }
+    }
+  },
+  {
+    "id": "rain",
+    "name": "비를 데려오는 손님",
+    "shift": "dawn",
+    "draftLines": true,
+    "motif": "비를 길 삼아 다니는 손님",
+    "entranceNote": "매장 안에만 비가 내린다. 천장에서 떨어진 빗방울이 카운터 앞에서 멈춘다. 우산을 든 젊은 여자가 서 있다.",
+    "greetPref": "quiet",
+    "category": "bag",
+    "color": "white",
+    "budget": 4500000,
+    "mentionsPrice": false,
+    "occasionIsGift": false,
+    "form": "humanoid",
+    "wants": "비를 접어 넣을 가방",
+    "cardNote": "머리카락에서 떨어진 물이 바닥에 닿기 전에 사라진다",
+    "rules": [
+      16
+    ],
+    "traits": {},
+    "specialPayment": {
+      "label": "멈춘 빗방울 한 병",
+      "amount": 3900000
+    },
+    "sprite": {
+      "hair": "wet",
+      "hairColor": "hair",
+      "skin": "skin-a",
+      "outfit": "mist",
+      "accent": "steel"
+    },
+    "care": {
+      "likes": [],
+      "dislikes": [],
+      "memo": "날씨 이야기를 하지 말 것.",
+      "vipReveal": "서윤 씨는 비 오는 날 저한테 우산을 빌려줬어요. 아직 못 돌려줬어요.",
+      "ack": "답장 대신 화면에 빗방울 하나가 맺혀서 아래로 흘러내린다."
+    },
+    "lines": {
+      "opening": "비가 그치질 않아서요. 우산이 다 해졌어요. 접어서 들고 다닐 수 있는 걸 찾아요.",
+      "askCategory": "가방이요. 하얀 거. 비를 접어서 넣고 다니게요.",
+      "askOccasion": "집에 가려고요. 비를 두고 가면 길을 잃어요. 비가 제 길이거든요.",
+      "askBudget": "…돈 얘기는 젖어서 안 들려요.",
+      "observe": "그녀의 머리카락에서 떨어진 물이 바닥에 닿기 전에 사라진다. 우산 구멍 사이로 다른 하늘이 보인다.",
+      "success": "고마워요. 비가 조금 가벼워졌어요.",
+      "successNote": "멈춘 빗방울 한 병을 받았다. 흔들어도 물방울이 병 가운데 그대로 떠 있다.",
+      "fail": "> 빗소리가 한 번 거세지더니 뚝 그친다. 그녀가 서 있던 자리만 젖어 있다.",
+      "violation": {
+        "16": "상자 모서리에 빗물이 스민다. 상자가 녹아내리고, 매장 천장 전체에서 비가 쏟아진다. 진열장 안까지."
+      }
+    },
+    "hospitality": {
+      "pref": "taboo",
+      "match": "> 아무것도 내밀지 않자 빗소리가 잦아든다.",
+      "mismatch": "> 잔이 순식간에 넘친다. 잔 안에서 비가 내리기 시작한다.",
+      "none": "> 아무것도 내밀지 않자 빗소리가 잦아든다."
+    },
+    "accepts": [
+      "folded_rain_clutch"
+    ],
+    "reactions": {
+      "greet": {
+        "match": "고마워요. 조용한 게 빗소리 같아요.",
+        "mismatch": {
+          "warm": "> 밝은 목소리에 빗줄기가 잠깐 굵어진다.",
+          "direct": "…네. 비가 급하진 않아요."
+        }
+      },
+      "propose": {
+        "perfect": "이거예요. 비가 이 안으로 접혀 들어가요.",
+        "deptOnly": "하얀 거요. 비는 하얀색이 좋대요.",
+        "wrong": "가방이요. 비를 넣을 가방.",
+        "overBudget": "> 가격표가 젖어서 숫자가 번진다.",
+        "notThis": "가방으로요. 접어서 드는 거."
+      },
+      "close": {
+        "tryOn": "> 그녀가 가방을 들자 그 위로만 비가 그친다.",
+        "box": {
+          "red": "상자는… 젖을 거예요.",
+          "gold": "금색 상자도 젖을 거예요."
+        },
+        "checkout": "네, 젖기 전에 바로요."
+      },
+      "regular": {
+        "accept": "또 올게요. 비 오는 날에.",
+        "decline": "> 빗소리가 멀어진다."
+      },
+      "leave": "> 우산을 펴지 않고 나간다. 문밖 거리는 말라 있다.",
+      "thought": {
+        "opening": "비 냄새. 수칙 16번. 포장하지 말고 바로 계산."
+      }
+    }
+  },
+  {
+    "id": "nametag",
+    "name": "명찰을 단 손님",
+    "shift": "dawn",
+    "draftLines": true,
+    "motif": "진열대에서 퇴근하러 내려온 지난 어드바이저",
+    "entranceNote": "메종 뤼미에르 유니폼을 입은 여자가 카운터 건너편, 손님 자리에 선다. 명찰의 이름은 긁혀서 읽을 수 없다.",
+    "greetPref": "quiet",
+    "category": "jewelry",
+    "color": "black",
+    "budget": 1000000,
+    "mentionsPrice": false,
+    "occasionIsGift": false,
+    "form": "humanoid",
+    "wants": "이름 없는 명찰",
+    "cardNote": "목과 손목에 마네킹 이음매가 있었다",
+    "rules": [
+      17
+    ],
+    "traits": {},
+    "specialPayment": {
+      "label": "누군가의 마지막 퇴근 시각",
+      "amount": 0
+    },
+    "sprite": {
+      "hair": "bob",
+      "hairColor": "hair",
+      "skin": "skin-a",
+      "outfit": "shadow",
+      "accent": "brass"
+    },
+    "care": {
+      "likes": [],
+      "dislikes": [],
+      "memo": "명찰 이름을 부르지 말 것.",
+      "vipReveal": "다음 금요일에 서윤이가 돌아와요. 당신 자리는 진열대 맨 오른쪽이에요.",
+      "ack": "답장이 온다. \"퇴근했습니다.\""
+    },
+    "lines": {
+      "opening": "수고하셨습니다. …아니, 제가 할 말이 아니죠. 오늘은 제가 손님이에요.",
+      "askCategory": "명찰이요. 이름이 없는 걸로.",
+      "askOccasion": "…퇴근하러 왔어요. 그걸 왜 물어요?",
+      "askBudget": "값은 이미 치렀어요. 몇 년 치 근무로.",
+      "observe": "웃는 얼굴이 한 번도 움직이지 않는다. 목과 손목에 가느다란 이음매 선이 있다.",
+      "success": "고마워요. 이제 이름 없이 퇴근할 수 있어요. …당신은 꼭 이름을 갖고 나가요.",
+      "successNote": "누군가의 마지막 퇴근 시각을 받았다. 종이에 \"금요일 04:44\"라고 적혀 있다.",
+      "fail": "> 눈을 깜빡이는 사이, 진열대 끝에 마네킹이 하나 늘어 있다. 유니폼을 입고 있다.",
+      "violation": {
+        "17": "\"퇴근하러 왔다고 했잖아요.\" 그녀의 웃는 얼굴에 금이 간다. 진열대의 마네킹들이 모두 이쪽으로 고개를 돌린다. 하나는 내 유니폼을 입고 있다."
+      }
+    },
+    "hospitality": {
+      "pref": "water",
+      "match": "탄산수. 우리가 내던 거네요.",
+      "mismatch": "초콜릿은 손님용이에요.",
+      "none": "괜찮아요. 우리는 아무것도 안 마셔요."
+    },
+    "accepts": [
+      "other_name_tag"
+    ],
+    "reactions": {
+      "greet": {
+        "match": "…네. 우리도 그렇게 배웠어요. 고개만.",
+        "mismatch": {
+          "warm": "> 그녀가 웃는 얼굴 그대로 대답하지 않는다.",
+          "direct": "…서두르지 마세요. 우리도 그러다 여기 남았어요."
+        }
+      },
+      "propose": {
+        "perfect": "이거예요. 이름이 긁힌 것. …제 것도 이랬어요.",
+        "deptOnly": "검은 명찰이요. 우리 건 늘 검은색이었어요.",
+        "wrong": "명찰이요. 가슴에 다는 거.",
+        "overBudget": "> 그녀는 가격표를 보지 않는다.",
+        "notThis": "명찰로요."
+      },
+      "close": {
+        "tryOn": "달아 볼게요. …이제 제 이름이 안 보이네요. 좋아요.",
+        "box": {
+          "red": "빨간 상자는 손님용이에요. 저는…",
+          "gold": "금색 상자. 우리가 매일 접던 상자네요."
+        },
+        "checkout": "근무 시간으로 계산할게요."
+      },
+      "regular": {
+        "accept": "단골이요? …우리는 매일 오는걸요. 진열대에서.",
+        "decline": "> 그녀가 목례하고 진열대 쪽으로 걸어간다. 문 쪽이 아니다."
+      },
+      "leave": "> 그녀가 나간 뒤, 진열대 끝 마네킹의 명찰 하나가 사라져 있다.",
+      "thought": {
+        "opening": "우리 유니폼이다. 수칙 17번. 무슨 일로 왔는지 묻지 말 것."
       }
     }
   }
