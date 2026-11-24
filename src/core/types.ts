@@ -126,6 +126,7 @@ export type CustomerReturnLines = Partial<Omit<CustomerLines, 'violation'>> & {
   reactions?: CustomerReactions; // 이 방문에만 바뀌는 반응
   hospitality?: Partial<Hospitality>; // 이 방문에만 바뀌는 대접 반응
   accepts?: string[]; // 이 방문에 원하는 상품
+  scene?: SceneCueRef; // 이 방문에만 바뀌는 배경 연출
 };
 
 /** ★ 손님별 반응 대사 (SCRIPT_DAY1 §0). 문자열이 "> "로 시작하면 지문, 아니면 손님의 대사다. 없으면 strings의 공통 반응을 쓴다. */
@@ -201,6 +202,8 @@ export interface CustomerDef {
   onVisit?: PlotBeat[]; // 입장 직후(첫 대사 뒤)
   afterSale?: PlotBeat[]; // 판매 직후
   talk?: TalkDef; // 판매 직후 선택 대화
+  /** 대사에 맞춘 배경 연출: leave = 판매 후 퇴장 지문, fail = 판매 실패 줄. 값은 UI의 연출 이름(extra_one_vanish …) */
+  scene?: SceneCueRef;
 }
 
 export interface ContactReplies { prefer?: string; neutral?: string; dislike?: string; any?: string; busy?: string }
@@ -392,6 +395,8 @@ export type Action =
   | { type: 'finale'; choice: 'yes' | 'ally' | 'leave' }
   | { type: 'nextDay' };
 
+export interface SceneCueRef { leave?: string; fail?: string }
+
 export type GameEvent =
   | { type: 'line'; speaker: string | null; text: string; kind?: 'note' } // note: 쪽지(RulesNote) 본문
   | { type: 'thought'; text: string } // (속마음) 이름표 없음
@@ -415,6 +420,8 @@ export type GameEvent =
   | { type: 'phase'; phase: Phase['kind'] }
   | { type: 'save'; ok: boolean }
   | { type: 'clue'; id: string }
+  /** 바로 다음 대사에 맞춘 배경 연출 (customers.json의 scene 값). UI가 잠깐 마네킹을 늘리거나 돌린다 */
+  | { type: 'sceneCue'; cue: string }
   | { type: 'ending'; ending: EndingId }
   | { type: 'sfx'; id: string };
 

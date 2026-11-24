@@ -6,6 +6,7 @@ import { JsonStorageAdapter } from '../core/save';
 import type { Action, GameEvent, GreetStyle, ProbeId, CloseId, Mood as CoreMood, EncounterState, CustomerDef } from '../core/types';
 import type { Mood } from '../render/palette';
 import type { Renderer } from '../render/renderer';
+import type { SceneCueView } from '../render/scene';
 import { Bgm } from './bgm';
 import { Bridge, type EventSink, type Flow } from './bridge';
 import { ChoicePanel, Dialogue, type ChoiceItem } from './dialogue';
@@ -112,6 +113,39 @@ export function startApp(stage: Stage, renderer: Renderer, opts: { debug: boolea
     html.dataset.shift = s;
     display.setShift(s);
   };
+  /** 날짜·사건으로 바뀐 배경(마네킹 배치·회색 장밋빛)과 마지막 밤의 돌아본 마네킹을 게임 상태에 맞춘다 */
+  const syncScene = (): void => {
+    const gs = game.getState();
+    renderer.setLayout({ day: gs.day, roseGray: gs.flags?.['roseGray'] === true });
+    renderer.setFinaleTurn(gs.phase.kind === 'finale');
+  };
+  /**
+   * 대사에 맞춘 잠깐의 배경 연출. 데이터(customers.json scene)의 이름 → [대사가 시작될 때, "다시 보면"부터]
+   * 예) "마네킹이 하나 늘어 있다. 다시 보면, 그대로다." → 하나 늘었다가 "다시"가 찍히는 순간 사라진다
+   */
+  const CUES: Record<string, [SceneCueView, SceneCueView | null]> = {
+    extra_one_vanish: ['extra_one', null],
+    extra_two_then_one: ['extra_two', 'extra_one'],
+    all_turn_door_vanish: ['all_turn_door', null],
+    uniform_added: ['uniform_added', 'uniform_added'],
+  };
+  let cueAfter: SceneCueView | null | undefined; // 다음 대사에서 "다시" 뒤에 바꿀 연출 (undefined = 없음)
+  const startCue = (name: string): void => {
+    const c = CUES[name];
+    if (!c) return;
+    renderer.setCue(c[0]);
+    cueAfter = c[1];
+  };
+  /** 대사가 화면에 뜰 때: "다시" 글자까지 찍히면 다음 연출로 */
+  const armCueAfter = (text: string): void => {
+    if (cueAfter === undefined) return;
+    const next = cueAfter;
+    cueAfter = undefined;
+    const i = text.indexOf('다시');
+    dialogue.whenShown(i >= 0 ? i : text.length, () => renderer.setCue(next));
+  };
+  const clearCue = (): void => { cueAfter = undefined; renderer.setCue(null); };
+
   /** 토스트는 한 번에 하나: 새것이 옛것을 바꾼다 */
   const toast = (text: string, ms = TOAST_MS): void => {
     const n = el('div', 'toast', text);
@@ -203,6 +237,7 @@ export function startApp(stage: Stage, renderer: Renderer, opts: { debug: boolea
           if (notes.length) { showNote(); return 'retry'; }
           if (toPhone(origin)) { phone.addNote(e.text); return 'continue'; }
           showDialogue(speakerPlate(e.speaker), e.text, e.speaker ? 'speech' : 'narration');
+          armCueAfter(e.text);
           return 'wait';
         case 'thought':
           if (notes.length) { showNote(); return 'retry'; }
@@ -216,7 +251,9 @@ export function startApp(stage: Stage, renderer: Renderer, opts: { debug: boolea
           if (game.getState().shift === 'afternoon') sfx.play('door_chime');
           return 'continue';
         }
+        case 'sceneCue': startCue(e.cue); return 'continue';
         case 'customerLeave':
+          clearCue();
           renderer.setCustomer(null);
           hud.hidden = true;
           if (e.outcome === 'sold') once('end', t('tutorial.end'), 'serve');
@@ -229,7 +266,7 @@ export function startApp(stage: Stage, renderer: Renderer, opts: { debug: boolea
           return 'wait';
         case 'violation': return 'continue';
         case 'mannerSlip': toast(t('toast.manner')); phone.pulse('notes'); return 'continue';
-        case 'shift': setShift(e.shift); if (e.shift === 'dawn') phone.unlockDawnRules(); return 'continue';
+        case 'shift': syncScene(); setShift(e.shift); if (e.shift === 'dawn') phone.unlockDawnRules(); return 'continue';
         case 'mood': baseMood = e.mood as CoreMood; if (!breachTimer || html.dataset.mood !== 'breach') setMood(baseMood); return 'continue';
         case 'sale': toast(t('toast.sale', { amount: e.amount.toLocaleString('en-US') })); sfx.play('register'); phone.refresh(); return 'continue';
         case 'ledger': phone.refresh(); return 'continue';
@@ -313,6 +350,7 @@ export function startApp(stage: Stage, renderer: Renderer, opts: { debug: boolea
 
   function onPhase(kind: string): void {
     syncBgm(kind);
+    syncScene();
     const gs = game.getState();
     if (kind === 'briefing' && gs.shift === 'afternoon' && gs.day > 1) phone.newDay();
     if (kind === 'finale') { renderer.setCustomer(SEOYUN_SPRITE as never); hud.hidden = true; dialogue.hide(); }
@@ -426,6 +464,7 @@ export function startApp(stage: Stage, renderer: Renderer, opts: { debug: boolea
   }
 
   function onIdle(): void {
+    syncScene();
     if (overlay) return;
     if (notes.length) { showNote(); return; }
     const s = game.getState();

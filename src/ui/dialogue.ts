@@ -18,6 +18,8 @@ export class Dialogue {
   /** collapse: 줄이 끝난 뒤 가끔 글자 하나가 ▒로 깨졌다가 돌아온다 (표시만. 저장된 글은 그대로) */
   private glitchTimer = 0;
   private glitchRestore = 0;
+  /** 지금 줄이 이 글자 위치까지 나오면 부른다 (배경 연출을 "다시 보면"에 맞추는 데 쓴다) */
+  private marks: { at: number; cb: () => void }[] = [];
 
   constructor(private readonly instant: boolean) {
     this.root.hidden = true;
@@ -31,9 +33,21 @@ export class Dialogue {
   /** 줄이 끝까지 나온 뒤 넘기기를 기다리는 중 */
   get waiting(): boolean { return this.onDone !== null; }
 
+  /** 지금 보여 주는 줄이 at번째 글자까지 나오면 cb (이미 나왔거나 건너뛰면 바로) */
+  whenShown(at: number, cb: () => void): void {
+    if (this.shown >= at) { cb(); return; }
+    this.marks.push({ at, cb });
+  }
+  private fireMarks(): void {
+    const due = this.marks.filter((m) => m.at <= this.shown);
+    this.marks = this.marks.filter((m) => m.at > this.shown);
+    for (const m of due) m.cb();
+  }
+
   show(speaker: string | null, text: string, kind: LineKind, done: () => void): void {
     this.stop();
     this.clearGlitch();
+    this.marks = [];
     this.root.hidden = false;
     this.root.dataset.kind = kind;
     this.root.dataset.state = 'typing';
@@ -46,7 +60,7 @@ export class Dialogue {
     const start = performance.now();
     this.timer = window.setInterval(() => {
       const n = Math.min(this.full.length, Math.floor(((performance.now() - start) / 1000) * CPS) + 1);
-      if (n !== this.shown) { this.shown = n; this.reveal(n); }
+      if (n !== this.shown) { this.shown = n; this.reveal(n); this.fireMarks(); }
       if (n >= this.full.length) this.finish();
     }, 16);
   }
@@ -70,6 +84,7 @@ export class Dialogue {
     this.shown = this.full.length;
     this.text.textContent = this.full;
     this.root.dataset.state = 'complete';
+    this.fireMarks();
     this.armGlitch();
   }
 

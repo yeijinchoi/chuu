@@ -1,6 +1,9 @@
 import { DRAIN_ORDER, buildLut, type Mood, type PaletteKey } from './palette';
 import { Layer, toImageData } from './pixel';
-import { W, H, bakeScene, drawChandelier, drawMannequinHeadOverlay, drawSilhouette, type SceneBake, type Shift } from './scene';
+import {
+  W, H, DEFAULT_LAYOUT, apparitionSpots, bakeScene, drawApparition, drawChandelier, drawMannequinHeadOverlay, drawSceneCue, drawSilhouette, mannequinSlots,
+  type Apparition, type SceneBake, type SceneCueView, type SceneLayout, type Shift,
+} from './scene';
 import { drawCustomer, drawOutsideColour, type SpriteDef } from './customerSprite';
 import { createFlicker, scanlines, type Flicker } from './effects';
 import { createLoop, type Loop } from './loop';
@@ -70,6 +73,50 @@ export class Renderer {
   get silhouetteLevel(): number { return this.sil.level; }
 
   setShift(s: Shift): void { this.shift = s; }
+
+  // ───── 이야기에 따라 바뀌는 배경
+  private layout: SceneLayout = DEFAULT_LAYOUT;
+  private finaleTurn = false;
+  private cue: SceneCueView | null = null;
+  /** 날짜·사건으로 바뀐 배경(마네킹 배치, 회색이 된 장밋빛). 바뀌면 배경을 다시 굽는다 */
+  setLayout(l: SceneLayout): void {
+    if (l.day === this.layout.day && l.roseGray === this.layout.roseGray) return;
+    this.layout = { ...l };
+    this.bakes.clear();
+    this.baked.clear();
+    this.acc = 1;
+  }
+  /** 마지막 밤: 가장 왼쪽 단발 마네킹이 고개를 돌려 이쪽을 본다 */
+  setFinaleTurn(on: boolean): void { this.finaleTurn = on; this.acc = 1; }
+  /** 대사에 맞춘 잠깐의 연출 (null이면 없음) */
+  setCue(c: SceneCueView | null): void { this.cue = c; this.acc = 1; }
+
+  // ───── 새벽의 괴현상: 손님 시계(t)와 따로 흐르는 시계로, 분위기가 나쁠수록 자주
+  private clock = 0;
+  private app: { a: Apparition; start: number; dur: number } | null = null;
+  private nextApp = 10;
+  private lastApp = -1;
+  private appGap(): number {
+    const [lo, hi] = this.mood === 'calm' ? [16, 28] : this.mood === 'uneasy' ? [10, 18] : this.mood === 'dread' ? [6, 12] : [4, 8];
+    return lo + Math.random() * (hi - lo);
+  }
+  private tickApparition(): void {
+    if (this.shift !== 'dawn') { this.app = null; this.nextApp = this.clock + this.appGap(); return; }
+    if (this.app && this.clock > this.app.start + this.app.dur) {
+      this.app = null;
+      this.nextApp = this.clock + this.appGap();
+      this.acc = 1;
+    }
+    if (!this.app && this.clock >= this.nextApp) {
+      const spots = apparitionSpots(this.layout.day);
+      let i = Math.floor(Math.random() * spots.length);
+      if (i === this.lastApp) i = (i + 1) % spots.length; // 같은 것이 연달아 나오지 않게
+      this.lastApp = i;
+      const a = spots[i] as Apparition;
+      this.app = { a, start: this.clock, dur: a.kind === 'blood' ? 2.2 : a.kind === 'eyesMany' ? 1.8 : 0.7 + Math.random() * 0.6 };
+      this.acc = 1;
+    }
+  }
   setMood(m: Mood): void { this.mood = m; }
   setCustomer(c: SpriteDef | null): void { this.customer = c; this.t = 0; this.acc = 1; this.nextBlink = 1.5; }
   setSprites(s: Map<string, CustomerSprite>): void { this.sprites = s; this.acc = 1; }
@@ -121,7 +168,7 @@ export class Renderer {
     let cv = this.baked.get(key);
     if (cv) return cv;
     let bake = this.bakes.get(this.shift);
-    if (!bake) { bake = bakeScene(this.shift); this.bakes.set(this.shift, bake); }
+    if (!bake) { bake = bakeScene(this.shift, this.layout); this.bakes.set(this.shift, bake); }
     cv = this.canvas();
     const cx = this.ctx2d(cv);
     const img = cx.createImageData(W, H);
@@ -133,6 +180,8 @@ export class Renderer {
 
   update(dt: number): void {
     this.t += dt;
+    this.clock += dt;
+    this.tickApparition();
     const sil = this.sil;
     if (sil.level !== sil.target) {
       const step = sil.rate * dt;
@@ -148,7 +197,10 @@ export class Renderer {
     this.mid.clear();
     this.top.clear();
     drawChandelier(this.mid, this.shift, this.flicker.level);
-    drawMannequinHeadOverlay(this.mid, this.mood);
+    const left = mannequinSlots(this.layout.day)[0];
+    if (this.app) drawApparition(this.mid, this.app.a, (this.clock - this.app.start) / this.app.dur, this.reduced);
+    if (this.cue) drawSceneCue(this.mid, this.cue, this.layout, this.shift);
+    else drawMannequinHeadOverlay(this.mid, this.mood, left?.cx ?? 66, this.finaleTurn);
     drawSilhouette(this.mid, this.sil.level, this.sil.palm);
     if (this.customer && this.customer.sprite.draw !== 'drawOutsideColour' && !this.imageSprite()) {
       drawCustomer(this.customer, { mid: this.mid, top: this.top }, { t: this.t, reduced: this.reduced, shift: this.shift });

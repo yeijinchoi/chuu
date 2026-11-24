@@ -124,6 +124,11 @@ function addAffinity(ctx: Ctx, e: EncounterState, delta: number): void {
 function say(ctx: Ctx, c: CustomerDef, text: string | undefined): void {
   if (text) sayLine(ctx, c, text);
 }
+/** 데이터에 적힌 배경 연출을 바로 다음 대사 앞에 알린다 (이 방문 값 → 손님 기본값) */
+function sceneCue(ctx: Ctx, c: CustomerDef, key: 'leave' | 'fail'): void {
+  const cue = returnsFor(ctx, c)?.scene?.[key] ?? c.scene?.[key];
+  if (cue) ctx.emit({ type: 'sceneCue', cue });
+}
 function narrate(ctx: Ctx, text: string | undefined): void {
   if (text) ctx.emit({ type: 'line', speaker: null, text });
 }
@@ -338,6 +343,7 @@ function rejectProduct(ctx: Ctx, e: EncounterState, c: CustomerDef, product: Pro
   if (e.affinity <= 0 || noneLeft) {
     // 호감이 바닥났거나 더 보여 줄 상품이 없다: 손님이 돌아선다
     e.outcome = 'walked';
+    sceneCue(ctx, c, 'fail');
     say(ctx, c, pickLine(ctx, c, 'fail'));
     narrate(ctx, c.lines.failNote);
     finish(ctx, e);
@@ -389,6 +395,7 @@ export function doClose(ctx: Ctx, choice: CloseId): boolean {
     // 맞는 물건에 "이거예요"라고 해 놓고 바로 돌아서면 흐름이 끊긴다: 마음이 식었다는 지문으로 잇는다
     const cooled = strList(ctx.data, 'text.closeCooled');
     narrate(ctx, pickOne(deriveRng(ctx.state.seed, ctx.state.day, c.id, 'cooled'), cooled));
+    sceneCue(ctx, c, 'fail');
     say(ctx, c, pickLine(ctx, c, 'fail'));
     narrate(ctx, c.lines.failNote);
     finish(ctx, e);
@@ -490,6 +497,7 @@ function finish(ctx: Ctx, e: EncounterState): void {
     if (farewell) reactThought(ctx, c, 'farewell');
   }
   if (e.outcome === 'sold') {
+    sceneCue(ctx, c, 'leave');
     react(ctx, c, 'leave');
     reactThought(ctx, c, 'sold');
   }

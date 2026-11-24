@@ -1,5 +1,5 @@
 import products from '../data/products.json';
-import { Layer, circle, dimLayer, dither, ellipse, hline, line, lit, polygon, px, rect, stamp, vline, T } from './pixel';
+import { Layer, circle, dimLayer, dither, ellipse, ellipseLine, hline, line, lit, polygon, px, rect, remap, stamp, vline, T } from './pixel';
 import { KEYS, KEY_INDEX, type Mood, type PaletteKey } from './palette';
 import { drawMini } from './productIcon';
 
@@ -19,6 +19,28 @@ export interface SceneBake {
   front: Layer;
 }
 
+/**
+ * 이야기에 따라 바뀌는 배경(굽기에 들어가는 것). 대사의 서술과 맞춘다.
+ * - 2일차 "마네킹이 한 칸 옮겨져 있다": 드레스 마네킹이 거울 쪽으로 한 칸, 원래 자리엔 받침대 자국
+ * - 4일차 "마네킹이 세 개로 늘어 있다": 거울 앞에 단발 마네킹(서윤의 유니폼). 한서진이 보는 "단발 마네킹",
+ *   마지막 밤 "가장 왼쪽의 단발"이 이것이다
+ * - 바깥에서 온 색 "진열장의 장밋빛 하나가 영원히 회색이 된다": 선반의 첫 분홍 가방이 회색
+ */
+export interface SceneLayout { day: number; roseGray: boolean }
+export const DEFAULT_LAYOUT: SceneLayout = { day: 1, roseGray: false };
+export type MannequinKind = 'dress' | 'coat' | 'bob' | 'uniform';
+
+export function mannequinSlots(day: number): { cx: number; kind: MannequinKind }[] {
+  const out: { cx: number; kind: MannequinKind }[] = [];
+  if (day >= 4) out.push({ cx: 22, kind: 'bob' });
+  out.push({ cx: day >= 2 ? 48 : 66, kind: 'dress' });
+  out.push({ cx: 258, kind: 'coat' });
+  return out;
+}
+/** 잠깐 늘어나는 마네킹 자리: 진열대 끝(문 앞), 선반 앞 */
+export const EXTRA_MANNEQUIN_X = [292, 112];
+
+const isPink = (id: string): boolean => (products as { id: string; color: string | null }[]).find((p) => p.id === id)?.color === 'pink';
 const catalog = (shift: Shift, cat: string): string[] =>
   (products as { id: string; shift: string; category: string }[]).filter((p) => p.shift === shift && p.category === cat).map((p) => p.id);
 
@@ -211,12 +233,12 @@ function drawDoor(l: Layer): void {
 
 /** 왼쪽 마네킹(드레스) 머리 위 얼굴 연출. 평소엔 얼굴이 없지만, dread부터 고개가 손님 쪽으로 돌고 눈이 생긴다.
  * collapse·breach에서는 여기에 단발 가발(서윤의 보브)이 더해진다. 그 외 mood는 아무것도 그리지 않는다. */
-export function drawMannequinHeadOverlay(l: Layer, mood: Mood): void {
-  if (mood !== 'dread' && mood !== 'collapse' && mood !== 'breach') return;
-  const cx = 66;
+export function drawMannequinHeadOverlay(l: Layer, mood: Mood, cx = 66, force = false): void {
+  // force: 마지막 밤 "가장 왼쪽의 단발이 고개만 돌려 이쪽을 본다" (mood와 상관없이)
+  if (!force && mood !== 'dread' && mood !== 'collapse' && mood !== 'breach') return;
   // 고개가 1도트 왼쪽 아래로 기울어 정면을 본다
   ellipse(l, 'bone', cx - 1, 57, 4, 6);
-  if (mood !== 'dread') {
+  if (mood !== 'dread' || force) {
     // 보브 가발: 정수리 캡(48~54), 양옆 단발(52~59), 목 높이에서 평평하게 자른 밑단(60)
     ellipse(l, 'hair', cx, 51, 5, 3);
     hline(l, 'hair', cx - 4, 54, 9); // 정수리 캡과 단발 사이의 앞머리 줄
@@ -230,7 +252,7 @@ export function drawMannequinHeadOverlay(l: Layer, mood: Mood): void {
 }
 
 /** 마네킹 (키 크기 약 70). cx = 중심 x */
-function drawMannequin(l: Layer, cx: number, kind: 'dress' | 'coat', shift: Shift): void {
+export function drawMannequin(l: Layer, cx: number, kind: MannequinKind, shift: Shift): void {
   const ground = 117;
   // 접지 그림자 (AO)
   ellipse(l, 'mist', cx, ground + 1, 11, 2);
@@ -246,7 +268,26 @@ function drawMannequin(l: Layer, cx: number, kind: 'dress' | 'coat', shift: Shif
   lit(l, 'bone', 'paper', 'ash', cx - 4, 50, 9, 13);
   rect(l, 'ash', cx - 1, 62, 3, 3);
   hline(l, 'mist', cx - 1, 64, 3);
-  if (kind === 'dress') {
+  if (kind === 'bob' || kind === 'uniform') {
+    // 메종 뤼미에르 어드바이저 유니폼: 검은 재킷 · 흰 깃 · 왼가슴 명찰
+    polygon(l, 'shadow', [[cx - 9, 66], [cx - 3, 63], [cx + 3, 63], [cx + 9, 66], [cx + 12, 70], [cx + 11, 100], [cx - 11, 100], [cx - 12, 70]]);
+    lit(l, 'shadow', 'dusk', 'ink', cx - 12, 63, 25, 37);
+    polygon(l, 'paper', [[cx - 3, 63], [cx, 70], [cx - 6, 67]]);
+    polygon(l, 'paper', [[cx + 3, 63], [cx, 70], [cx + 6, 67]]);
+    vline(l, 'ink', cx, 70, 30);
+    rect(l, 'brass', cx - 7, 74, 4, 2);
+    px(l, 'brass-light', cx - 7, 74);
+    for (const y of [80, 88]) px(l, 'stone', cx + 2, y);
+    hline(l, 'ink', cx - 11, 100, 23);
+    if (kind === 'bob') {
+      // 서윤의 단발 (가발): 정수리 캡 · 양옆 단발 · 평평한 밑단
+      ellipse(l, 'hair', cx, 51, 5, 3);
+      hline(l, 'hair', cx - 4, 54, 9);
+      rect(l, 'hair', cx - 5, 52, 2, 8);
+      rect(l, 'hair', cx + 4, 52, 2, 8);
+      hline(l, 'ink', cx - 5, 60, 11);
+    }
+  } else if (kind === 'dress') {
     // 검은 원피스: 3톤 + 주름
     polygon(l, 'dusk', [[cx - 8, 66], [cx - 2, 64], [cx + 2, 64], [cx + 8, 66], [cx + 6, 78], [cx + 15, 106], [cx - 15, 106], [cx - 6, 78]]);
     lit(l, 'dusk', 'stone', 'shadow', cx - 15, 64, 31, 42);
@@ -281,8 +322,11 @@ type K = PaletteKey;
 
 // ───────────────────────── 선반, 진열
 
-function drawShelves(l: Layer, shift: Shift): void {
+const ROSE_TO_GRAY: Partial<Record<PaletteKey, PaletteKey>> = { rose: 'mist', 'rose-light': 'ash', 'rose-dark': 'stone' };
+
+function drawShelves(l: Layer, shift: Shift, roseGray = false): void {
   const bags = catalog(shift, 'bag');
+  let grayed = !roseGray;
   const pat = BAG_PATTERN[shift];
   SHELF_Y.forEach((y, ti) => {
     // 판: 윗면 하이라이트, 앞면, 밑면 그림자, 벽에 드리운 그림자
@@ -298,7 +342,17 @@ function drawShelves(l: Layer, shift: Shift): void {
     SHELF_X.forEach((cx, ci) => {
       const id = bags[(pat[ti * 3 + ci] as number) % bags.length] as string;
       hline(l, 'ink', cx - 6, y - 1, 13);
-      stamp(l, drawMini(id), cx - 8, y - 16);
+      let mini = drawMini(id);
+      if (!grayed && isPink(id)) {
+        // drawMini는 캐시를 돌려준다: 복사본에만 칠해야 진열 칸의 같은 가방이 회색이 되지 않는다
+        const copy = new Layer(mini.w, mini.h);
+        copy.data.set(mini.data);
+        mini = copy;
+        // 바깥에서 온 색이 가져간 장밋빛: 이 가방만 영원히 회색
+        for (const [from, to] of Object.entries(ROSE_TO_GRAY)) remap(mini, from as PaletteKey, to as PaletteKey);
+        grayed = true;
+      }
+      stamp(l, mini, cx - 8, y - 16);
     });
   });
 }
@@ -477,16 +531,20 @@ function lightPool(front: Layer): void {
 
 // ───────────────────────── 굽기
 
-export function bakeScene(shift: Shift): SceneBake {
+export function bakeScene(shift: Shift, layout: SceneLayout = DEFAULT_LAYOUT): SceneBake {
   const back = new Layer(W, H);
   const front = new Layer(W, H);
   drawWall(back);
   drawFloor(back);
   drawMirror(back);
   drawDoor(back);
-  drawShelves(back, shift);
-  drawMannequin(back, 66, 'dress', shift);
-  drawMannequin(back, 258, 'coat', shift);
+  drawShelves(back, shift, layout.roseGray);
+  if (layout.day >= 2 && layout.day < 4) {
+    // 옮겨진 마네킹의 원래 자리: 받침대 자국만 남았다
+    ellipseLine(back, 'stone', 66, 117, 8, 2);
+    dither(back, 'mist', null, 60, 117, 13, 1);
+  }
+  for (const m of mannequinSlots(layout.day)) drawMannequin(back, m.cx, m.kind, shift);
   drawPedestals(back, shift);
   drawCounter(front, shift);
   if (shift === 'dawn') {
@@ -598,5 +656,114 @@ export function drawSilhouette(l: Layer, level: number, palm: boolean): void {
     rect(l, 'ink', 293, 66, 1, 4);
     px(l, 'bone', 289, 77);
     px(l, 'bone', 292, 76);
+  }
+}
+
+// ───────────────────────── 이야기 연출 (가운데 층, 매 프레임)
+
+/**
+ * 손님 대사에 맞춰 잠깐 바뀌는 배경. 대사 문구가 아니라 데이터의 scene 설정값(customers.json)으로 연결된다.
+ * extra_one: 마네킹 하나가 늘어 있다 · extra_two: 둘 · uniform_added: 진열대 끝에 유니폼 마네킹
+ * all_turn_door: 마네킹들이 모두 문 쪽을 보고 있다
+ */
+export type SceneCueView = 'extra_one' | 'extra_two' | 'uniform_added' | 'all_turn_door';
+
+function headToDoor(l: Layer, cx: number, bob: boolean): void {
+  // 고개를 오른쪽(문)으로 돌린 옆얼굴: 머리가 1도트 오른쪽, 눈 하나, 코끝
+  ellipse(l, 'bone', cx + 1, 56, 4, 6);
+  lit(l, 'bone', 'paper', 'ash', cx - 3, 50, 9, 13);
+  if (bob) {
+    ellipse(l, 'hair', cx, 51, 5, 3);
+    rect(l, 'hair', cx - 5, 52, 3, 8);
+    hline(l, 'ink', cx - 5, 60, 4);
+  }
+  px(l, 'ink', cx + 3, 55);
+  px(l, 'ash', cx + 5, 57);
+}
+
+export function drawSceneCue(l: Layer, cue: SceneCueView, layout: SceneLayout, shift: Shift): void {
+  const t = new Layer(W, H);
+  const [a, b] = EXTRA_MANNEQUIN_X as [number, number];
+  if (cue === 'extra_one') drawMannequin(t, a, 'dress', shift);
+  else if (cue === 'extra_two') { drawMannequin(t, a, 'dress', shift); drawMannequin(t, b, 'coat', shift); }
+  else if (cue === 'uniform_added') drawMannequin(t, a, 'uniform', shift);
+  else for (const m of mannequinSlots(layout.day)) headToDoor(t, m.cx, m.kind === 'bob');
+  if (shift === 'dawn') lighting([t]); // 굽힌 배경과 같은 새벽 조명 아래에 서 있게
+  for (let i = 0; i < t.data.length; i++) if (t.data[i] !== T) l.data[i] = t.data[i] as number;
+}
+
+/**
+ * 새벽에 가끔 배경에 나타났다 사라지는 것들 (1초 남짓). 눈 · 손자국 · 핏자국 · 거울 속 얼굴.
+ * 자리는 벽의 어두운 구석·문 유리·거울 안. p = 0~1 진행도(나타나는 동안), reduced면 움직임 없이 그대로.
+ */
+export type ApparitionKind = 'eyes' | 'eyesMany' | 'hand' | 'blood' | 'mirrorFace';
+export interface Apparition { kind: ApparitionKind; x: number; y: number }
+export const APPARITION_SPOTS: readonly Apparition[] = [
+  { kind: 'eyes', x: 84, y: 24 }, // 샹들리에 왼쪽 벽 위 어둠
+  { kind: 'eyes', x: 252, y: 12 }, // 코트 마네킹 위 벽
+  { kind: 'eyesMany', x: 232, y: 14 }, // 선반 끝과 문 사이 위쪽 벽 (마네킹 머리보다 위)
+  { kind: 'hand', x: 292, y: 62 }, // 문 유리에 바깥에서 짚은 손
+  { kind: 'hand', x: 22, y: 78 }, // 거울 안쪽에서 짚은 손
+  { kind: 'blood', x: 98, y: 14 }, // 벽을 타고 흘러내리는 핏자국
+  { kind: 'blood', x: 228, y: 18 },
+  { kind: 'mirrorFace', x: 23, y: 52 }, // 거울 속에 서 있는 얼굴
+];
+
+function eye(l: Layer, x: number, y: number, shut: boolean): void {
+  if (shut) { hline(l, 'mist', x - 2, y, 5); return; }
+  hline(l, 'paper', x - 2, y, 5);
+  hline(l, 'bone', x - 1, y - 1, 3);
+  hline(l, 'bone', x - 1, y + 1, 3);
+  px(l, 'ink', x, y);
+}
+
+/** 그날 보이는 자리만: 4일차부터는 거울 앞에 단발 마네킹이 서서 거울 속이 가려진다 */
+export function apparitionSpots(day: number): readonly Apparition[] {
+  const mirrorBlocked = mannequinSlots(day).some((m) => m.cx < 42);
+  return APPARITION_SPOTS.filter((a) => !(mirrorBlocked && a.x < 42));
+}
+
+export function drawApparition(l: Layer, a: Apparition, p: number, reduced: boolean): void {
+  const shut = !reduced && p > 0.82; // 사라지기 직전에 눈을 감는다
+  switch (a.kind) {
+    case 'eyes':
+      eye(l, a.x - 4, a.y, shut);
+      eye(l, a.x + 4, a.y, shut);
+      break;
+    case 'eyesMany':
+      for (const [dx, dy, d] of [[0, 0, 0], [8, -6, 0.15], [-7, 9, 0.3], [6, 12, 0.45], [-3, 22, 0.6]] as const) {
+        if (!reduced && p < d) continue; // 하나씩 뜬다
+        eye(l, a.x + dx - 3, a.y + dy, shut);
+        eye(l, a.x + dx + 3, a.y + dy, shut);
+      }
+      break;
+    case 'hand': {
+      // 창백한 손바닥 + 손가락 다섯 (유리에 눌린 자국)
+      rect(l, 'bone', a.x - 3, a.y, 7, 6);
+      for (const [dx, h] of [[-3, 4], [-1, 6], [1, 6], [3, 5]] as const) vline(l, 'bone', a.x + dx, a.y - h, h);
+      line(l, 'bone', a.x - 4, a.y + 2, a.x - 7, a.y - 1); // 엄지
+      dither(l, 'ash', null, a.x - 3, a.y, 7, 6);
+      hline(l, 'mist', a.x - 3, a.y + 6, 7);
+      break;
+    }
+    case 'blood': {
+      // 위에서 번진 얼룩이 한 줄기로 흘러내린다
+      ellipse(l, 'wine', a.x, a.y, 3, 2);
+      px(l, 'wine-dark', a.x + 2, a.y + 1);
+      const len = reduced ? 22 : Math.round(4 + 22 * Math.min(1, p * 1.6));
+      vline(l, 'wine', a.x, a.y, len);
+      vline(l, 'wine-dark', a.x + 1, a.y + 2, Math.max(0, len - 6));
+      vline(l, 'wine', a.x - 2, a.y + 1, Math.round(len * 0.4));
+      px(l, 'wine', a.x, a.y + len + 1); // 맺힌 방울
+      break;
+    }
+    case 'mirrorFace':
+      // 거울 속, 내 쪽을 보는 창백한 얼굴
+      ellipse(l, 'bone', a.x, a.y, 5, 7);
+      dither(l, 'ash', null, a.x - 5, a.y + 2, 11, 5);
+      rect(l, 'ink', a.x - 3, a.y - 2, 2, 2);
+      rect(l, 'ink', a.x + 2, a.y - 2, 2, 2);
+      hline(l, 'ink', a.x - 1, a.y + 4, 3);
+      break;
   }
 }

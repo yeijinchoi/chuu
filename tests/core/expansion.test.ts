@@ -104,3 +104,32 @@ describe('새벽 수칙 12~17', () => {
     expect(violations(act(toClose('rain'), { type: 'close', choice: 'checkout' }))).toEqual([]);
   });
 });
+
+describe('대사에 맞춘 배경 연출 신호', () => {
+  it('얼굴 없는 여자: 퇴장 지문 바로 앞에 sceneCue가 온다', () => {
+    const g = rig('faceless', 'dawn', 3);
+    act(g, { type: 'greet', style: 'quiet' });
+    act(g, { type: 'probe', probe: 'askCategory' });
+    act(g, { type: 'probe', probe: 'askOccasion' });
+    act(g, { type: 'propose', productId: encOf(g).offered[0]! });
+    let ev = act(g, { type: 'close', choice: 'boxRed' });
+    if (encOf(g).step === 'regularOffer') ev = [...ev, ...act(g, { type: 'regularOffer', accept: false })]; // 퇴장은 단골 권유 뒤
+    const i = ev.findIndex((e) => e.type === 'sceneCue');
+    expect(ev[i]).toEqual({ type: 'sceneCue', cue: 'extra_one_vanish' });
+    const leave = customer('faceless').reactions!.leave!.replace(/^>\s*/, '');
+    const j = ev.findIndex((e) => e.type === 'line' && e.text === leave);
+    expect(j).toBeGreaterThan(i);
+  });
+
+  it('바깥에서 온 색에게 빈 상자를 팔면 roseGray 표시가 남는다 (배경의 장밋빛 하나가 회색)', () => {
+    const g = rig('colour', 'dawn', 3);
+    act(g, { type: 'greet', style: 'quiet' });
+    act(g, { type: 'probe', probe: 'askCategory' });
+    act(g, { type: 'probe', probe: 'observe' });
+    for (let i = 0; i < 3 && !encOf(g).offered.includes('empty_box'); i++) act(g, { type: 'reroll' });
+    act(g, { type: 'propose', productId: 'empty_box' });
+    act(g, { type: 'close', choice: 'checkout' });
+    expect(encOf(g).outcome).toBe('sold');
+    expect(st(g).flags['roseGray']).toBe(true);
+  });
+});

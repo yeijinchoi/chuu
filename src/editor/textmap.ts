@@ -22,7 +22,7 @@ const SKIP_KEYS = new Set([
   'id', 'shift', 'category', 'color', 'greetPref', 'form', 'speaksVia', 'sprite', 'rules', 'traits', 'onlyProduct',
   'pref', 'flag', 'clue', 'book', 'customerId', 'prefers', 'dislikes', 'likes', 'template', 'stage', 'forbid', 'require',
   'exempts', 'motif', 'neglectEvent', 'draftLines', 'day', 'visit', 'best', 'time',
-  'accepts', 'condition', 'candidates', // 정답 상품·일정 조건은 글이 아니라 설정이다
+  'accepts', 'condition', 'candidates', 'scene', // 정답 상품·일정 조건·배경 연출은 글이 아니라 설정이다
 ]);
 /** SKIP 키이지만 그 안에 글이 들어 있는 예외: customers.care.forbid[].note */
 const KEEP_UNDER_SKIP = new Set(['note']);
