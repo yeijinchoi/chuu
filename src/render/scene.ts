@@ -231,6 +231,17 @@ function drawDoor(l: Layer): void {
   hline(l, 'ink', x0 - 2, bot, x1 - x0 + 4);
 }
 
+/** 서윤의 단발 가발: 정수리 캡 + 이마를 덮는 앞머리 + 턱선(58)에서 끝나는 옆머리. 턱 아래를 막지 않아야 얼굴이 드러난다 */
+function bobWig(l: Layer, cx: number, faceRight = false): void {
+  ellipse(l, 'hair', cx, 51, 6, 3);
+  rect(l, 'hair', cx - 5, 50, 11, 3); // 앞머리 (눈썹 위까지)
+  hline(l, 'shadow', cx - 4, 53, 9); // 앞머리 끝 그림자
+  rect(l, 'hair', faceRight ? cx - 6 : cx - 6, 52, 2, 7); // 왼쪽 옆머리
+  rect(l, 'hair', faceRight ? cx + 6 : cx + 5, 52, 2, 7); // 오른쪽 옆머리
+  px(l, 'shadow', cx - 6, 58);
+  px(l, 'shadow', cx + (faceRight ? 7 : 6), 58);
+}
+
 /** 왼쪽 마네킹(드레스) 머리 위 얼굴 연출. 평소엔 얼굴이 없지만, dread부터 고개가 손님 쪽으로 돌고 눈이 생긴다.
  * collapse·breach에서는 여기에 단발 가발(서윤의 보브)이 더해진다. 그 외 mood는 아무것도 그리지 않는다. */
 export function drawMannequinHeadOverlay(l: Layer, mood: Mood, cx = 66, force = false): void {
@@ -239,12 +250,7 @@ export function drawMannequinHeadOverlay(l: Layer, mood: Mood, cx = 66, force = 
   // 고개가 1도트 왼쪽 아래로 기울어 정면을 본다
   ellipse(l, 'bone', cx - 1, 57, 4, 6);
   if (mood !== 'dread' || force) {
-    // 보브 가발: 정수리 캡(48~54), 양옆 단발(52~59), 목 높이에서 평평하게 자른 밑단(60)
-    ellipse(l, 'hair', cx, 51, 5, 3);
-    hline(l, 'hair', cx - 4, 54, 9); // 정수리 캡과 단발 사이의 앞머리 줄
-    rect(l, 'hair', cx - 5, 52, 2, 8);
-    rect(l, 'hair', cx + 4, 52, 2, 8);
-    hline(l, 'ink', cx - 5, 60, 11);
+    bobWig(l, cx);
   }
   // 눈 두 개 (얼굴 중앙, 가발 안쪽)
   px(l, 'ink', cx - 2, 55);
@@ -269,24 +275,21 @@ export function drawMannequin(l: Layer, cx: number, kind: MannequinKind, shift: 
   rect(l, 'ash', cx - 1, 62, 3, 3);
   hline(l, 'mist', cx - 1, 64, 3);
   if (kind === 'bob' || kind === 'uniform') {
-    // 메종 뤼미에르 어드바이저 유니폼: 검은 재킷 · 흰 깃 · 왼가슴 명찰
-    polygon(l, 'shadow', [[cx - 9, 66], [cx - 3, 63], [cx + 3, 63], [cx + 9, 66], [cx + 12, 70], [cx + 11, 100], [cx - 11, 100], [cx - 12, 70]]);
-    lit(l, 'shadow', 'dusk', 'ink', cx - 12, 63, 25, 37);
-    polygon(l, 'paper', [[cx - 3, 63], [cx, 70], [cx - 6, 67]]);
-    polygon(l, 'paper', [[cx + 3, 63], [cx, 70], [cx + 6, 67]]);
-    vline(l, 'ink', cx, 70, 30);
-    rect(l, 'brass', cx - 7, 74, 4, 2);
-    px(l, 'brass-light', cx - 7, 74);
-    for (const y of [80, 88]) px(l, 'stone', cx + 2, y);
-    hline(l, 'ink', cx - 11, 100, 23);
-    if (kind === 'bob') {
-      // 서윤의 단발 (가발): 정수리 캡 · 양옆 단발 · 평평한 밑단
-      ellipse(l, 'hair', cx, 51, 5, 3);
-      hline(l, 'hair', cx - 4, 54, 9);
-      rect(l, 'hair', cx - 5, 52, 2, 8);
-      rect(l, 'hair', cx + 4, 52, 2, 8);
-      hline(l, 'ink', cx - 5, 60, 11);
-    }
+    // 메종 뤼미에르 어드바이저 유니폼. 드레스 마네킹과 같은 비율: 잘록한 허리 + A라인 치마
+    polygon(l, 'shadow', [[cx - 8, 66], [cx - 2, 64], [cx + 2, 64], [cx + 8, 66], [cx + 6, 78], [cx + 13, 106], [cx - 13, 106], [cx - 6, 78]]);
+    lit(l, 'shadow', 'dusk', 'ink', cx - 13, 64, 27, 42);
+    // 짧은 재킷: 허리 아래로 살짝 퍼지는 밑단 + 흰 깃 + 왼가슴 명찰
+    polygon(l, 'dusk', [[cx - 6, 78], [cx + 6, 78], [cx + 8, 84], [cx - 8, 84]]);
+    hline(l, 'ink', cx - 8, 84, 17);
+    polygon(l, 'paper', [[cx - 2, 64], [cx + 2, 64], [cx, 70]]);
+    px(l, 'bone', cx - 3, 65);
+    px(l, 'bone', cx + 3, 65);
+    rect(l, 'brass', cx - 6, 70, 3, 2);
+    px(l, 'brass-light', cx - 6, 70);
+    hline(l, 'stone', cx - 6, 78, 13); // 허리선
+    for (const dx of [-7, -2, 3, 8]) line(l, 'ink', cx + dx * 0.5, 86, cx + dx * 1.2, 105); // 치마 주름
+    hline(l, 'ink', cx - 13, 106, 27);
+    if (kind === 'bob') bobWig(l, cx);
   } else if (kind === 'dress') {
     // 검은 원피스: 3톤 + 주름
     polygon(l, 'dusk', [[cx - 8, 66], [cx - 2, 64], [cx + 2, 64], [cx + 8, 66], [cx + 6, 78], [cx + 15, 106], [cx - 15, 106], [cx - 6, 78]]);
@@ -672,11 +675,7 @@ function headToDoor(l: Layer, cx: number, bob: boolean): void {
   // 고개를 오른쪽(문)으로 돌린 옆얼굴: 머리가 1도트 오른쪽, 눈 하나, 코끝
   ellipse(l, 'bone', cx + 1, 56, 4, 6);
   lit(l, 'bone', 'paper', 'ash', cx - 3, 50, 9, 13);
-  if (bob) {
-    ellipse(l, 'hair', cx, 51, 5, 3);
-    rect(l, 'hair', cx - 5, 52, 3, 8);
-    hline(l, 'ink', cx - 5, 60, 4);
-  }
+  if (bob) bobWig(l, cx + 1, true);
   px(l, 'ink', cx + 3, 55);
   px(l, 'ash', cx + 5, 57);
 }
