@@ -107,7 +107,7 @@ export function titleScreen(host: HTMLElement, o: { canResume: boolean; corrupt:
   return ov;
 }
 
-/** S00 이름 입력: 최대 6자, 기본값 신입 */
+/** S00 이름 입력: 최대 6자, 기본값 정연 (strings defaultPlayerName) */
 export function nameScreen(host: HTMLElement, onDone: (name: string) => void): Overlay {
   const root = el('div', 'screen screen--name');
   const box = el('div', 'panel name');

@@ -195,6 +195,8 @@ export class Phone {
   }
   get isBookOpen(): boolean { return this.bookOpen; }
   private bookPulse = false;
+  /** 문자 마치기·퇴근하기를 한 번 눌렀다: 확인을 기다린다 (홈 바 바로 위라 잘못 눌리기 쉬워서) */
+  private confirmFinish: 'finishTexting' | 'finishAftercare' | null = null;
   /** 새벽인데 검은 수첩이 아직 닫혀 있다: 메모만 열 수 있다 */
   private get bookLocked(): boolean { return this.s.shift === 'dawn' && !this.bookOpen; }
   unlockDawnRules(): void { this.dawnRules = true; this.dawnNew = true; this.pulse('notes'); }
@@ -209,6 +211,7 @@ export class Phone {
   get locked(): boolean { return this.inflight > 0 || this.host.busy(); }
 
   openTab(tab: PhoneTab, focus = false): void {
+    this.confirmFinish = null;
     if (this.bookLocked && tab !== 'notes') { this.openHome(); return; } // 덮개를 벗기기 전에는 검은 수첩에 못 들어간다
     this.tab = tab;
     this.home = false;
@@ -223,7 +226,7 @@ export class Phone {
   }
 
   /** 홈 화면으로 */
-  openHome(): void { this.home = true; this.view = null; this.panelOpen = false; this.refresh(); }
+  openHome(): void { this.confirmFinish = null; this.home = true; this.view = null; this.panelOpen = false; this.refresh(); }
 
   pulse(tab: PhoneTab): void {
     const app = APP_OF[tab];
@@ -511,15 +514,28 @@ export class Phone {
     if (this.home || (this.view !== null && !this.closing)) return; // 대화방에서는 ‹로 목록에 돌아와 마친다
     const p = this.s.phase;
     const lock = this.locked;
-    const done = (label: string, a: Action): HTMLButtonElement => {
-      const b = button('phone-btn phone-btn--primary', label, () => { if (!this.locked) this.host.dispatch(a); });
+    // 처음 누르면 확인 상자가 뜬다. 확인 버튼은 위에, 취소는 아래(홈 바 쪽)에 둬서 또 잘못 눌러도 취소가 눌린다
+    const done = (label: string, type: 'finishTexting' | 'finishAftercare'): HTMLElement => {
+      if (this.confirmFinish === type && !lock) {
+        const box = el('div', 'finish-confirm');
+        box.setAttribute('role', 'alertdialog');
+        box.setAttribute('aria-label', label);
+        box.append(el('div', 'finish-confirm__msg', t(`phone.confirmFinish.${type}`)));
+        const yes = button('phone-btn phone-btn--primary', label, () => { this.confirmFinish = null; if (!this.locked) this.host.dispatch({ type }); });
+        const no = button('phone-btn', t('phone.confirmFinish.cancel'), () => { this.confirmFinish = null; this.refresh(); });
+        box.append(yes, no);
+        window.setTimeout(() => no.focus({ preventScroll: true }), 0);
+        return box;
+      }
+      const b = button('phone-btn phone-btn--primary', label, () => { if (!this.locked) { this.confirmFinish = type; this.refresh(); } });
       if (lock) { b.setAttribute('aria-disabled', 'true'); b.title = t('phone.waitReply'); }
       return b;
     };
+    if (p.kind !== 'texting' && p.kind !== 'aftercare') this.confirmFinish = null;
     if (p.kind === 'texting') {
-      this.foot.append(this.counter(), done(t('phone.finishTexting'), { type: 'finishTexting' }));
+      this.foot.append(this.counter(), done(t('phone.finishTexting'), 'finishTexting'));
     } else if (p.kind === 'aftercare') {
-      this.foot.append(this.aftercareCounter(), done(t('phone.finishAftercare'), { type: 'finishAftercare' }));
+      this.foot.append(this.aftercareCounter(), done(t('phone.finishAftercare'), 'finishAftercare'));
     } else if (p.kind === 'closingText' && this.closing) {
       const row = el('div', 'phone__choices');
       [t('choices.closingReply.reply'), t('choices.closingReply.ignore')].forEach((label, i) => {

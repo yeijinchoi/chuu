@@ -7,7 +7,7 @@
     "label": "방문 일정을 말씀해 주세요 무대"
   },
   "unknown": "아직 몰라요",
-  "defaultPlayerName": "신입",
+  "defaultPlayerName": "정연",
   "briefing": {
     "speaker": "마담 로즈",
     "afternoon": {
@@ -429,6 +429,11 @@
     "aftercareLeft": "감사 문자 {left}/{total}",
     "finishTexting": "문자 마치기",
     "finishAftercare": "퇴근하기",
+    "confirmFinish": {
+      "finishTexting": "문자를 마칠까요?\n오늘은 더 보낼 수 없어요.",
+      "finishAftercare": "퇴근할까요?\n남은 감사 문자는 보낼 수 없어요.",
+      "cancel": "취소"
+    },
     "noChat": "아직 답장이 없어요",
     "sendLabel": "보내기",
     "sendWait": "전송 중…",

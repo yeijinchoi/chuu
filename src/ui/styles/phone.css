@@ -441,3 +441,10 @@ html[data-text='pad'] .notif__text {
 html[data-text='pad'] .phone .thread-row__last, html[data-text='pad'] .phone .note-row__line { -webkit-line-clamp: 2; }
 html[data-text='pad'] .phone :is(.seg__btn, .card-pick__btn) { height: 28px; }
 html[data-text='pad'] .phone .search { height: 30px; }
+
+/* 문자 마치기·퇴근하기 확인 (홈 바 바로 위라 잘못 눌리기 쉽다): 확인은 위, 취소는 아래 */
+.finish-confirm { display: flex; flex-direction: column; gap: 6px; width: 100%; padding: 8px; border-radius: 14px; background: var(--c-field); }
+.finish-confirm__msg { font-size: 11px; line-height: 15px; text-align: center; white-space: pre-wrap; word-break: keep-all; color: var(--color-phone-text); }
+.finish-confirm .phone-btn:not(.phone-btn--primary) { background: transparent; box-shadow: inset 0 0 0 1px var(--c-sub); }
+html[data-layout='mobile'] .finish-confirm__msg { font-family: var(--font-m-body); font-size: var(--text-m-body); line-height: var(--lh-m-body); }
+html[data-text='pad'] .finish-confirm__msg { font-size: var(--pad-fs); line-height: var(--pad-lh); }
