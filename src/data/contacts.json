@@ -3,12 +3,12 @@
     "id": "kang",
     "name": "강도윤",
     "book": "afternoon",
-    "memo": "신상 나오면 무조건 연락. 바쁨.",
+    "memo": "신상 나오면 무조건 연락. 인사 문자 금지.",
     "customerId": "kang",
     "prefers": "new_arrival",
     "dislikes": "greeting",
     "replies": {
-      "prefer": "오 신상? 세 시 반쯤 갈게요.",
+      "prefer": "세 시 반쯤 갈게요.",
       "neutral": "네 이따 들를게요.",
       "dislike": "아 네… 바빠서요.",
       "busy": "이번 주는 일정이 꽉 찼어요. 마지막 날쯤 들를게요."
@@ -34,12 +34,12 @@
     "id": "jin",
     "name": "진영숙",
     "book": "afternoon",
-    "memo": "VVIP. 말 많은 거 싫어하심. 탄산수. 레몬 없이.",
+    "memo": "VVIP. 품위가 중요. 레몬 없이 탄산수.",
     "customerId": "jin",
     "prefers": "private",
     "dislikes": "new_arrival",
     "replies": {
-      "prefer": "다섯 시 반. 조용히 보고 싶네요.",
+      "prefer": "다섯 시 반에 방문할게요. 조용히 보고 싶네요.",
       "neutral": "시간 되면 들를게요.",
       "dislike": "단체 문자는 사양할게요.",
       "busy": "오늘은 못 가요. 마지막 날에 갈게요."
@@ -65,7 +65,7 @@
     "id": "oh",
     "name": "오미란",
     "book": "afternoon",
-    "memo": "주말에만 오심.",
+    "memo": "문자 영업 잘 안 먹힘. 항상 워크인으로 방문.",
     "customerId": null,
     "prefers": null,
     "dislikes": null,
