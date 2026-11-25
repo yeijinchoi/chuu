@@ -7,7 +7,7 @@ import {
 import { drawCustomer, drawOutsideColour, type SpriteDef } from './customerSprite';
 import { createFlicker, scanlines, type Flicker } from './effects';
 import { createLoop, type Loop } from './loop';
-import { spriteFor, type CustomerSprite } from './sprites';
+import { clearSpriteCache, spriteFor, type CustomerSprite } from './sprites';
 
 /** 오프스크린 320×180 버퍼에 그린 뒤 화면 캔버스로 복사한다. 정적 배경은 교대·mood별로 한 번만 굽는다. */
 export class Renderer {
@@ -24,7 +24,14 @@ export class Renderer {
   private buffer: HTMLCanvasElement;
   private bctx: CanvasRenderingContext2D;
   private bakes = new Map<Shift, SceneBake>();
-  private baked = new Map<string, HTMLCanvasElement>();
+  /**
+   * 굽힌 정적 레이어는 캔버스가 아니라 픽셀(ImageData)로 들고 있다가 매 장마다 다시 찍는다.
+   * 아이패드 사파리는 탭이 뒤로 가면 화면에 붙지 않은 캔버스의 내용을 지워 버려서,
+   * 한 번 그려 두고 재사용하던 배경·카운터가 검게 비는 일이 있었다.
+   */
+  private baked = new Map<string, ImageData>();
+  private frontCv!: HTMLCanvasElement;
+  private frontCx!: CanvasRenderingContext2D;
   private luts = new Map<string, Uint8Array>();
   private mid = new Layer(W, H);
   private top = new Layer(W, H);
@@ -44,6 +51,19 @@ export class Renderer {
     this.topCv = this.canvas();
     this.midImg = this.ctx2d(this.midCv).createImageData(W, H);
     this.topImg = this.ctx2d(this.topCv).createImageData(W, H);
+    this.frontCv = this.canvas();
+    this.frontCx = this.ctx2d(this.frontCv);
+    // 탭이 다시 보이면 화면 밖 캔버스로 만든 캐시(디더·분위기 색 스프라이트)를 버리고 새로 만든다
+    const refresh = (): void => { if (document.visibilityState === 'visible') this.invalidate(); };
+    document.addEventListener('visibilitychange', refresh);
+    window.addEventListener('pageshow', refresh);
+  }
+
+  /** 화면 밖 캔버스 캐시를 모두 버린다 (사파리가 지웠을 수 있다). 다음 장에서 다시 만든다 */
+  invalidate(): void {
+    this.ditherCache.clear();
+    clearSpriteCache();
+    this.acc = 1;
   }
 
   private canvas(): HTMLCanvasElement {
@@ -248,19 +268,16 @@ export class Renderer {
   }
 
   /** 정적 레이어를 (교대, mood, 빠진 색)별로 한 번만 래스터화한다 */
-  private bakedCanvas(which: 'back' | 'front', lut: Uint8Array, sig: string): HTMLCanvasElement {
+  private bakedImage(which: 'back' | 'front', lut: Uint8Array, sig: string): ImageData {
     const key = `${this.shift}|${which}|${sig}`;
-    let cv = this.baked.get(key);
-    if (cv) return cv;
+    let img = this.baked.get(key);
+    if (img) return img;
     let bake = this.bakes.get(this.shift);
     if (!bake) { bake = bakeScene(this.shift, this.layout); this.bakes.set(this.shift, bake); }
-    cv = this.canvas();
-    const cx = this.ctx2d(cv);
-    const img = cx.createImageData(W, H);
+    img = this.bctx.createImageData(W, H);
     toImageData(bake[which], lut, img);
-    cx.putImageData(img, 0, 0);
-    this.baked.set(key, cv);
-    return cv;
+    this.baked.set(key, img);
+    return img;
   }
 
   update(dt: number): void {
@@ -308,7 +325,7 @@ export class Renderer {
       this.lastSig = sig;
     }
     const b = this.bctx;
-    b.drawImage(this.bakedCanvas('back', lut, sig), 0, 0);
+    b.putImageData(this.bakedImage('back', lut, sig), 0, 0); // 맨 아래 층: 버퍼를 통째로 덮어쓴다
     b.drawImage(this.midCv, 0, 0);
     if (this.customer?.sprite.draw === 'drawOutsideColour') drawOutsideColour(b, this.t, this.reduced);
     if (this.scan || this.mood === 'collapse') scanlines(b, W, H);
@@ -320,7 +337,8 @@ export class Renderer {
     this.drawApparitionArt(target, k);
     const sp = this.imageSprite();
     if (sp && this.customer) this.drawImageSprite(target, sp, this.customer.id);
-    target.drawImage(this.bakedCanvas('front', lut, sig), 0, 0, W * k, H * k);
+    this.frontCx.putImageData(this.bakedImage('front', lut, sig), 0, 0);
+    target.drawImage(this.frontCv, 0, 0, W * k, H * k);
     target.drawImage(this.topCv, 0, 0, W * k, H * k);
   }
 

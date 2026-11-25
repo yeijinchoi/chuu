@@ -88,6 +88,8 @@ function nearestKey(r: number, g: number, b: number): PaletteKey {
 }
 
 const cache = new Map<string, HTMLCanvasElement>();
+/** 사파리가 화면 밖 캔버스를 비웠을 수 있을 때(탭이 다시 보일 때) 부른다 */
+export function clearSpriteCache(): void { cache.clear(); }
 
 /** mood가 적용된 스프라이트 캔버스. calm이면 원본 그대로. */
 export function spriteFor(id: string, s: CustomerSprite, mood: Mood, blink = false): CanvasImageSource {
