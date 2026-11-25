@@ -96,3 +96,39 @@ html, body.editor { margin: 0; height: 100%; background: var(--color-bg); color:
 .ed-how summary { cursor: pointer; color: var(--steel-light); }
 .ed-how ol { margin: 6px 0 0; padding-left: 18px; }
 .ed-dialog__sub { margin-top: 4px; font-size: 9px; color: var(--color-text-muted); }
+
+/* 보기 전환: 대본 / 목록 */
+.ed-seg { display: inline-flex; border: 2px solid var(--color-border); }
+.ed-seg__btn { min-height: 30px; padding: 0 12px; background: transparent; border: 0; cursor: pointer; white-space: nowrap; color: var(--color-text-muted); }
+.ed-seg__btn + .ed-seg__btn { border-left: 2px solid var(--color-border); }
+.ed-seg__btn[aria-pressed='true'] { background: var(--brass-dark); color: var(--paper); font-weight: 700; }
+.ed-seg__btn:focus-visible { outline: 2px solid var(--steel); outline-offset: 2px; }
+
+/* 대본 보기: 장면 제목 아래로 "누가 · 무슨 상황" | 글 */
+.ed-script-hint { margin: -4px 0 14px; font-size: 9px; color: var(--color-text-muted); }
+.ed-scene { margin: 0 0 22px; }
+.ed-scene__title { position: sticky; top: -12px; z-index: 2; display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 10px; margin: 0 0 6px; padding: 8px 0 6px; font-size: 12px; color: var(--color-trim); background: var(--color-bg); border-bottom: 2px solid var(--color-border); }
+.ed-scene__sub { font-size: 9px; font-weight: 400; color: var(--color-text-muted); }
+.ed-line { display: grid; grid-template-columns: 170px minmax(0, 1fr); gap: 16px; padding: 2px 8px; border-left: 4px solid transparent; }
+.ed-line + .ed-line { border-top: 1px solid var(--color-border); }
+.ed-line[data-changed='true'] { border-left-color: var(--brass); background: color-mix(in srgb, var(--brass-dark) 18%, transparent); }
+.ed-line__who { min-width: 0; display: flex; flex-direction: column; gap: 1px; padding-top: 5px; }
+/* 대본처럼: 평소엔 글만 보이고, 올리거나 누르면 칸이 드러난다. 글자 수는 고치는 중에만 */
+.ed-line .ed-ta { min-height: 0; padding: 4px 6px; resize: none; background: transparent; border-color: transparent; }
+.ed-line:hover .ed-ta { border-color: var(--color-border); }
+.ed-line .ed-ta:focus { background: var(--color-bg); border-color: var(--steel); }
+.ed-line .ed-row__foot { min-height: 0; padding-left: 6px; }
+.ed-line .ed-count { display: none; }
+.ed-line:focus-within .ed-count { display: inline; }
+.ed-line .ed-orig { margin-left: 6px; }
+.ed-line__who b { color: var(--paper); overflow-wrap: anywhere; }
+.ed-line__what { font-size: 9px; line-height: 1.35; color: var(--color-text-muted); overflow-wrap: anywhere; }
+.ed-line[data-kind='narration'] .ed-line__who b { color: var(--mist); font-weight: 400; }
+.ed-line[data-kind='thought'] .ed-line__who b { color: var(--steel-light); font-weight: 400; }
+.ed-line[data-kind='note'] .ed-line__who b { color: var(--color-trim); }
+.ed-line[data-kind='narration'] .ed-ta { color: var(--color-text-muted); }
+.ed-line[data-kind='thought'] .ed-ta { color: var(--steel-light); }
+@media (max-width: 900px) {
+  .ed-line { grid-template-columns: minmax(0, 1fr); gap: 2px; }
+  .ed-line__who { flex-direction: row; gap: 8px; align-items: baseline; padding-top: 0; }
+}

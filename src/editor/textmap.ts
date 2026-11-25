@@ -176,6 +176,7 @@ const REACTION_KEYS: Record<string, string> = {
   deptOnly: '카테고리만 맞는 상품(거절)',
   wrong: '다른 카테고리 상품(거절)',
   overBudget: '예산 초과(거절)',
+  notThis: '찾는 물건과 다른 상품(거절)',
   tryOn: '시착',
   box: '포장',
   red: '빨간 상자',
@@ -276,7 +277,9 @@ export function labelOf(leaf: Leaf, data: DataSet): Label {
     }
     case 'contacts': {
       const c = (data.contacts as { id: string; name: string }[]).find((x) => x.id === at(0));
-      return { group: '연락처(명부·검은 수첩)', section: c?.name ?? at(0), name: at(1) === 'replies' ? `문자 답장 · ${at(2)}` : (({ name: '이름', address: '주소', memo: '서윤의 메모', memoStruck: '취소선 메모' }) as Record<string, string>)[at(1)] ?? at(1) };
+      const REPLY: Record<string, string> = { prefer: '좋아하는 문자에', neutral: '그저 그런 문자에', dislike: '싫어하는 문자에', busy: '바빠서 못 올 때', any: '어떤 문자에든' };
+      if (at(1) === 'repliesByDay') return { group: '연락처(명부·검은 수첩)', section: c?.name ?? at(0), name: `${at(2)}일차 답장 · ${REPLY[at(3)] ?? at(3)}` };
+      return { group: '연락처(명부·검은 수첩)', section: c?.name ?? at(0), name: at(1) === 'replies' ? `답장 · ${REPLY[at(2)] ?? at(2)}` : (({ name: '이름', address: '주소', memo: '서윤의 메모', memoStruck: '취소선 메모' }) as Record<string, string>)[at(1)] ?? at(1) };
     }
     case 'rules':
       return { group: '수칙', section: `수칙 ${at(0)}`, name: at(1) === 'reveal' ? '3~4일차에 더 읽히는 문장' : '수칙 문장' };

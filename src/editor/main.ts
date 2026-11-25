@@ -3,6 +3,12 @@ import '../ui/styles/tokens.css';
 import './editor.css';
 import { publishChanges, type PublishResult } from './github';
 import { LIVE, loadPatch, PATCH_KEY, savePatch } from './store';
+import { buildScript, type DayInfo, type ScriptChapter, type ScriptLine } from './script';
+import day1 from '../data/day1.json';
+import day2 from '../data/day2.json';
+import day3 from '../data/day3.json';
+import day4 from '../data/day4.json';
+import day5 from '../data/day5.json';
 import {
   applyPatch, collectAll, FILE_IDS, FILE_NAMES, isNarration, labelOf, missingPlaceholders, splitId,
   type DataSet, type Label, type Leaf, type Patch,
@@ -35,6 +41,13 @@ const ORDER = new Map(ROWS.map((r, i) => [r.id, i]));
 ROWS.sort((a, b) => (a.label.group === b.label.group ? rank(a) - rank(b) : 0) || (ORDER.get(a.id) as number) - (ORDER.get(b.id) as number));
 const ROW_BY_ID = new Map(ROWS.map((r) => [r.id, r]));
 
+/** 대본 보기: n일차 → 장면 → 게임에 나오는 순서대로 */
+const SCRIPT = buildScript(ORIGINAL, [day1, day2, day3, day4, day5] as unknown as DayInfo[], LEAVES);
+const REST_KEY = 'rest';
+const chapterIds = (c: ScriptChapter): string[] => c.scenes.flatMap((s) => s.lines.map((l) => l.id));
+const MODE_KEY = 'closing-time.editor.mode';
+const savedMode = ((): 'script' | 'list' => { try { return localStorage.getItem(MODE_KEY) === 'list' ? 'list' : 'script'; } catch { return 'script'; } })();
+
 // ------------------------------------------------------------ 상태
 const state = {
   patch: {} as Patch,
@@ -42,6 +55,8 @@ const state = {
   save: 'unknown' as 'unknown' | 'ok' | 'failed',
   savedAt: '',
   group: null as string | null,
+  mode: savedMode,
+  chapter: 'day1',
   query: '',
   changedOnly: false,
   limit: 60,
@@ -121,11 +136,11 @@ const search = el('input', 'ed-search');
 search.type = 'search';
 search.placeholder = '검색: 대사·경로·손님 이름';
 search.setAttribute('aria-label', '문구 검색');
-search.addEventListener('input', () => { state.query = search.value.trim().toLowerCase(); state.limit = 60; renderList(); });
+search.addEventListener('input', () => { state.query = search.value.trim().toLowerCase(); state.limit = 60; if (state.mode === 'script') renderSide(); renderList(); });
 const changedToggle = el('label', 'ed-check');
 const changedBox = el('input');
 changedBox.type = 'checkbox';
-changedBox.addEventListener('change', () => { state.changedOnly = changedBox.checked; state.limit = 60; renderList(); });
+changedBox.addEventListener('change', () => { state.changedOnly = changedBox.checked; state.limit = 60; if (state.mode === 'script') renderSide(); renderList(); });
 changedToggle.append(changedBox, el('span', '', '수정한 것만'));
 const status = el('div', 'ed-status');
 status.setAttribute('aria-live', 'polite');
@@ -147,7 +162,23 @@ actions.append(
   btn('불러오기', 'ed-btn', () => importDialog.showModal()),
   btn('모두 되돌리기', 'ed-btn ed-btn--danger', resetAll),
 );
-top.append(title, search, changedToggle, status, actions);
+const modeSeg = el('div', 'ed-seg');
+modeSeg.setAttribute('role', 'group');
+modeSeg.setAttribute('aria-label', '보기');
+const modeBtns = (['script', 'list'] as const).map((m) => {
+  const b = btn(m === 'script' ? '대본 보기' : '목록 보기', 'ed-seg__btn', () => {
+    state.mode = m;
+    try { localStorage.setItem(MODE_KEY, m); } catch { /* 기억 못 해도 된다 */ }
+    paintMode();
+    renderSide();
+    renderList();
+  });
+  b.dataset.mode = m;
+  return b;
+});
+modeSeg.append(...modeBtns);
+function paintMode(): void { for (const b of modeBtns) b.setAttribute('aria-pressed', String(b.dataset.mode === state.mode)); }
+top.append(title, modeSeg, search, changedToggle, status, actions);
 
 function paintStatus(): void {
   const n = Object.keys(state.patch).length;
@@ -175,6 +206,7 @@ const GROUPS: Group[] = (() => {
 
 function renderSide(): void {
   side.replaceChildren();
+  if (state.mode === 'script') { renderScriptSide(); return; }
   const all = btn('', 'ed-group', () => { state.group = null; state.limit = 60; renderSide(); renderList(); });
   all.dataset.on = String(state.group === null);
   all.append(el('span', 'ed-group__name', '전체'), el('span', 'ed-group__n', String(ROWS.length)));
@@ -220,25 +252,14 @@ function autosize(t: HTMLTextAreaElement): void {
   t.style.height = `${t.scrollHeight + 2}px`;
 }
 
-function buildRow(r: Row): HTMLElement {
-  const row = el('article', 'ed-row');
-  row.dataset.changed = String(isChanged(r.id));
-  const meta = el('div', 'ed-row__meta');
-  const head = el('div', 'ed-row__head');
-  head.append(el('span', 'ed-row__sec', r.label.section));
-  if (isNarration(r.leaf.text)) {
-    const tag = el('span', 'ed-tag', '지문');
-    tag.title = '"> "로 시작하는 글은 대사가 아니라 장면 묘사로 나옵니다. 맨 앞의 "> "는 지우지 마세요.';
-    head.append(tag);
-  }
-  meta.append(head, el('div', 'ed-row__name', r.label.name), el('code', 'ed-row__id', r.id));
-
+/** 글 하나를 고치는 칸 (목록·대본 공용). row는 수정 여부 표시(data-changed)를 받는 바깥 요소 */
+function editorFor(r: Row, row: HTMLElement, ariaLabel: string): HTMLElement {
   const edit = el('div', 'ed-row__edit');
   const ta = el('textarea', 'ed-ta');
   ta.value = currentText(r);
   ta.rows = 1;
   ta.spellcheck = false;
-  ta.setAttribute('aria-label', `${r.label.section} ${r.label.name}`);
+  ta.setAttribute('aria-label', ariaLabel);
   const foot = el('div', 'ed-row__foot');
   const warn = el('span', 'ed-warn');
   const count = el('span', 'ed-count');
@@ -267,14 +288,109 @@ function buildRow(r: Row): HTMLElement {
   ta.addEventListener('input', () => { onInput(); autosize(ta); });
   foot.append(count, warn, reset);
   edit.append(ta, foot, orig);
-  row.append(meta, edit);
   paintRow();
   queueMicrotask(() => autosize(ta));
+  return edit;
+}
+
+function buildRow(r: Row): HTMLElement {
+  const row = el('article', 'ed-row');
+  row.dataset.changed = String(isChanged(r.id));
+  const meta = el('div', 'ed-row__meta');
+  const head = el('div', 'ed-row__head');
+  head.append(el('span', 'ed-row__sec', r.label.section));
+  if (isNarration(r.leaf.text)) {
+    const tag = el('span', 'ed-tag', '지문');
+    tag.title = '"> "로 시작하는 글은 대사가 아니라 장면 묘사로 나옵니다. 맨 앞의 "> "는 지우지 마세요.';
+    head.append(tag);
+  }
+  meta.append(head, el('div', 'ed-row__name', r.label.name), el('code', 'ed-row__id', r.id));
+  row.append(meta, editorFor(r, row, `${r.label.section} ${r.label.name}`));
   return row;
+}
+
+// ------------------------------------------------------------ 대본 보기
+function lineVisible(id: string): boolean {
+  const r = ROW_BY_ID.get(id);
+  if (!r) return false;
+  if (state.changedOnly && !isChanged(id)) return false;
+  if (state.query) return r.hay.includes(state.query) || (isChanged(id) && currentText(r).toLowerCase().includes(state.query));
+  return true;
+}
+
+function renderScriptSide(): void {
+  side.replaceChildren(el('div', 'ed-side__h', '게임 순서대로'));
+  const entry = (key: string, name: string, ids: string[]): void => {
+    const changed = ids.filter(isChanged).length;
+    const b = btn('', 'ed-group', () => { state.chapter = key; renderSide(); renderList(); });
+    b.dataset.on = String(state.chapter === key);
+    b.append(el('span', 'ed-group__name', name));
+    if (changed > 0) b.append(el('span', 'ed-group__dot', `${changed}`));
+    b.append(el('span', 'ed-group__n', String(ids.filter(lineVisible).length)));
+    side.append(b);
+  };
+  for (const c of SCRIPT.chapters) entry(c.key, c.title, chapterIds(c));
+  side.append(el('div', 'ed-side__h', '장면에 매이지 않는 글'));
+  entry(REST_KEY, '그 밖의 글 (공통·UI)', SCRIPT.rest);
+}
+
+function buildLine(line: ScriptLine): HTMLElement {
+  const r = ROW_BY_ID.get(line.id) as Row;
+  const row = el('div', 'ed-line');
+  row.dataset.kind = line.kind;
+  row.dataset.changed = String(isChanged(r.id));
+  const who = el('div', 'ed-line__who');
+  // 상황 이름: 손님·연락처·수칙은 "인사 › 맞았을 때"처럼 뜻이 있다. UI 문구 경로(afternoon › intro › 1번째)는 감춘다
+  const what = r.leaf.file === 'strings' ? '' : r.leaf.file === 'rules' ? r.label.section : r.label.name;
+  who.append(el('b', '', line.who));
+  if (what) who.append(el('span', 'ed-line__what', what));
+  who.title = r.id;
+  row.append(who, editorFor(r, row, `${line.who} · ${r.label.name}`));
+  return row;
+}
+
+function renderScript(): void {
+  if (state.chapter === REST_KEY) {
+    const rows = SCRIPT.rest.filter(lineVisible).map((id) => ROW_BY_ID.get(id) as Row);
+    const head = el('div', 'ed-list-head');
+    head.append(el('h2', '', '그 밖의 글'), el('span', 'ed-list-n', `${rows.length}개 · 여러 장면에 두루 나오는 공통 반응, 버튼·알림 같은 UI 문구`));
+    main.append(head);
+    let group = '';
+    const list = el('div', 'ed-list');
+    for (const r of rows) {
+      if (r.label.group !== group) { group = r.label.group; list.append(el('h3', 'ed-scene__title', group)); }
+      list.append(buildRow(r));
+    }
+    main.append(list);
+    main.scrollTop = 0;
+    return;
+  }
+  const ch = SCRIPT.chapters.find((c) => c.key === state.chapter) ?? SCRIPT.chapters[0];
+  if (!ch) return;
+  const head = el('div', 'ed-list-head');
+  const n = chapterIds(ch).filter(lineVisible).length;
+  head.append(el('h2', '', ch.title), el('span', 'ed-list-n', `${n}줄`));
+  main.append(head);
+  if (ch.key.startsWith('day')) main.append(el('p', 'ed-script-hint', '조건에 따라 갈리는 줄(단골일 때, 초대 없이 왔을 때, 인사가 맞았을 때 등)도 함께 적혀 있어요. 왼쪽 회색 글씨가 어떤 상황의 줄인지 알려 줘요.'));
+  let shown = 0;
+  for (const sc of ch.scenes) {
+    const lines = sc.lines.filter((l) => lineVisible(l.id));
+    if (lines.length === 0) continue;
+    const sec = el('section', 'ed-scene');
+    const h = el('h3', 'ed-scene__title', sc.title);
+    if (sc.sub) h.append(el('span', 'ed-scene__sub', sc.sub));
+    sec.append(h);
+    for (const l of lines) sec.append(buildLine(l));
+    main.append(sec);
+    shown += lines.length;
+  }
+  if (shown === 0) main.append(el('div', 'ed-empty', state.changedOnly && !state.query ? '이 장에서 수정한 글이 없어요.' : '찾는 글이 없어요. 검색어를 바꾸거나 다른 날을 골라 보세요.'));
+  main.scrollTop = 0;
 }
 
 function renderList(): void {
   main.replaceChildren();
+  if (state.mode === 'script') { renderScript(); return; }
   if (state.loadError) {
     const banner = el('div', 'ed-banner');
     banner.setAttribute('role', 'alert');
@@ -563,6 +679,7 @@ window.addEventListener('beforeunload', (e) => {
 window.addEventListener('storage', (e) => {
   if (e.key === PATCH_KEY) say('다른 탭에서 수정 내용이 바뀌었어요. 새로고침하면 반영돼요.', 'warn');
 });
+paintMode();
 paintStatus();
 renderSide();
 renderList();
