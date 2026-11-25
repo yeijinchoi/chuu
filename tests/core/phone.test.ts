@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { act, newGame, playAfternoon, playCorrect, registered, st, toAftercare, toTexting } from './helpers';
+import { act, newGame, playAfternoon, playCorrect, registered, st, toAftercare, toTexting, txt } from './helpers';
 import type { GameEvent } from '../../src/core/types';
 
 /** M4: 업무폰 UI가 의존하는 코어 동작 (비활성 사유, 효과음 이벤트, 04:44 순서) */
@@ -97,13 +97,13 @@ describe('04:44 문자 (S12)', () => {
     expect(all.filter((e) => e.type === 'sfx' && e.id === 'phone_buzz')).toHaveLength(2);
     const lines = all.filter((e): e is Extract<GameEvent, { type: 'phone' }> => e.type === 'phone');
     expect(lines.map((e) => e.from)).toEqual(['나', '나', '나']);
-    expect(lines.map((e) => e.text)).toEqual(['아직 매장이야?', '나 지금 문 앞이야.', '열어줘.']);
+    expect(lines.map((e) => e.text)).toEqual([txt('strings/closingText/incoming/#0'), txt('strings/closingText/incoming/#1'), txt('strings/closingText/incoming/#2')]);
   });
 
   it('무시: …… ×2 다음 내일 봐.', () => {
     const { g } = toClosing();
     const ev = act(g, { type: 'closingText', reply: false });
-    expect(ev.filter((e) => e.type === 'phone').map((e) => (e as { text: string }).text)).toEqual(['……', '……', '내일 봐.']);
+    expect(ev.filter((e) => e.type === 'phone').map((e) => (e as { text: string }).text)).toEqual([txt('strings/closingText/ignored/#0'), txt('strings/closingText/ignored/#1'), txt('strings/closingText/ignored/#2')]);
   });
 
   it('답장: 블랙아웃과 glass_tap이 먼저, 그 뒤에 실루엣의 답장, 마지막에 평정심 감소', () => {
@@ -118,6 +118,6 @@ describe('04:44 문자 (S12)', () => {
     expect(black).toBeLessThan(reply);
     expect(tap).toBeLessThan(reply);
     expect(reply).toBeLessThan(comp);
-    expect((ev[reply] as { text: string }).text).toBe('고마워. 이제 내 자리 돌려줘.');
+    expect((ev[reply] as { text: string }).text).toBe(txt('strings/closingText/replied/#0'));
   });
 });

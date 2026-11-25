@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { act, customer, encOf, registered, rig, st } from './helpers';
+import { act, customer, encOf, registered, rig, st, txt } from './helpers';
 import type { GameEvent } from '../../src/core/types';
 
 const vip = { tier: 'vip' as const, score: 5 };
@@ -60,7 +60,7 @@ describe('오후 대접', () => {
     expect(ev.filter((e) => e.type === 'relationship')).toEqual([
       { type: 'relationship', customerId: 'jin', delta: 1, score: 6, tier: 'vip' },
     ]);
-    expect(ev).toContainEqual({ type: 'line', speaker: '진영숙', text: '레몬 안 넣었네. 서윤 씨한테 배웠어요?' });
+    expect(ev).toContainEqual({ type: 'line', speaker: '진영숙', text: customer('jin').hospitality!.match }); // 문구는 편집기로 바뀔 수 있어 데이터에서 읽는다
   });
 
   it('다른 것을 내면 호감 −5, 관계 점수는 오르지 않고 취향은 기록된다', () => {
@@ -75,7 +75,7 @@ describe('오후 대접', () => {
     expect(delta).toBe(-5);
     expect(st(g).cards.jin?.drink).toBeUndefined();
     expect(ev.some((e) => e.type === 'cardUpdate' && e.field === 'drink')).toBe(false);
-    expect(ev).toContainEqual({ type: 'line', speaker: '진영숙', text: '…대접이 없네요.' });
+    expect(ev).toContainEqual({ type: 'line', speaker: '진영숙', text: customer('jin').hospitality!.none });
   });
 
   it('대접 뒤에는 probe 단계로 간다', () => {
@@ -128,7 +128,7 @@ describe('취향 any / taboo', () => {
       const { g, composureDelta, ev } = serveOnce('door', 'dawn', drink, 'vip');
       expect(composureDelta).toBe(-10);
       expect(st(g).cards.door?.drink).toBe('taboo');
-      expect(ev).toContainEqual({ type: 'line', speaker: null, text: '촉수가 잔을 감아 문 쪽으로 당긴다.' });
+      expect(ev).toContainEqual({ type: 'line', speaker: null, text: txt('customers/door/hospitality/mismatch').replace(/^>\s*/, '') });
     }
   });
 });

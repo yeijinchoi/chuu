@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { act, bestOffer, data, encOf, newGame, playAfternoon, playCorrect, st, toAftercare } from './helpers';
+import { act, bestOffer, data, encOf, newGame, playAfternoon, playCorrect, st, toAftercare, txt } from './helpers';
 import type { GameEvent } from '../../src/core/types';
 
 function goldenPath(seed: number): { events: GameEvent[]; game: ReturnType<typeof newGame> } {
@@ -83,7 +83,7 @@ describe('1일차 정답 루트 (dispatch만 사용)', () => {
     expect(s.thanksSent).toBe(4);
     expect(s.composure).toBe(100);
     expect(s.results?.grade).toBe('S');
-    expect(s.results?.comment).toBe('서윤이 자리가 아깝지 않네요. 그분도 기뻐하실 거예요.');
+    expect(s.results?.comment).toBe(txt('strings/results/gradeComment/S'));
     // 오후 매출 = 세 상품 가격 합, 새벽은 장부로
     expect(s.revenue).toBeGreaterThan(0);
     expect(s.dawnLedger.map((x) => x.customerId)).toEqual(['marsh', 'faceless', 'baek']);
@@ -183,7 +183,7 @@ describe('평정심 0 → 배드엔딩', () => {
     for (let i = 0; i < 2; i++) { playCorrect(g); act(g, { type: 'advance' }); }
     expect(st(g).phase.kind).toBe('closingText');
     const ev = act(g, { type: 'closingText', reply: false });
-    expect(ev.filter((e) => e.type === 'phone').map((e) => (e as { text: string }).text).at(-1)).toBe('내일 봐.');
+    expect(ev.filter((e) => e.type === 'phone').map((e) => (e as { text: string }).text).at(-1)).toBe(txt('strings/closingText/ignored/#2'));
     expect(st(g).violations).toBe(0);
     expect(st(g).phase).toEqual({ kind: 'aftercare', shift: 'dawn' });
   });

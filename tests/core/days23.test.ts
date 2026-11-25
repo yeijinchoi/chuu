@@ -4,7 +4,7 @@ import { applicableRules, checkChoice } from '../../src/core/rules';
 import type { Game } from '../../src/core/game';
 import type { CloseId, CustomerDef, GreetStyle, ProbeId } from '../../src/core/types';
 import { dawnBond, leaveEnding, TOP_SELLER_REVENUE, yesEnding } from '../../src/core/plot';
-import { act, ctxOf, customer, data, encOf, newGame, registered, rightDrink, st } from './helpers';
+import { act, ctxOf, customer, data, encOf, newGame, registered, rightDrink, st, txt } from './helpers';
 
 const PROBES: ProbeId[] = ['askCategory', 'askOccasion', 'observe', 'askBudget'];
 const CLOSES: CloseId[] = ['boxGold', 'checkout', 'boxRed', 'tryOn'];
@@ -94,7 +94,7 @@ describe('2~5일차', () => {
     nextMorning(g);
     playDay(g);
     const ev = act(g, { type: 'closingText', reply: false });
-    expect(ev.filter((e) => e.type === 'phone').map((e) => (e as { text: string }).text)).toEqual(['……', '……', '……', '내일은 들어갈게.']);
+    expect(ev.filter((e) => e.type === 'phone').map((e) => (e as { text: string }).text)).toEqual([txt('strings/closingText/d2/ignored/#0'), txt('strings/closingText/d2/ignored/#1'), txt('strings/closingText/d2/ignored/#2'), txt('strings/closingText/d2/ignored/#3')]);
   });
 
   it('3일차·4일차 일정과 단서', () => {

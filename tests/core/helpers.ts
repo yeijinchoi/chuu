@@ -3,6 +3,7 @@ import { startEncounter } from '../../src/core/encounter';
 import { makeLookups, type Ctx } from '../../src/core/ctx';
 import { Game } from '../../src/core/game';
 import { loadGameData } from '../../src/core/gameData';
+import { getAt } from '../../src/editor/textmap';
 import type {
   Action, ClientCard, CustomerDef, GameEvent, GameState, Product, Shift, StorageAdapter,
 } from '../../src/core/types';
@@ -125,4 +126,16 @@ export function playAfternoon(g: Game, accept = true): void {
     playCorrect(g, { accept, close: i === 0 ? 'boxGold' : 'boxRed' });
     act(g, { type: 'advance' });
   }
+}
+
+/**
+ * 데이터 파일의 글 한 줄 (문구 편집기 id와 같은 경로: "customers/jin/lines/farewell", "contacts/kang/replies/prefer").
+ * 테스트에 대사 원문을 적어 두면 편집기로 문구를 고칠 때마다 테스트가 깨져 배포가 막힌다. 그래서 데이터에서 읽는다.
+ */
+export function txt(id: string): string {
+  const files = { strings: data.strings, customers: data.customers, contacts: data.contacts, rules: data.rules, templates: data.templates, products: data.products } as Record<string, unknown>;
+  const [file, ...path] = id.split('/');
+  const v = getAt(files[file as string], path);
+  if (typeof v !== 'string') throw new Error(`글이 없다: ${id}`);
+  return v;
 }

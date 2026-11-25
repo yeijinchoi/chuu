@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { act, customer, data, newGame, registered, rig, st, toAftercare, toTexting } from './helpers';
+import { act, customer, data, newGame, registered, rig, st, toAftercare, toTexting, txt } from './helpers';
 import { strAt } from '../../src/core/ctx';
 import type { GameEvent } from '../../src/core/types';
 
@@ -63,8 +63,8 @@ describe('대사 흐름', () => {
     toTexting(g, 'afternoon');
     const ev = act(g, { type: 'sendText', contactId: 'kang', template: 'new_arrival' });
     const phone = ev.find((e) => e.type === 'phone') as { text: string };
-    expect(phone.text).toContain('두 시 십오 분');
-    expect(phone.text).not.toBe('오 신상? 세 시 반쯤 갈게요.');
+    expect(phone.text).toBe(txt('contacts/kang/repliesByDay/2/prefer'));
+    expect(phone.text).not.toBe(txt('contacts/kang/replies/prefer')) // 2일차 답장은 1일차 답장과 다르다;
   });
 
   it('새벽 손님에게 관리 문자를 보내면 반응 지문이 하나 나온다', () => {
