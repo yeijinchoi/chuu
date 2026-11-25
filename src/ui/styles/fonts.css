@@ -53,14 +53,14 @@
   font-style: normal;
   font-display: swap;
 }
-/* 본문 크기: 델타돋움은 같은 크기에서 갈무리보다 작아 보여 size-adjust로 키운다(데스크톱 11px→15px, 모바일 14px→19px) */
+/* 본문 크기: 델타돋움은 같은 크기에서 갈무리보다 작아 보여 size-adjust로 키운다(데스크톱 11px→15px, 모바일 14px→20px) */
 @font-face {
   font-family: 'GameBodyM';
   src: url('./../fonts/DeltaDotumKR-subset.woff2') format('woff2');
   font-weight: 400;
   font-style: normal;
   font-display: swap;
-  size-adjust: 138%;
+  size-adjust: 142.857%; /* 14px → 20px: 글꼴 점 하나 = CSS 1px. 폰(dpr 2·3)에서 화면 정수 픽셀이라 획 굵기가 고르다 */
 }
 @font-face {
   font-family: 'GameBodyM';

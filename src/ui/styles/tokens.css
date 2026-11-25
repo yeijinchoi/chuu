@@ -65,6 +65,10 @@
 
   /* 모바일 세로 배치 (§7-2): 장면만 줄이고 글자·버튼은 CSS px 원래 크기 */
   --font-m-body: 'GameBodyM', 'Galmuri14', 'Galmuri11', 'Malgun Gothic', sans-serif;
+
+  /* 태블릿 글자 모드(html[data-text='pad']): 델타돋움을 글꼴 점 = CSS 1px(20px)로. 11px × 136%(size-adjust)와 같은 비율 */
+  --pad-fs: 14.7059px;
+  --pad-lh: 22px;
   --text-m-body: 14px;
   --lh-m-body: 20px;
   --text-m-sub: 11px;

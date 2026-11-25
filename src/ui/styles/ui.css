@@ -315,3 +315,20 @@ html[data-layout='mobile'] .opening__compose .opening__send { min-width: 88px; }
 .dialogue__text { font-size: 14px; line-height: 20px; height: 60px; }
 .dialogue__plate { font-size: 12px; line-height: 14px; height: 20px; top: -21px; }
 .choice { height: 36px; font-size: 12px; line-height: 14px; }
+
+/* ---------- 태블릿 글자 모드 (stage.ts padText): 본문 델타돋움을 20px로 (글꼴 점 하나 = 화면 정수 픽셀)
+   무대 배율이 화면 정수 픽셀에 맞춰져 있어 획 굵기가 고르다. 글자가 커진 만큼 대화창·선택지는 아래를 고정한 채 위로 자란다. ---------- */
+html[data-text='pad'] body,
+html[data-text='pad'] .empty, html[data-text='pad'] .hint,
+html[data-text='pad'] .toast, html[data-text='pad'] .bubble,
+html[data-text='pad'] .title__msg .bubble, html[data-text='pad'] .opening__text,
+html[data-text='pad'] .ledger__h, html[data-text='pad'] .trophy, html[data-text='pad'] .trophies__count,
+html[data-text='pad'] .loading__text {
+  font-size: var(--pad-fs); line-height: var(--pad-lh);
+}
+html[data-text='pad'] .dialogue { top: auto; bottom: calc(100% - 376px); height: auto; }
+html[data-text='pad'] .dialogue__text { font-size: var(--pad-fs); line-height: var(--pad-lh); height: auto; min-height: calc(var(--pad-lh) * 3); max-height: calc(var(--pad-lh) * 6); }
+html[data-text='pad'] .choice { height: auto; min-height: 40px; padding-top: 4px; padding-bottom: 4px; font-size: var(--pad-fs); line-height: var(--pad-lh); }
+html[data-text='pad'] .choice__label { -webkit-line-clamp: 3; }
+html[data-text='pad'] .opening__input { height: 34px; font-size: var(--pad-fs); }
+html[data-text='pad'] .opening__send { height: 34px; }

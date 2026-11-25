@@ -431,3 +431,13 @@ html[data-layout='mobile'] .folder-row { padding: var(--space-3) var(--space-3);
 .contact__text .contact__addr, .contact__text .contact__memo { padding-left: 0; display: block; }
 .contact__head { text-align: left; }
 html[data-layout='mobile'] .contact__name { font-size: 13px; line-height: 18px; }
+
+/* 태블릿 글자 모드: 폰 안 본문도 델타돋움 20px (ui.css 같은 절 참고). 굵은 제목(갈무리 굵게)·작은 글씨·앱 이름은 그대로 */
+html[data-text='pad'] .phone :is(.bubble, .reply__opt, .thread-row__last, .note-page, .cdet__line, .kv__v, .rules__list, .hint, .empty,
+  .inputbar__field, .phone-btn, .seg__btn, .picker__name, .nav-back, .cdet-act, .card-pick__btn, .search, .phone__money, .note-row__line, .folder-row, .rel__tier),
+html[data-text='pad'] .notif__text {
+  font-size: var(--pad-fs); line-height: var(--pad-lh);
+}
+html[data-text='pad'] .phone .thread-row__last, html[data-text='pad'] .phone .note-row__line { -webkit-line-clamp: 2; }
+html[data-text='pad'] .phone :is(.seg__btn, .card-pick__btn) { height: 28px; }
+html[data-text='pad'] .phone .search { height: 30px; }

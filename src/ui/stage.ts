@@ -16,11 +16,28 @@ export const CANVAS_H = 360;
  * 1배에 머물러 화면 가운데에 작게 뜨고 글자가 작다. 그래서 창에 꽉 차는 소수 배율을 쓴다(1/20 단위로 내림:
  * 창 크기가 조금 바뀔 때마다 배율이 흔들리지 않게). 정수 배에 아주 가까우면 정수로 붙여 도트를 또렷하게 둔다.
  */
-export function computeScale(vw: number, vh: number): number {
+/**
+ * 무대 배율. deviceSnap(태블릿 글자 모드)이면 CSS 1px가 화면 정수 픽셀이 되도록 내린다(dpr 2에서 1, 1.5, 2배…):
+ * 그래야 20px 델타돋움의 글꼴 점 하나가 화면 정수 픽셀로 떨어져 획 굵기가 고르다.
+ */
+export function computeScale(vw: number, vh: number, dpr = 1, deviceSnap = false): number {
   const fit = Math.min(vw / STAGE_W, vh / STAGE_H);
+  if (deviceSnap) {
+    const d = Math.floor(fit * dpr) / dpr;
+    if (d >= 0.5) return d;
+  }
   const whole = Math.round(fit);
   if (whole >= 1 && Math.abs(fit - whole) < 0.04) return whole;
   return Math.max(0.1, Math.floor(fit * 20) / 20);
+}
+
+/**
+ * 태블릿 글자 모드: 터치 화면 + 정수 배 고해상도(dpr 2·3). 데스크톱 배치에서 본문 델타돋움을 20px로 키우고
+ * 무대 배율을 화면 정수 픽셀에 맞춰, 글꼴 점이 1.5픽셀로 떨어져 획이 굵었다 가늘었다 하는 것을 막는다.
+ */
+export function padText(): boolean {
+  const dpr = window.devicePixelRatio || 1;
+  return (navigator.maxTouchPoints ?? 0) > 1 && dpr >= 2 && Math.abs(dpr - Math.round(dpr)) < 0.01;
 }
 
 export interface Stage {
@@ -123,8 +140,10 @@ export function createStage(label: string): Stage {
   const sheets = new Sheets({ display: displayFrame, phone: phoneFrame }, backdrop, stage);
 
   const apply = (): void => {
+    const pad = !layout.mobile && padText();
+    document.documentElement.dataset.text = pad ? 'pad' : '';
     if (layout.mobile) { stage.style.transform = ''; return; }
-    const s = computeScale(window.innerWidth, window.innerHeight);
+    const s = computeScale(window.innerWidth, window.innerHeight, window.devicePixelRatio || 1, pad);
     stage.style.transform = `translate(-50%, -50%) scale(${s})`;
   };
   apply();
