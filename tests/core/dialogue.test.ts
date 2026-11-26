@@ -87,9 +87,14 @@ describe('대사 흐름', () => {
     }
   });
 
-  it('재방문 대사에 "어제"를 쓰지 않는다 (방문 사이가 하루가 아닐 수 있다)', () => {
+  it('재방문 대사의 "어제"는 바로 다음 날 오는 방문에만 쓴다 (방문 사이가 하루가 아닐 수 있다)', async () => {
     const r = customer('hanyeoreum').returns ?? {};
-    expect(JSON.stringify(r)).not.toContain('어제');
+    // 한여름 2번째 방문은 늘 2일차(1일차 13:30에 반드시 오고, 2일차 재방문 칸의 후보가 한여름뿐이다) → "어제"가 맞다
+    const day2 = (await import('../../src/data/day2.json')).default as { schedule: { condition: string; candidates?: string[] }[] };
+    const onlyHan = day2.schedule.some((x) => x.condition === 'returning' && JSON.stringify(x.candidates) === '["hanyeoreum"]');
+    if (!onlyHan) expect(JSON.stringify(r['2'] ?? {})).not.toContain('어제');
+    // 3번째 방문(4·5일차)은 바로 다음 날이 아니다
+    for (const [n, v] of Object.entries(r)) if (Number(n) >= 3) expect(JSON.stringify(v), `${n}번째 방문`).not.toContain('어제');
   });
 });
 

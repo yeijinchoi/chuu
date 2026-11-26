@@ -132,3 +132,13 @@ html, body.editor { margin: 0; height: 100%; background: var(--color-bg); color:
   .ed-line { grid-template-columns: minmax(0, 1fr); gap: 2px; }
   .ed-line__who { flex-direction: row; gap: 8px; align-items: baseline; padding-top: 0; }
 }
+
+/* 옛 수정 충돌: 다른 곳에서 먼저 바뀐 글 */
+.ed-conflict { margin: 0 0 18px; padding: 12px 14px; background: color-mix(in srgb, var(--wine-dark) 55%, var(--color-surface)); border: 2px solid var(--wine); }
+.ed-conflict h2 { margin: 0 0 4px; font-size: 13px; color: var(--paper); }
+.ed-conflict__hint { margin: 0 0 10px; font-size: 9px; color: var(--bone); }
+.ed-conflict__row { display: flex; flex-direction: column; gap: 4px; padding: 8px 0; border-top: 1px solid var(--wine); }
+.ed-conflict__name { font-size: 9px; color: var(--bone); }
+.ed-conflict__text { overflow-wrap: anywhere; }
+.ed-conflict__text b { color: var(--color-trim); margin-right: 6px; }
+.ed-conflict__act { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 2px; }

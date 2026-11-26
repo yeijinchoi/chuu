@@ -2,7 +2,7 @@ import '../ui/styles/fonts.css';
 import '../ui/styles/tokens.css';
 import './editor.css';
 import { publishChanges, type PublishResult } from './github';
-import { LIVE, loadPatch, PATCH_KEY, savePatch } from './store';
+import { classifyStored, LIVE, loadBases, loadPatch, PATCH_KEY, saveBases, savePatch } from './store';
 import { buildScript, type DayInfo, type ScriptChapter, type ScriptLine } from './script';
 import day1 from '../data/day1.json';
 import day2 from '../data/day2.json';
@@ -61,19 +61,25 @@ const state = {
   changedOnly: false,
   limit: 60,
   loadError: null as null | 'corrupt' | 'blocked',
+  /** 고칠 때의 원문 (수정 id → 글) */
+  bases: loadBases(),
+  /** 이 브라우저에 저장돼 있었지만 그 사이 다른 곳에서 바뀐 글의 옛 수정: 사람이 고를 때까지 쓰지 않는다 */
+  conflicts: [] as { id: string; saved: string }[],
 };
 
 const stored = loadPatch();
 let cleaned = 0;
 if (stored.ok) {
-  // 이미 게시돼 사이트 원문이 된 수정(원문과 같아진 것)은 목록에서 정리한다
+  // 이미 게시돼 사이트 원문이 된 수정은 정리하고, 그 사이 다른 곳에서 바뀐 글의 옛 수정은 충돌로 따로 둔다
+  // (예전에는 옛 수정이 그대로 "수정"으로 남아, 다음 게시 때 더 새로 고친 글을 되돌려 버렸다)
   for (const [id, text] of Object.entries(stored.patch)) {
     const r = ROW_BY_ID.get(id);
-    if (!r) { cleaned++; continue; }
-    if (r.leaf.text === text) { cleaned++; continue; }
+    const kind = classifyStored(text, state.bases[id], r?.leaf.text);
+    if (kind === 'drop') { cleaned++; delete state.bases[id]; continue; }
+    if (kind === 'conflict') { state.conflicts.push({ id, saved: text }); continue; }
     state.patch[id] = text;
   }
-  if (cleaned > 0) savePatch(state.patch);
+  if (cleaned > 0) { savePatch(storedPatch()); saveBases(state.bases); }
 } else state.loadError = stored.reason;
 
 // ------------------------------------------------------------ DOM 도우미
@@ -98,16 +104,26 @@ let saveTimer = 0;
 function persist(): void {
   window.clearTimeout(saveTimer);
   saveTimer = window.setTimeout(() => {
-    const ok = savePatch(state.patch);
+    const ok = savePatch(storedPatch()) && saveBases(state.bases);
     state.save = ok ? 'ok' : 'failed';
     if (ok) state.savedAt = new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
     paintStatus();
   }, 250);
 }
 
+/** 저장할 패치: 지금 수정 + 아직 고르지 않은 충돌(고를 때까지 지우지 않는다) */
+function storedPatch(): Patch {
+  const out: Patch = {};
+  for (const c of state.conflicts) out[c.id] = c.saved;
+  return { ...out, ...state.patch };
+}
+
 function setText(r: Row, text: string): void {
-  if (text === r.leaf.text) delete state.patch[r.id];
-  else state.patch[r.id] = text;
+  if (text === r.leaf.text) { delete state.patch[r.id]; delete state.bases[r.id]; }
+  else {
+    state.patch[r.id] = text;
+    state.bases[r.id] = r.leaf.text; // 이 글을 고쳤다
+  }
   persist();
   paintCounts();
 }
@@ -388,8 +404,44 @@ function renderScript(): void {
   main.scrollTop = 0;
 }
 
+/** 옛 수정 충돌: 이 브라우저에 저장된 수정이 만들어진 뒤 그 글이 다른 곳에서 바뀌었다. 하나씩 고른다 */
+function conflictBox(): HTMLElement | null {
+  if (state.conflicts.length === 0) return null;
+  const box = el('section', 'ed-conflict');
+  box.setAttribute('role', 'alert');
+  box.append(el('h2', '', `확인이 필요한 옛 수정 ${state.conflicts.length}개`));
+  box.append(el('p', 'ed-conflict__hint', '이 브라우저에 예전에 저장해 둔 수정인데, 그 뒤에 같은 글이 다른 곳(다른 브라우저·다른 사람·코드 수정)에서 먼저 바뀌었어요. 고르기 전에는 게시되지 않아요.'));
+  const resolve = (id: string, use: boolean): void => {
+    const c = state.conflicts.find((x) => x.id === id);
+    state.conflicts = state.conflicts.filter((x) => x.id !== id);
+    const r = ROW_BY_ID.get(id);
+    if (use && c && r) setText(r, c.saved);
+    else { delete state.bases[id]; persist(); }
+    renderSide();
+    renderList();
+  };
+  for (const c of state.conflicts) {
+    const r = ROW_BY_ID.get(c.id);
+    if (!r) continue;
+    const row = el('div', 'ed-conflict__row');
+    row.append(el('div', 'ed-conflict__name', `${r.label.group.replace(/^손님 · /, '')} · ${r.label.section} · ${r.label.name}`));
+    const now = el('div', 'ed-conflict__text');
+    now.append(el('b', '', '지금 글 '), el('span', '', r.leaf.text));
+    const old = el('div', 'ed-conflict__text');
+    old.append(el('b', '', '옛 수정 '), el('span', '', c.saved));
+    const act = el('div', 'ed-conflict__act');
+    act.append(btn('지금 글 유지 (옛 수정 버리기)', 'ed-btn ed-btn--accent', () => resolve(c.id, false)), btn('옛 수정으로 바꾸기', 'ed-btn', () => resolve(c.id, true)));
+    row.append(now, old, act);
+    box.append(row);
+  }
+  if (state.conflicts.length > 1) box.append(btn('모두 지금 글 유지', 'ed-btn', () => { for (const c of [...state.conflicts]) delete state.bases[c.id]; state.conflicts = []; persist(); renderSide(); renderList(); }));
+  return box;
+}
+
 function renderList(): void {
   main.replaceChildren();
+  const cb = conflictBox();
+  if (cb) main.append(cb);
   if (state.mode === 'script') { renderScript(); return; }
   if (state.loadError) {
     const banner = el('div', 'ed-banner');
@@ -560,6 +612,12 @@ async function doPublish(): Promise<void> {
     return r ? [{ id, before: r.leaf.text, after }] : [];
   });
   const result = await publishChanges({ repo, branch, token }, changes);
+  if (result.ok) {
+    // 올린 글은 "게시함" 표시(고칠 때의 원문 = 올린 글): 배포 전 새로고침해도 수정으로 남고, 배포 뒤에는 저절로 정리된다
+    const skipped = new Set(result.skipped.map((x) => x.id));
+    for (const c of changes) if (!skipped.has(c.id)) state.bases[c.id] = c.after;
+    persist();
+  }
   pubGo.disabled = false;
   pubGo.textContent = '게시하기';
   showPub(result);
